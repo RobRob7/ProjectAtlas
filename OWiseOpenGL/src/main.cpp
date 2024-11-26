@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "Shader.hpp"
+#include "../header/shader.hpp"
+#include "../header/stb_image.h"
 
 #include <iostream>
 
@@ -47,24 +48,25 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	// shader creation
-	Shader myShader("Shaders/5 - Hello Triangle/HelloTriangle_vs.glsl", "Shaders/5 - Hello Triangle/HelloTriangle_fs.glsl");
+	Shader myShader("shaders/7/vs.glsl", "shaders/7/fs.glsl");
 
 	// triangle vertices
 	float vertices[] = {
-		-0.5f, -0.5f, 0.0f,		// 0
-		-0.5f, 0.5f, 0.0f,		// 1
-		0.5f, -0.5f, 0.0f,		// 2
-		0.5f, 0.5f, 0.0f		// 3
+		// positions		// colors		  // texture coords
+		 0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
+		 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
+		-0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f  // top left
 	};
 
 	// triangle indices
 	unsigned int indices[] =
 	{
-		0, 1, 2,	// first triangle vertices
+		0, 1, 3,	// first triangle vertices
 		1, 2, 3		// second triangle vertices
-	};			
+	};		
 
-	// vertex array object (stores VBO and EBO)
+	// vertex array object (stores VBO + EBO)
 	unsigned int VAO;
 	glGenVertexArrays(1, &VAO);
 
@@ -91,9 +93,84 @@ int main()
 	// copy previously defined indices data into buffer's memory
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 		
-	// set the vertex attribute pointers
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	// set position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+	// set color attribute
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	// set texture coordinate attribute
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	// texture object
+	unsigned int texture;
+	glGenTextures(1, &texture);
+
+	// bind texture
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	// set texture wrapping/filtering options (on currently bound texture)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// load texture
+	int width, height, nrChannels;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* data = stbi_load("textures/cosmos.jpg", &width, &height, &nrChannels, 0);
+
+	// load successful
+	if (data) {
+		// generate texture
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	// bad load
+	else {
+		std::cout << "Failed to load texture!" << std::endl;
+	}
+
+	// free image memory
+	stbi_image_free(data);
+
+
+	// texture1 object
+	unsigned int texture1;
+	glGenTextures(1, &texture1);
+
+	// bind texture
+	glBindTexture(GL_TEXTURE_2D, texture1);
+
+	// set texture wrapping/filtering options (on currently bound texture)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// load texture1
+	stbi_set_flip_vertically_on_load(true);
+	data = stbi_load("textures/D2_Farewell_End.png", &width, &height, &nrChannels, 0);
+
+	// load successful
+	if (data) {
+		// generate texture
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	// bad load
+	else {
+		std::cout << "Failed to load texture!" << std::endl;
+	}
+
+	// free image memory
+	stbi_image_free(data);
+	
+	// set texture unit for shader
+	myShader.use();
+	myShader.setInt("texture0", 0);
+	myShader.setInt("texture1", 1);
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -106,6 +183,13 @@ int main()
 		// process any inputs
 		processInput(window);
 
+
+		// bind/activate the textures we stored earlier
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture1);
 
 		// use my shader program
 		myShader.use();
