@@ -193,6 +193,9 @@ int main()
 
 		// use my shader program
 		myShader.use();
+			
+		// set ourColor uniform
+		myShader.setVec4("ourColor", glm::vec4(sin(glfwGetTime() / 2) + 0.5, 0.1f, glfwGetTime() * 2, 1.0f));
 
 		// bind/activate the VAO data we stored earlier
 		glBindVertexArray(VAO);
