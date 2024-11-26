@@ -1,5 +1,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "../header/shader.hpp"
 #include "../header/stb_image.h"
 
@@ -48,7 +51,7 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	// shader creation
-	Shader myShader("shaders/7/vs.glsl", "shaders/7/fs.glsl");
+	Shader myShader("shaders/8/vs.glsl", "shaders/8/fs.glsl");
 
 	// triangle vertices
 	float vertices[] = {
@@ -193,6 +196,14 @@ int main()
 
 		// use my shader program
 		myShader.use();
+
+		// rotate and translate matrix transform
+		glm::mat4 trans = glm::mat4(1.0f);
+		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.5f));
+		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
+
+		// set shader transform uniform
+		myShader.setMat4("transform", trans);
 			
 		// set ourColor uniform
 		myShader.setVec4("ourColor", glm::vec4(sin(glfwGetTime() / 2) + 0.5, 0.1f, glfwGetTime() * 2, 1.0f));
