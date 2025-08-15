@@ -19,14 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\glad.c" />
+    <ClCompile Include="src\camera\camera.cpp" />
+    <ClCompile Include="src\external\glad.c" />
+    <ClCompile Include="src\external\stb_image.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\stb_image.cpp" />
+    <ClCompile Include="src\shader\shader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="header\camera.h" />
-    <ClInclude Include="header\shader.hpp" />
-    <ClInclude Include="header\stb_image.h" />
+    <ClInclude Include="src\camera\camera.h" />
+    <ClInclude Include="src\shader\shader.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -81,12 +82,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>C:\Libraries\OWiseOpenGL\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>C:\Libraries\OWiseOpenGL\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>C:\Libraries\OWiseOpenGL\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>C:\Libraries\OWiseOpenGL\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

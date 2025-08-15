@@ -3,9 +3,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "../header/shader.hpp"
-#include "../header/stb_image.h"
-#include "../header/camera.h"
+#include "shader/shader.h"
+#include "stb/stb_image.h"
+#include "camera/camera.h"
 
 #include <iostream>
 
@@ -79,7 +79,7 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	// shader creation
-	Shader myShader("shaders/10/vs.glsl", "shaders/10/fs.glsl");
+	Shader myShader("resources/shaders/10/vs.glsl", "resources/shaders/10/fs.glsl");
 
 	// cube vertices
 	float vertices[] = {
@@ -180,7 +180,7 @@ int main()
 	// load texture
 	int width, height, nrChannels;
 	stbi_set_flip_vertically_on_load(true);
-	unsigned char* data = stbi_load("textures/cosmos.jpg", &width, &height, &nrChannels, 0);
+	unsigned char* data = stbi_load("resources/textures/cosmos.jpg", &width, &height, &nrChannels, 0);
 
 	// load successful
 	if (data) {
@@ -212,7 +212,7 @@ int main()
 
 	// load texture1
 	stbi_set_flip_vertically_on_load(true);
-	data = stbi_load("textures/D2_Farewell_End.png", &width, &height, &nrChannels, 0);
+	data = stbi_load("resources/textures/D2_Farewell_End.png", &width, &height, &nrChannels, 0);
 
 	// load successful
 	if (data) {
