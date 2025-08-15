@@ -44,7 +44,7 @@ unsigned int Texture::getID() const {
 
 // bind/activate texture
 void Texture::bindActivateTexture() const {
-	glActiveTexture(0x84C0 + orderID);
+	glActiveTexture(GL_TEXTURE0 + orderID);
 	glBindTexture(GL_TEXTURE_2D, internalTextureID);
 }
 
