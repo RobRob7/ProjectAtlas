@@ -1,13 +1,7 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include "shader/shader.h"
-#include "stb/stb_image.h"
+#include "texture/texture.h"
 #include "camera/camera.h"
 
-#include <iostream>
 
 // is called each time window is resized
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -164,72 +158,13 @@ int main()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	// texture object
-	unsigned int texture;
-	glGenTextures(1, &texture);
+	// load textures
+	Texture texture1("resources/textures/cosmos.jpg");
+	Texture texture2("resources/textures/D2_Farewell_End.png");
 
-	// bind texture
-	glBindTexture(GL_TEXTURE_2D, texture);
-
-	// set texture wrapping/filtering options (on currently bound texture)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// load texture
-	int width, height, nrChannels;
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char* data = stbi_load("resources/textures/cosmos.jpg", &width, &height, &nrChannels, 0);
-
-	// load successful
-	if (data) {
-		// generate texture
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	// bad load
-	else {
-		std::cout << "Failed to load texture!" << std::endl;
-	}
-
-	// free image memory
-	stbi_image_free(data);
-
-
-	// texture1 object
-	unsigned int texture1;
-	glGenTextures(1, &texture1);
-
-	// bind texture
-	glBindTexture(GL_TEXTURE_2D, texture1);
-
-	// set texture wrapping/filtering options (on currently bound texture)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// load texture1
-	stbi_set_flip_vertically_on_load(true);
-	data = stbi_load("resources/textures/D2_Farewell_End.png", &width, &height, &nrChannels, 0);
-
-	// load successful
-	if (data) {
-		// generate texture
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	// bad load
-	else {
-		std::cout << "Failed to load texture!" << std::endl;
-	}
-
-	// free image memory
-	stbi_image_free(data);
-	
 	// set texture unit for shader
 	myShader.use();
+
 	myShader.setInt("texture0", 0);
 	myShader.setInt("texture1", 1);
 
@@ -246,15 +181,13 @@ int main()
 
 		// RENDER //
 		// set color to display after clear (state-setting function)
-		glClearColor(0.1f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		// clear the screen colors (state-using function)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// bind/activate the textures we stored earlier
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture1);
+		texture1.bindActivateTexture();
+		texture2.bindActivateTexture();
 
 		// activate shader
 		myShader.use();
