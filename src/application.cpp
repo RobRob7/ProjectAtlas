@@ -1,0 +1,179 @@
+#include "application.h"
+
+//--- PUBLIC ---//
+Application::Application(int width, int height, const char* windowTitle)
+	: width_(width), height_(height), windowTitle_(windowTitle)
+{
+	// intialize GLFW
+	if (!glfwInit())
+	{
+		throw std::runtime_error("GLFW initialization error!");
+	}
+
+	// specify major OpenGL version
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	// specify minor OpenGL version
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	// specify OpenGL core-profile
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	// WINDOW CREATION + CHECK
+	window_ = glfwCreateWindow(width_, height_, windowTitle_, nullptr, nullptr);
+	if (!window_)
+	{
+		glfwTerminate();
+		throw std::runtime_error("GLFW window creation failure!");
+	} // end if
+
+	// tell GLFW to make the context of our window the main context on the current thread
+	glfwMakeContextCurrent(window_);
+
+	// vsync
+	glfwSwapInterval(1);
+
+	// tell GLFW to capture our mouse
+	glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	// INITIALIZE GLAD + CHECK
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		throw std::runtime_error("GLAD initialization failure!");
+	} // end if
+
+	// enable depth test
+	glEnable(GL_DEPTH_TEST);
+
+	// set callbacks
+	glfwSetWindowUserPointer(window_, this);
+	glfwSetFramebufferSizeCallback(window_, [](GLFWwindow* window, int width, int height)
+		{
+			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
+			if (self)
+			{
+				self->width_ = width;
+				self->height_ = height;
+				glViewport(0, 0, width, height);
+			}
+		});
+	glfwSetCursorPosCallback(window_, [](GLFWwindow* window, double xposIn, double yposIn)
+		{
+			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
+			if (self)
+			{
+				if (self->camera_)
+				{
+					float xpos = static_cast<float>(xposIn);
+					float ypos = static_cast<float>(yposIn);
+
+					if (self->camera_->getFirstMouse())
+					{
+						self->camera_->setLastX(xpos);
+						self->camera_->setLastY(ypos);
+						self->camera_->setFirstMouse(false);
+					}
+
+					float xoffset = xpos - self->camera_->getLastX();
+					float yoffset = self->camera_->getLastY() - ypos;
+
+					self->camera_->setLastX(xpos);
+					self->camera_->setLastY(ypos);
+
+					self->camera_->processMouseMovement(xoffset, yoffset);
+				}
+			}
+		});
+	glfwSetScrollCallback(window_, [](GLFWwindow* window, double xoffset, double yoffset)
+		{
+			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
+			if (self)
+			{
+				if (self->camera_)
+				{
+					self->camera_->processMouseScroll(yoffset);
+				}
+			}
+		});
+
+	// camera controller
+	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 0.0f, 3.0f));
+} // end of constructor
+
+Application::~Application()
+{
+	// destroy window if still active
+	if (window_) glfwDestroyWindow(window_);
+	glfwTerminate();
+} // end of destructor
+
+void Application::run()
+{
+	while (!glfwWindowShouldClose(window_))
+	{
+		// per-frame time logic
+		float currentFrame = glfwGetTime();
+		deltaTime_ = currentFrame - lastFrame_;
+		lastFrame_ = currentFrame;
+
+		// poll user input events
+		glfwPollEvents();
+
+		// process user input
+		processInput();
+
+		// set color to display after clear (state-setting function)
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		// clear the screen colors (state-using function)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// enable clipping plane
+		glEnable(GL_CLIP_DISTANCE0);
+
+		// font test
+		//fontView_->render("HELLO THERE!", 0.0f, height_ - 75.0f, 1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+
+		//////////////////////////////
+		// init transform matrices
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 view = camera_->getViewMatrix();
+		glm::mat4 projection = glm::mat4(1.0f);
+		projection = glm::perspective(glm::radians(camera_->m_zoom), width_ / height_, 0.1f, 200.0f);
+
+		//////////////////////////////
+
+		// swap buffers
+		glfwSwapBuffers(window_);
+	} // end while
+} // end of run()
+
+//--- PRIVATE ---//
+void Application::processInput()
+{
+	// press 'esc' key to close window
+	if (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	{
+		glfwSetWindowShouldClose(window_, true);
+	}
+
+	// press 'down' arrow key to disable camera
+	if (glfwGetKey(window_, GLFW_KEY_DOWN) == GLFW_PRESS)
+	{
+		camera_->m_isEnabled = false;
+		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
+
+	// press 'up' arrow key to enable camera
+	if (glfwGetKey(window_, GLFW_KEY_UP) == GLFW_PRESS)
+	{
+		camera_->m_isEnabled = true;
+		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	}
+
+	// camera change (W A S D)
+	if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)
+		camera_->processKeyboard(FORWARD, deltaTime_);
+	if (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS)
+		camera_->processKeyboard(BACKWARD, deltaTime_);
+	if (glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS)
+		camera_->processKeyboard(LEFT, deltaTime_);
+	if (glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS)
+		camera_->processKeyboard(RIGHT, deltaTime_);
+} // end of processInput()

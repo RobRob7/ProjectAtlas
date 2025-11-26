@@ -1,0 +1,47 @@
+#ifndef APPLICATION_H
+#define APPLICATION_H
+
+#include "camera.h"
+#include "shader.h"
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <memory>
+#include <stdexcept>
+
+class Application
+{
+public:
+	Application(int width, int height, const char* windowTitle);
+	~Application();
+
+	// this function runs the application render loop
+	void run();
+
+private:
+	// this function processes and handles input from user
+	void processInput();
+
+private:
+	// width of window
+	float width_;
+	// height of window
+	float height_;
+	// window title name
+	const char* windowTitle_;
+	// GLFWwindow instance
+	GLFWwindow* window_ = nullptr;
+
+	// time between current frame and last frame
+	float deltaTime_ = 0.0f;
+	// time of last frame
+	float lastFrame_ = 0.0f;
+
+	// camera system
+	std::unique_ptr<Camera> camera_;
+};
+
+#endif
