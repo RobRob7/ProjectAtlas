@@ -7,9 +7,9 @@ Camera::Camera(int width, int height, glm::vec3 position, glm::vec3 up, float ya
 {
 	lastX_ = width_ / 2.0f;
 	lastY_ = width_ / 2.0f;
-	position = position;
+	position_ = position;
 	worldUp_ = up;
-	yaw = yaw;
+	yaw_ = yaw;
 	pitch_ = pitch;
 	updateCameraVectors();
 } // end constructor
