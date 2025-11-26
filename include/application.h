@@ -18,11 +18,9 @@ public:
 	Application(int width, int height, const char* windowTitle);
 	~Application();
 
-	// this function runs the application render loop
 	void run();
 
 private:
-	// this function processes and handles input from user
 	void processInput();
 
 private:

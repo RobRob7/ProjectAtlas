@@ -3,45 +3,29 @@
 //--- PUBLIC ---//
 // constructor with vectors
 Camera::Camera(int width, int height, glm::vec3 position, glm::vec3 up, float yaw, float pitch)
-	: width_(width), height_(height), m_front(glm::vec3(0.0f, 0.0f, -1.0f)), m_movementSpeed(SPEED), m_mouseSensitivity(SENSITIVITY), m_zoom(ZOOM)
+	: width_(width), height_(height), front_(glm::vec3(0.0f, 0.0f, -1.0f)), movementSpeed_(SPEED), mouseSensitivity_(SENSITIVITY), zoom_(ZOOM)
 {
 	lastX_ = width_ / 2.0f;
 	lastY_ = width_ / 2.0f;
-	m_position = position;
-	m_worldUp = up;
-	m_yaw = yaw;
-	m_pitch = pitch;
+	position = position;
+	worldUp_ = up;
+	yaw = yaw;
+	pitch_ = pitch;
 	updateCameraVectors();
 } // end constructor
 
 // constructor with scalar values
 Camera::Camera(int width, int height, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch)
-	: width_(width), height_(height), m_front(glm::vec3(0.0f, 0.0f, -1.0f)), m_movementSpeed(SPEED), m_mouseSensitivity(SENSITIVITY), m_zoom(ZOOM)
+	: width_(width), height_(height), front_(glm::vec3(0.0f, 0.0f, -1.0f)), movementSpeed_(SPEED), mouseSensitivity_(SENSITIVITY), zoom_(ZOOM)
 {
 	lastX_ = width_ / 2.0f;
 	lastY_ = width_ / 2.0f;
-	m_position = glm::vec3(posX, posY, posZ);
-	m_worldUp = glm::vec3(upX, upY, upZ);
-	m_yaw = yaw;
-	m_pitch = pitch;
+	position_ = glm::vec3(posX, posY, posZ);
+	worldUp_ = glm::vec3(upX, upY, upZ);
+	yaw_ = yaw;
+	pitch_ = pitch;
 	updateCameraVectors();
 } // end constructor
-
-// getters
-float Camera::getLastX()
-{
-	return lastX_;
-} // end of getLastX()
-
-float Camera::getLastY()
-{
-	return lastY_;
-} // end of getLastY()
-
-bool Camera::getFirstMouse()
-{
-	return isFirstMouse_;
-} // end of getFirstMouse()
 
 // setters
 void Camera::setLastX(float lastX)
@@ -59,28 +43,27 @@ void Camera::setFirstMouse(bool isFirstMouse)
 	isFirstMouse_ = isFirstMouse;
 } // end of setFirstMouse()
 
-
 // returns the view matrix calculated using Euler angles and LookAt matrix
-glm::mat4 Camera::getViewMatrix()
+glm::mat4 Camera::getViewMatrix() const
 {
-	return glm::lookAt(m_position, m_position + m_front, m_up);
+	return glm::lookAt(position_, position_ + front_, up_);
 } // end of getViewMatrix()
 
 // processes input received from any keyboard-like input system.
 // accepts input parameter in the form of camera defined ENUM
 void Camera::processKeyboard(Camera_Movement direction, float deltaTime)
 {
-	if (m_isEnabled)
+	if (isEnabled_)
 	{
-		float velocity = m_movementSpeed * deltaTime;
+		float velocity = movementSpeed_ * deltaTime;
 		if (direction == FORWARD)
-			m_position += m_front * velocity;
+			position_ += front_ * velocity;
 		if (direction == BACKWARD)
-			m_position -= m_front * velocity;
+			position_ -= front_ * velocity;
 		if (direction == LEFT)
-			m_position -= m_right * velocity;
+			position_ -= right_ * velocity;
 		if (direction == RIGHT)
-			m_position += m_right * velocity;
+			position_ += right_ * velocity;
 	}
 } // end of processKeyboard()
 
@@ -89,21 +72,21 @@ void Camera::processKeyboard(Camera_Movement direction, float deltaTime)
 void Camera::processMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch)
 {
 	// only process if camera is enabled
-	if (m_isEnabled)
+	if (isEnabled_)
 	{
-		xoffset *= m_mouseSensitivity;
-		yoffset *= m_mouseSensitivity;
+		xoffset *= mouseSensitivity_;
+		yoffset *= mouseSensitivity_;
 
-		m_yaw += xoffset;
-		m_pitch += yoffset;
+		yaw_ += xoffset;
+		pitch_ += yoffset;
 
 		// check pitch within bounds
 		if (constrainPitch)
 		{
-			if (m_pitch > 89.0f)
-				m_pitch = 89.0f;
-			if (m_pitch < -89.0f)
-				m_pitch = -89.0f;
+			if (pitch_ > 89.0f)
+				pitch_ = 89.0f;
+			if (pitch_ < -89.0f)
+				pitch_ = -89.0f;
 		}
 
 		// update m_front, m_right, and m_up vectors using updated Euler angles
@@ -116,22 +99,62 @@ void Camera::processMouseMovement(float xoffset, float yoffset, GLboolean constr
 void Camera::processMouseScroll(float yoffset)
 {
 	// only process if camera is enabled
-	if (m_isEnabled)
+	if (isEnabled_)
 	{
-		m_zoom -= (float)yoffset;
-		if (m_zoom < 1.0f)
-			m_zoom = 1.0f;
-		if (m_zoom > 45.0f)
-			m_zoom = 45.0f;
+		zoom_ -= (float)yoffset;
+		if (zoom_ < 1.0f)
+			zoom_ = 1.0f;
+		if (zoom_ > 45.0f)
+			zoom_ = 45.0f;
 	}
 } // end of processMouseScroll()
 
 // invert pitch
 void Camera::invertPitch()
 {
-	m_pitch = -m_pitch;
+	pitch_ = -pitch_;
 	updateCameraVectors();
-} // end of 
+} // end of invertPitch()
+
+// mouse handlers
+void Camera::handleMousePosition(float xpos, float ypos, GLboolean constrainPitch)
+{
+	if (!isEnabled_)
+	{
+		lastX_ = xpos;
+		lastY_ = ypos;
+		isFirstMouse_ = false;
+		return;
+
+		float xoffset = xpos - lastX_;
+		float yoffset = lastY_ - ypos;
+
+		lastX_ = xpos;
+		lastY_ = ypos;
+
+		processMouseMovement(xoffset, yoffset, constrainPitch);
+	}
+} // end of handleMousePosition()
+
+void Camera::handleMouseScroll(float yoffset)
+{
+	processMouseScroll(yoffset);
+} // end of handleMouseScroll()
+
+void Camera::setEnabled(bool enabled)
+{
+	isEnabled_ = enabled;
+} // end of setEnabled()
+
+bool Camera::isEnabled() const
+{
+	return isEnabled_;
+} // end of isEnabled()
+
+glm::mat4 Camera::getProjectionMatrix(float aspectRatio, float nearPlane, float farPlane) const
+{
+	return glm::perspective(glm::radians(zoom_), aspectRatio, nearPlane, farPlane);
+} // end of getProjectionMatrix()
 
 
 //--- PRIVATE ---//
@@ -139,17 +162,17 @@ void Camera::invertPitch()
 void Camera::updateCameraVectors()
 {
 	// only process if camera is enabled
-	if (m_isEnabled)
+	if (isEnabled_)
 	{
 		// calculate the new m_front vector
-		glm::vec3 front;
-		front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-		front.y = sin(glm::radians(m_pitch));
-		front.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-		m_front = glm::normalize(front);
+		glm::vec3 front{};
+		front.x = cos(glm::radians(yaw_)) * cos(glm::radians(pitch_));
+		front.y = sin(glm::radians(pitch_));
+		front.z = sin(glm::radians(yaw_)) * cos(glm::radians(pitch_));
+		front_ = glm::normalize(front);
 
 		// re-calculate m_right and m_up vector
-		m_right = glm::normalize(glm::cross(m_front, m_worldUp));
-		m_up = glm::normalize(glm::cross(m_right, m_front));
+		right_ = glm::normalize(glm::cross(front_, worldUp_));
+		up_ = glm::normalize(glm::cross(right_, front_));
 	}
 } // end of updateCameraVectors()

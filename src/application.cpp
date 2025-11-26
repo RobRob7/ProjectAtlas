@@ -58,39 +58,20 @@ Application::Application(int width, int height, const char* windowTitle)
 	glfwSetCursorPosCallback(window_, [](GLFWwindow* window, double xposIn, double yposIn)
 		{
 			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
-			if (self)
+			if (self && self->camera_)
 			{
-				if (self->camera_)
-				{
-					float xpos = static_cast<float>(xposIn);
-					float ypos = static_cast<float>(yposIn);
-
-					if (self->camera_->getFirstMouse())
-					{
-						self->camera_->setLastX(xpos);
-						self->camera_->setLastY(ypos);
-						self->camera_->setFirstMouse(false);
-					}
-
-					float xoffset = xpos - self->camera_->getLastX();
-					float yoffset = self->camera_->getLastY() - ypos;
-
-					self->camera_->setLastX(xpos);
-					self->camera_->setLastY(ypos);
-
-					self->camera_->processMouseMovement(xoffset, yoffset);
-				}
+				self->camera_->handleMousePosition(
+					static_cast<float>(xposIn),
+					static_cast<float>(yposIn)
+				);
 			}
 		});
 	glfwSetScrollCallback(window_, [](GLFWwindow* window, double xoffset, double yoffset)
 		{
 			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
-			if (self)
+			if (self && self->camera_)
 			{
-				if (self->camera_)
-				{
-					self->camera_->processMouseScroll(yoffset);
-				}
+				self->camera_->handleMouseScroll(static_cast<float>(yoffset));
 			}
 		});
 
@@ -124,18 +105,12 @@ void Application::run()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		// clear the screen colors (state-using function)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		// enable clipping plane
-		glEnable(GL_CLIP_DISTANCE0);
-
-		// font test
-		//fontView_->render("HELLO THERE!", 0.0f, height_ - 75.0f, 1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 
 		//////////////////////////////
 		// init transform matrices
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera_->getViewMatrix();
-		glm::mat4 projection = glm::mat4(1.0f);
-		projection = glm::perspective(glm::radians(camera_->m_zoom), width_ / height_, 0.1f, 200.0f);
+		glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_);
 
 		//////////////////////////////
 
@@ -156,14 +131,14 @@ void Application::processInput()
 	// press 'down' arrow key to disable camera
 	if (glfwGetKey(window_, GLFW_KEY_DOWN) == GLFW_PRESS)
 	{
-		camera_->m_isEnabled = false;
+		camera_->setEnabled(false);
 		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
 
 	// press 'up' arrow key to enable camera
 	if (glfwGetKey(window_, GLFW_KEY_UP) == GLFW_PRESS)
 	{
-		camera_->m_isEnabled = true;
+		camera_->setEnabled(true);
 		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
 

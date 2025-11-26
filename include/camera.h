@@ -24,35 +24,11 @@ const float ZOOM		= 45.0f;
 class Camera
 {
 public:
-	// camera active state
-	bool m_isEnabled = true;
-
-	// camera attributes
-	glm::vec3 m_position;
-	glm::vec3 m_front;
-	glm::vec3 m_up;
-	glm::vec3 m_right;
-	glm::vec3 m_worldUp;
-
-	// euler angles
-	float m_yaw;
-	float m_pitch;
-
-	// camera options
-	float m_movementSpeed;
-	float m_mouseSensitivity;
-	float m_zoom;
-public:
 	// constructor with vectors
 	Camera(int width, int height, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH);
 
 	// constructor with scalar values
 	Camera(int width, int height, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
-
-	// getters
-	float getLastX();
-	float getLastY();
-	bool getFirstMouse();
 
 	// setters
 	void setLastX(float lastX);
@@ -60,7 +36,7 @@ public:
 	void setFirstMouse(bool isFirstMouse);
 
 	// returns the view matrix calculated using Euler angles and LookAt matrix
-	glm::mat4 getViewMatrix();
+	glm::mat4 getViewMatrix() const;
 
 	// processes input received from any keyboard-like input system.
 	// accepts input parameter in the form of camera defined ENUM
@@ -77,6 +53,15 @@ public:
 	// invert pitch
 	void invertPitch();
 
+	// mouse handlers
+	void handleMousePosition(float xpos, float ypos, GLboolean constrainPitch = true);
+	void handleMouseScroll(float yoffset);
+
+	void setEnabled(bool enabled);
+	bool isEnabled() const;
+
+	glm::mat4 getProjectionMatrix(float aspectRatio, float nearPlane = 0.1f, float farPlane = 200.0f) const;
+
 private:
 	// width of window
 	int width_;
@@ -87,6 +72,24 @@ private:
 	float lastY_;
 	// first mouse movement
 	bool isFirstMouse_ = true;
+
+	bool isEnabled_ = true;
+
+	// camera attributes
+	glm::vec3 position_;
+	glm::vec3 front_;
+	glm::vec3 up_;
+	glm::vec3 right_;
+	glm::vec3 worldUp_;
+
+	// euler angles
+	float yaw_;
+	float pitch_;
+
+	// camera options
+	float movementSpeed_;
+	float mouseSensitivity_;
+	float zoom_;
 private:
 	// calculates the front vector from the Camera's (updated) Euler angles
 	void updateCameraVectors();
