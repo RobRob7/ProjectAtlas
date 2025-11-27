@@ -21,7 +21,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
 	try
 	{
 		// preliminary path to shaders
-		const std::string pathToShaders = std::string(RESOURCES_PATH) + "/shader";
+		const std::string pathToShaders = std::string(RESOURCES_PATH) + "/shader/";
 		// open shader files
 		problemFile = "VERTEX";
 		vertexShaderFile.open(pathToShaders + vertexPath);

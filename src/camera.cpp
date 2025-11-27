@@ -6,7 +6,7 @@ Camera::Camera(int width, int height, glm::vec3 position, glm::vec3 up, float ya
 	: width_(width), height_(height), front_(glm::vec3(0.0f, 0.0f, -1.0f)), movementSpeed_(SPEED), mouseSensitivity_(SENSITIVITY), zoom_(ZOOM)
 {
 	lastX_ = width_ / 2.0f;
-	lastY_ = width_ / 2.0f;
+	lastY_ = height_ / 2.0f;
 	position_ = position;
 	worldUp_ = up;
 	yaw_ = yaw;
@@ -19,7 +19,7 @@ Camera::Camera(int width, int height, float posX, float posY, float posZ, float 
 	: width_(width), height_(height), front_(glm::vec3(0.0f, 0.0f, -1.0f)), movementSpeed_(SPEED), mouseSensitivity_(SENSITIVITY), zoom_(ZOOM)
 {
 	lastX_ = width_ / 2.0f;
-	lastY_ = width_ / 2.0f;
+	lastY_ = height_ / 2.0f;
 	position_ = glm::vec3(posX, posY, posZ);
 	worldUp_ = glm::vec3(upX, upY, upZ);
 	yaw_ = yaw;
@@ -119,21 +119,22 @@ void Camera::invertPitch()
 // mouse handlers
 void Camera::handleMousePosition(float xpos, float ypos, GLboolean constrainPitch)
 {
-	if (!isEnabled_)
+	if (!isEnabled_) return;
+
+	if (isFirstMouse_)
 	{
 		lastX_ = xpos;
 		lastY_ = ypos;
 		isFirstMouse_ = false;
-		return;
-
-		float xoffset = xpos - lastX_;
-		float yoffset = lastY_ - ypos;
-
-		lastX_ = xpos;
-		lastY_ = ypos;
-
-		processMouseMovement(xoffset, yoffset, constrainPitch);
 	}
+
+	float xoffset = xpos - lastX_;
+	float yoffset = lastY_ - ypos;
+
+	lastX_ = xpos;
+	lastY_ = ypos;
+
+	processMouseMovement(xoffset, yoffset, constrainPitch);
 } // end of handleMousePosition()
 
 void Camera::handleMouseScroll(float yoffset)
