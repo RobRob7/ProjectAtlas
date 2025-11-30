@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <string_view>
+#include <cstdint>
 
 class Shader
 {
@@ -44,7 +44,7 @@ public:
 
 private:
 	// shader ID
-	unsigned int ID_;
+	uint32_t ID_{};
 private: 
 	// this function check for shader compilation/linking errors
 	void checkCompileErrors(GLuint shader, std::string type, std::string path);

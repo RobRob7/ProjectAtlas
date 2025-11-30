@@ -69,7 +69,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
 	const char* fragmentShaderCode = fragmentCode.c_str();
 
 	// will contain ID_'s for shaders
-	unsigned int vertex, fragment;
+	uint32_t vertex, fragment;
 
 	// vertex shader compile
 	vertex = glCreateShader(GL_VERTEX_SHADER);
@@ -84,7 +84,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
 	checkCompileErrors(fragment, "FRAGMENT", fragmentPath);
 
 	// check for geometry shader and compile if needed
-	unsigned int geometry;
+	uint32_t geometry;
 	if (geometryPath != nullptr)
 	{
 		const char* geometryShaderCode = geometryCode.c_str();
@@ -116,7 +116,11 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
 
 Shader::~Shader()
 {
-	if (ID_ != 0) glDeleteProgram(ID_);
+	if (ID_ != 0)
+	{
+		glDeleteProgram(ID_);
+		ID_ = 0;
+	}
 } // end of destructor
 
 Shader::Shader(Shader&& other) noexcept
