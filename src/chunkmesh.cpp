@@ -13,6 +13,22 @@ ChunkMesh::ChunkMesh(int chunkX, int chunkY)
 	buildChunkMesh();
 } // end of other constructor
 
+ChunkMesh::~ChunkMesh()
+{
+	if (vao_)
+	{
+		glDeleteVertexArrays(1, &vao_);
+	}
+	if (vbo_)
+	{
+		glDeleteBuffers(1, &vbo_);
+	}
+	if (ebo_)
+	{
+		glDeleteBuffers(1, &ebo_);
+	}
+} // end of destructor
+
 void ChunkMesh::uploadChunkMesh()
 {
 	// texture

@@ -109,6 +109,7 @@ class ChunkMesh
 public:
 	ChunkMesh();
     ChunkMesh(int chunkX, int chunkY);
+    ~ChunkMesh();
 
     void uploadChunkMesh();
     void renderChunk(const glm::mat4& view, const glm::mat4& proj);
