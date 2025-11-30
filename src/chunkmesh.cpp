@@ -18,14 +18,17 @@ ChunkMesh::~ChunkMesh()
 	if (vao_)
 	{
 		glDeleteVertexArrays(1, &vao_);
+		vao_ = 0;
 	}
 	if (vbo_)
 	{
 		glDeleteBuffers(1, &vbo_);
+		vbo_ = 0;
 	}
 	if (ebo_)
 	{
 		glDeleteBuffers(1, &ebo_);
+		ebo_ = 0;
 	}
 } // end of destructor
 

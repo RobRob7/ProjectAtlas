@@ -122,9 +122,9 @@ private:
     Texture texture_{"blocks.png", true};
     // render
     Shader chunkShader_;
-    uint32_t vao_;
-    uint32_t vbo_;
-    uint32_t ebo_;
+    uint32_t vao_ = 0;
+    uint32_t vbo_ = 0;
+    uint32_t ebo_ = 0;
     int32_t indexCount_;
 private:
 	void buildChunkMesh();

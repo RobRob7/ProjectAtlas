@@ -61,6 +61,7 @@ Texture::~Texture()
 	if (m_ID)
 	{
 		glDeleteTextures(1, &m_ID);
+		m_ID = 0;
 	}
 } // end of destructor
 
