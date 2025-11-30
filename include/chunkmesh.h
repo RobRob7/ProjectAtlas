@@ -84,11 +84,32 @@ inline int tileYFromTop(int rowFromTop)
     return ATLAS_ROWS - 1 - rowFromTop;
 }
 
+struct ChunkCoord
+{
+    int x;
+    int z;
+
+    bool operator==(const ChunkCoord& other) const noexcept
+    {
+        return x == other.x && z == other.z;
+    }
+};
+
+struct ChunkCoordHash
+{
+    size_t operator()(const ChunkCoord& c) const noexcept
+    {
+        return std::hash<int>()(c.x) ^ (std::hash<int>()(c.z) << 1);
+    }
+};
+
 
 class ChunkMesh
 {
 public:
 	ChunkMesh();
+    ChunkMesh(int chunkX, int chunkY);
+
     void uploadChunkMesh();
     void renderChunk(const glm::mat4& view, const glm::mat4& proj);
 

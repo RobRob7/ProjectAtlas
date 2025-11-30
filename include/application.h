@@ -5,6 +5,7 @@
 #include "shader.h"
 
 #include "chunkmesh.h"
+#include "chunkmanager.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -43,9 +44,9 @@ private:
 
 	// camera system
 	std::unique_ptr<Camera> camera_;
-	
-	// chunk
-	ChunkMesh chunk_;
+
+	// chunk manager
+	ChunkManager world_{4};
 };
 
 #endif

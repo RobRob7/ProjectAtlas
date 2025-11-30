@@ -80,9 +80,6 @@ Application::Application(int width, int height, const char* windowTitle)
 
 	// camera controller
 	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 0.0f, 3.0f));
-
-	// upload chunk
-	chunk_.uploadChunkMesh();
 } // end of constructor
 
 Application::~Application()
@@ -107,6 +104,9 @@ void Application::run()
 		// process user input
 		processInput();
 
+		// update world
+		world_.update(camera_->getCameraPosition());
+
 		// set color to display after clear (state-setting function)
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		// clear the screen colors (state-using function)
@@ -117,8 +117,11 @@ void Application::run()
 		glm::mat4 view = camera_->getViewMatrix();
 		glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_);
 
+		// render world
+		world_.render(view, projection);
+
 		// draw chunk
-		chunk_.renderChunk(view, projection);
+		//chunk_.renderChunk(view, projection);
 		//////////////////////////////
 
 		// swap buffers
@@ -149,13 +152,29 @@ void Application::processInput()
 		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
 
+	const float speedIncrease = 3.0f;
+	// camera speed increase
+	if (glfwGetKey(window_, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+	{
+		camera_->processKeyboard(FORWARD, deltaTime_ * speedIncrease);
+	}
+
+
 	// camera change (W A S D)
 	if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)
+	{
 		camera_->processKeyboard(FORWARD, deltaTime_);
+	}
 	if (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS)
+	{
 		camera_->processKeyboard(BACKWARD, deltaTime_);
+	}
 	if (glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS)
+	{
 		camera_->processKeyboard(LEFT, deltaTime_);
+	}
 	if (glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS)
+	{
 		camera_->processKeyboard(RIGHT, deltaTime_);
+	}
 } // end of processInput()

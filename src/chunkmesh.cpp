@@ -1,11 +1,17 @@
 #include "chunkmesh.h"
 
 //--- PUBLIC ---//
-ChunkMesh::ChunkMesh() :
-	chunkData_(0, 0)
+ChunkMesh::ChunkMesh()
+	: chunkData_(0, 0)
 {
 	buildChunkMesh();
 } // end of constructor
+
+ChunkMesh::ChunkMesh(int chunkX, int chunkY)
+	: chunkData_(chunkX, chunkY)
+{
+	buildChunkMesh();
+} // end of other constructor
 
 void ChunkMesh::uploadChunkMesh()
 {
