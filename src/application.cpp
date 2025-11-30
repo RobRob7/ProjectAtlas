@@ -91,7 +91,7 @@ Application::Application(int width, int height, const char* windowTitle)
 		"texture/cubemap/space_alt/front.png",
 		"texture/cubemap/space_alt/back.png"
 	};
-	cubemap_ = std::make_unique<CubeMap>(faces);
+	skybox_ = std::make_unique<CubeMap>(faces);
 } // end of constructor
 
 Application::~Application()
@@ -132,8 +132,8 @@ void Application::run()
 		// render world
 		world_.render(view, projection);
 
-		/*view = glm::mat4(glm::mat3(camera_->getViewMatrix()));*/
-		cubemap_->render(view, projection, glfwGetTime());
+		// render skybox
+		skybox_->render(view, projection, glfwGetTime());
 		//////////////////////////////
 
 		// swap buffers

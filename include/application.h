@@ -46,8 +46,8 @@ private:
 	// camera system
 	std::unique_ptr<Camera> camera_;
 
-	// cubemap
-	std::unique_ptr<CubeMap> cubemap_;
+	// skybox
+	std::unique_ptr<CubeMap> skybox_;
 
 	// chunk manager
 	ChunkManager world_{2};
