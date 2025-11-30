@@ -4,9 +4,11 @@
 #include <stb/stb_image.h>
 
 //--- PUBLIC ---//
-Texture::Texture(const std::string& filePath)
+Texture::Texture(const std::string& filePath, const bool needToFlip)
 	: filePath_(filePath)
 {
+	// flip image vertically
+	stbi_set_flip_vertically_on_load(needToFlip);
 } // end of constructor
 
 void Texture::setupTexture()
@@ -15,11 +17,11 @@ void Texture::setupTexture()
 	std::string pathToTexture = std::string(RESOURCES_PATH) + "texture/" + filePath_;
 
 #ifdef _DEBUG
-std::cout << "Loading Texture: " << pathToTexture << "\n";
+	std::cout << "Loading Texture: " << pathToTexture << "\n";
 #endif
 
-	// flip image vertically
-	stbi_set_flip_vertically_on_load(true);
+	//// flip image vertically
+	//stbi_set_flip_vertically_on_load(true);
 
 	// load texture
 	int w, h, nrChannels;
@@ -29,7 +31,12 @@ std::cout << "Loading Texture: " << pathToTexture << "\n";
 	if (!data)
 	{
 		std::cerr << "Failed to load texture!\n";
+		return;
 	}
+
+#ifdef _DEBUG
+	std::cout << "TEXTURE LOADED" << "\n";
+#endif
 
 	// set texture parameters
 	width_ = w;

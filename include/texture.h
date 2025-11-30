@@ -13,7 +13,7 @@ public:
 	// texture ID
 	uint32_t m_ID = 0;
 public:
-	Texture(const std::string& filePath);
+	Texture(const std::string& filePath, const bool needToFlip = false);
 
 	void setupTexture();
 
