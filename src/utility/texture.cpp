@@ -36,13 +36,33 @@ std::cout << "Loading Texture: " << pathToTexture << "\n";
 	height_ = h;
 	colorChannels_ = nrChannels;
 
+	// setup depending on color channels
+	GLenum format = GL_RGBA;
+	GLenum internalFormat = GL_RGBA8;
+
+	if (colorChannels_ == 1)
+	{
+		format =		 GL_RED;
+		internalFormat = GL_R8;
+	}
+	else if (colorChannels_ == 3)
+	{
+		format = GL_RGB;
+		internalFormat = GL_RGB8;
+	}
+	else if (colorChannels_ == 4)
+	{
+		format = GL_RGBA;
+		internalFormat = GL_RGBA8;
+	}
+
 	// generate texture OpenGL
 	glCreateTextures(GL_TEXTURE_2D, 1, &m_ID);
-	glTextureStorage2D(m_ID, 1, GL_RGBA8, width_, height_);
-	glTextureSubImage2D(m_ID, 0, 0, 0, width_, height_, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glTextureStorage2D(m_ID, 1, internalFormat, width_, height_);
+	glTextureSubImage2D(m_ID, 0, 0, 0, width_, height_, format, GL_UNSIGNED_BYTE, data);
 
 	glTextureParameteri(m_ID, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(m_ID, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(m_ID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
