@@ -20,9 +20,6 @@ void Texture::setupTexture()
 	std::cout << "Loading Texture: " << pathToTexture << "\n";
 #endif
 
-	//// flip image vertically
-	//stbi_set_flip_vertically_on_load(true);
-
 	// load texture
 	int w, h, nrChannels;
 	unsigned char* data = stbi_load(pathToTexture.c_str(), &w, &h, &nrChannels, 0);
