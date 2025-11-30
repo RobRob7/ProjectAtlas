@@ -2,11 +2,8 @@
 
 //--- PUBLIC ---//
 CubeMap::CubeMap(const std::vector<std::string>& textures)
-	: shader_("/cubemap/cubemap.vert", "/cubemap/cubemap.frag"), texture_(textures)
+	: shader_("/cubemap/cubemap.vert", "/cubemap/cubemap.frag"), texture_(textures), cubemapTexture_(texture_.m_ID)
 {
-	// get cubemap texture ID
-	cubemapTexture_ = texture_.m_ID;
-
 	// VAO + VBO
 	glGenVertexArrays(1, &vao_);
 	glGenBuffers(1, &vbo_);

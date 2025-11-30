@@ -80,7 +80,7 @@ private:
     Shader shader_;
     // cubemap texture
     Texture texture_;
-    uint32_t cubemapTexture_{};
+    uint32_t& cubemapTexture_;
     // cubemap VAO, VBO
     uint32_t vao_{};
     uint32_t vbo_{};
