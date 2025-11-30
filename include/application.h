@@ -4,6 +4,8 @@
 #include "camera.h"
 #include "shader.h"
 
+#include "chunkmesh.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -11,6 +13,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <array>
 
 class Application
 {
@@ -40,6 +43,9 @@ private:
 
 	// camera system
 	std::unique_ptr<Camera> camera_;
+	
+	// chunk
+	ChunkMesh chunk_;
 };
 
 #endif

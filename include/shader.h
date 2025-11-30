@@ -18,9 +18,16 @@ public:
 	// destructor
 	~Shader();
 
-	// this function activates the current shader
-	void use() const;
+	// disallow copy
+	Shader(const Shader&) = delete;
+	Shader& operator=(const Shader&) = delete;
 
+	// move constructor
+	Shader(Shader&& other) noexcept;
+	// move assignment operator
+	Shader& operator=(Shader&& other) noexcept;
+
+	void use() const;
 	// set various uniforms in shader
 	void setBool(const std::string& name, bool value) const;
 	void setInt(const std::string& name, int value) const;

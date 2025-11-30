@@ -119,6 +119,23 @@ Shader::~Shader()
 	if (ID_ != 0) glDeleteProgram(ID_);
 } // end of destructor
 
+Shader::Shader(Shader&& other) noexcept
+: ID_(other.ID_)
+{
+	other.ID_ = 0;
+} // end of move constructor
+
+Shader& Shader::operator=(Shader&& other) noexcept
+{
+	if (this != &other)
+	{
+		if (ID_ != 0) glDeleteProgram(ID_);
+		ID_ = other.ID_;
+		other.ID_ = 0;
+	}
+	return *this;
+} // end of move assignment
+
 void Shader::use() const
 {
 	glUseProgram(ID_);

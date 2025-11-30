@@ -81,22 +81,8 @@ Application::Application(int width, int height, const char* windowTitle)
 	// camera controller
 	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 0.0f, 3.0f));
 
-	//glCreateVertexArrays(1, &vao);
-	//glCreateBuffers(1, &vbo);
-
-	//glNamedBufferData(vbo, sizeof(triangle), &triangle, GL_STATIC_DRAW);
-
-	//glVertexArrayVertexBuffer(vao, 0, vbo, 0, 6 * sizeof(float));
-
-	//glEnableVertexArrayAttrib(vao, 0);
-	//glVertexArrayAttribBinding(vao, 0, 0);
-	//glVertexArrayAttribFormat(vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
-
-	//glEnableVertexArrayAttrib(vao, 1);
-	//glVertexArrayAttribBinding(vao, 1, 0);
-	//glVertexArrayAttribFormat(vao, 1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
-
-	//triangleShader = std::make_unique<Shader>("triangle/triangle.vert", "triangle/triangle.frag");
+	// upload chunk
+	chunk_.uploadChunkMesh();
 } // end of constructor
 
 Application::~Application()
@@ -128,17 +114,11 @@ void Application::run()
 
 		//////////////////////////////
 		// init transform matrices
-		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera_->getViewMatrix();
 		glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_);
 
-		//triangleShader->use();
-		//triangleShader->setMat4("u_model", model);
-		//triangleShader->setMat4("u_view", view);
-		//triangleShader->setMat4("u_proj", projection);
-
-		//glBindVertexArray(vao);
-		//glDrawArrays(GL_TRIANGLES, 0, 3);
+		// draw chunk
+		chunk_.renderChunk(view, projection);
 		//////////////////////////////
 
 		// swap buffers
