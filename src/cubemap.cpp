@@ -37,8 +37,18 @@ CubeMap::~CubeMap()
 } // end of destructor
 
 // render cubemap
-void CubeMap::render(glm::mat4& view, glm::mat4& projection) const
+void CubeMap::render(glm::mat4& view, glm::mat4& projection, const float time) const
 {
+	if (time > 0.0f)
+	{
+		float speed = 0.005f;
+
+		glm::mat4 skyRot = glm::rotate(glm::mat4(1.0f),
+			time * speed,
+			glm::vec3(1.0f, 0.0f, 0.0f)); // rotate about X
+		view = glm::mat4(glm::mat3(skyRot)) * view;
+	}
+
 	glDepthFunc(GL_LEQUAL);
 	shader_.use();
 	shader_.setMat4("view", view);

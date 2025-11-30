@@ -5,6 +5,7 @@
 #include "shader.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <string>
 #include <vector>
@@ -61,7 +62,7 @@ public:
     // default constructor
 	CubeMap() = default;
 	// constructor
-	CubeMap(const std::vector<std::string>& textures);
+    CubeMap(const std::vector<std::string>& textures);
     // destructor
     ~CubeMap();
 
@@ -71,7 +72,7 @@ public:
     CubeMap& operator=(const CubeMap&) = delete;
 
     // render cubemap
-    void render(glm::mat4& view, glm::mat4& projection) const;
+    void render(glm::mat4& view, glm::mat4& projection, const float time = -1.0) const;
 
 private:
     // cubemap shader

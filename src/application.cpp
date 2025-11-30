@@ -132,9 +132,8 @@ void Application::run()
 		// render world
 		world_.render(view, projection);
 
-		// render skybox
 		view = glm::mat4(glm::mat3(camera_->getViewMatrix()));
-		cubemap_->render(view, projection);
+		cubemap_->render(view, projection, glfwGetTime());
 		//////////////////////////////
 
 		// swap buffers
