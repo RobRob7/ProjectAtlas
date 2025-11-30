@@ -4,7 +4,6 @@
 #include "camera.h"
 #include "shader.h"
 
-#include "chunkmesh.h"
 #include "chunkmanager.h"
 #include "cubemap.h"
 
