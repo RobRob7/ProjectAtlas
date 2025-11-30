@@ -17,6 +17,7 @@ public:
 	Texture(const std::string& filePath, const bool needToFlip = false);
 	// constructor for cubemap texture
 	Texture(const std::vector<std::string>& textures, const bool needToFlip = false);
+	~Texture();
 
 	void setupTexture();
 

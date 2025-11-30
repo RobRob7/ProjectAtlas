@@ -56,6 +56,14 @@ Texture::Texture(const std::vector<std::string>& textures, const bool needToFlip
 	m_ID = texture;
 } // end of cubemap texture constructor
 
+Texture::~Texture()
+{
+	if (m_ID)
+	{
+		glDeleteTextures(1, &m_ID);
+	}
+} // end of destructor
+
 void Texture::setupTexture()
 {
 	// texture path
