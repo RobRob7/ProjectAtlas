@@ -6,6 +6,7 @@
 
 #include "chunkmesh.h"
 #include "chunkmanager.h"
+#include "cubemap.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -45,8 +46,11 @@ private:
 	// camera system
 	std::unique_ptr<Camera> camera_;
 
+	// cubemap
+	std::unique_ptr<CubeMap> cubemap_;
+
 	// chunk manager
-	ChunkManager world_{4};
+	ChunkManager world_{2};
 };
 
 #endif

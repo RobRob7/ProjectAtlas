@@ -80,6 +80,18 @@ Application::Application(int width, int height, const char* windowTitle)
 
 	// camera controller
 	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 0.0f, 3.0f));
+
+	// cubemap init
+	std::vector<std::string> faces
+	{
+		"texture/cubemap/space_alt/right.png",
+		"texture/cubemap/space_alt/left.png",
+		"texture/cubemap/space_alt/top.png",
+		"texture/cubemap/space_alt/bottom.png",
+		"texture/cubemap/space_alt/front.png",
+		"texture/cubemap/space_alt/back.png"
+	};
+	cubemap_ = std::make_unique<CubeMap>(faces);
 } // end of constructor
 
 Application::~Application()
@@ -120,8 +132,9 @@ void Application::run()
 		// render world
 		world_.render(view, projection);
 
-		// draw chunk
-		//chunk_.renderChunk(view, projection);
+		// render skybox
+		view = glm::mat4(glm::mat3(camera_->getViewMatrix()));
+		cubemap_->render(view, projection);
 		//////////////////////////////
 
 		// swap buffers
