@@ -11,6 +11,51 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 	stbi_set_flip_vertically_on_load(needToFlip);
 } // end of constructor
 
+Texture::Texture(const std::vector<std::string>& textures, const bool needToFlip)
+{
+	// flip image vertically
+	stbi_set_flip_vertically_on_load(needToFlip);
+
+	// generate texture
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+
+	// load texture
+	int w, h, nrChannels;
+
+	for (size_t i = 0; i < textures.size(); ++i)
+	{
+		std::string path = RESOURCES_PATH + textures[i];
+		unsigned char* data = stbi_load(path.c_str(), &w, &h, &nrChannels, 0);
+		width_ = w;
+		height_ = h;
+		colorChannels_ = nrChannels;
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, GL_RGB, width_, height_, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+			);
+			// free image
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cerr << "Cubemap texture failed to load at path: " << textures[i] << "\n";
+			// free image
+			stbi_image_free(data);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	// set texture ID
+	m_ID = texture;
+} // end of cubemap texture constructor
+
 void Texture::setupTexture()
 {
 	// texture path

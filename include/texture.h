@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <iostream>
 #include <string>
+#include <vector>
 
 class Texture
 {
@@ -14,6 +15,8 @@ public:
 	uint32_t m_ID = 0;
 public:
 	Texture(const std::string& filePath, const bool needToFlip = false);
+	// constructor for cubemap texture
+	Texture(const std::vector<std::string>& textures, const bool needToFlip = false);
 
 	void setupTexture();
 
