@@ -3,6 +3,7 @@
 
 #include "chunkdata.h"
 #include "shader.h"
+#include "texture.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -68,6 +69,21 @@ inline constexpr std::array<Vertex, 4> FACE_NEG_Z = { {
     {{0, 0, 0}, {0, 0, -1}, {1, 0}}
 } };
 
+inline constexpr int ATLAS_COLS = 32;
+inline constexpr int ATLAS_ROWS = 32;
+
+enum class FaceDir {
+    PosX, NegX,
+    PosY, NegY,
+    PosZ, NegZ
+};
+
+// helper for when texture is flipped vertically
+inline int tileYFromTop(int rowFromTop) 
+{
+    return ATLAS_ROWS - 1 - rowFromTop;
+}
+
 
 class ChunkMesh
 {
@@ -80,6 +96,8 @@ private:
 	std::vector<Vertex> vertices_;
 	std::vector<uint32_t> indices_;
 	ChunkData chunkData_;
+    // texture
+    Texture texture_{"blocks.png", true};
     // render
     Shader chunkShader_;
     uint32_t vao_;
@@ -89,6 +107,10 @@ private:
 private:
 	void buildChunkMesh();
 	bool isAir(int x, int y, int z);
+
+    // atlas
+    glm::vec2 atlasUV(const glm::vec2& localUV, int tileX, int tileY);
+    void getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY);
 };
 
 #endif

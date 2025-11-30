@@ -8,7 +8,8 @@
 
 // 0 = air
 // 1 = dirt
-// 2 = stone
+// 2 = dirt (grass)
+// 3 = stone
 using BlockID = uint8_t;
 
 inline constexpr int CHUNK_SIZE = 32;

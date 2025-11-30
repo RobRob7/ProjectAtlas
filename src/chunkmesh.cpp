@@ -9,7 +9,11 @@ ChunkMesh::ChunkMesh() :
 
 void ChunkMesh::uploadChunkMesh()
 {
+	// texture
+	texture_.setupTexture();
 	chunkShader_ = { "chunk/chunk.vert", "chunk/chunk.frag" };
+	chunkShader_.use();
+	chunkShader_.setInt("u_atlas", 0);
 
 	glCreateVertexArrays(1, &vao_);
 	glCreateBuffers(1, &vbo_);
@@ -38,12 +42,16 @@ void ChunkMesh::uploadChunkMesh()
 	glVertexArrayAttribFormat(vao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
 	glVertexArrayAttribBinding(vao_, 2, 0);
 
+	//// texture
+	//texture_.setupTexture();
+
 	indexCount_ = static_cast<int32_t>(indices_.size());
 } // end of uploadChunkMesh()
 
 void ChunkMesh::renderChunk(const glm::mat4& view, const glm::mat4& proj)
 {
 	chunkShader_.use();
+	glBindTextureUnit(0, texture_.m_ID);
 
 	glm::mat4 model = glm::translate(glm::mat4(1.0f), 
 		glm::vec3(chunkData_.m_chunkX * CHUNK_SIZE, 0.0f, chunkData_.m_chunkZ * CHUNK_SIZE));
@@ -68,15 +76,22 @@ void ChunkMesh::buildChunkMesh()
 	// indexing
 	auto addFace = [&](const std::array<Vertex, 4> faceVerts,
 						const std::array<uint32_t, 6> faceIndices,
-						int bx, int by, int bz)
+						int bx, int by, int bz,
+						BlockID id,
+						FaceDir faceDir)
 		{
 			uint32_t startIndex = static_cast<uint32_t>(vertices_.size());
+
+			int tileX;
+			int tileY;
+			getBlockTile(id, faceDir, tileX, tileY);
 
 			// offset block local face positions by block position in world
 			for (int i = 0; i < 4; ++i)
 			{
 				Vertex v = faceVerts[i];
 				v.pos += glm::vec3(bx, by, bz);
+				v.uv = atlasUV(v.uv, tileX, tileY);
 				vertices_.push_back(v);
 			}
 			for (int i = 0; i < 6; ++i)
@@ -99,32 +114,32 @@ void ChunkMesh::buildChunkMesh()
 				// +X
 				if (isAir(x + 1, y, z))
 				{
-					addFace(FACE_POS_X, FACE_INDICES, x, y, z);
+					addFace(FACE_POS_X, FACE_INDICES, x, y, z, id, FaceDir::PosX);
 				}
 				// -X
 				if (isAir(x - 1, y, z))
 				{
-					addFace(FACE_NEG_X, FACE_INDICES, x, y, z);
+					addFace(FACE_NEG_X, FACE_INDICES, x, y, z, id, FaceDir::NegX);
 				}
 				// +Y
 				if (isAir(x, y + 1, z))
 				{
-					addFace(FACE_POS_Y, FACE_INDICES, x, y, z);
+					addFace(FACE_POS_Y, FACE_INDICES, x, y, z, id, FaceDir::PosY);
 				}
 				// -Y
 				if (isAir(x, y - 1, z))
 				{
-					addFace(FACE_NEG_Y, FACE_INDICES, x, y, z);
+					addFace(FACE_NEG_Y, FACE_INDICES, x, y, z, id, FaceDir::NegY);
 				}
 				// +Z
 				if (isAir(x, y, z + 1))
 				{
-					addFace(FACE_POS_Z, FACE_INDICES, x, y, z);
+					addFace(FACE_POS_Z, FACE_INDICES, x, y, z, id, FaceDir::PosZ);
 				}
 				// -Z
 				if (isAir(x, y, z - 1))
 				{
-					addFace(FACE_NEG_Z, FACE_INDICES, x, y, z);
+					addFace(FACE_NEG_Z, FACE_INDICES, x, y, z, id, FaceDir::NegZ);
 				}
 			} // end for
 		} // end for
@@ -143,3 +158,44 @@ bool ChunkMesh::isAir(int x, int y, int z)
 
 	return chunkData_.getBlockID(x, y, z) == 0;
 } // end of isAir()
+
+glm::vec2 ChunkMesh::atlasUV(const glm::vec2& localUV, int tileX, int tileY)
+{
+	float tileW = 1.0f / ATLAS_COLS;
+	float tileH = 1.0f / ATLAS_ROWS;
+
+	return glm::vec2(
+		(tileX + localUV.x) * tileW,
+		(tileY + localUV.y) * tileH
+	);
+} // end of atlasUV()
+
+void ChunkMesh::getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY)
+{
+	switch (id)
+	{
+	case 1: // dirt
+		tileX = 5; tileY = tileYFromTop(7);
+		break;
+	case 2: // dirt (grass)
+		switch (face)
+		{
+		case FaceDir::PosY: // top
+			tileX = 14; tileY = tileYFromTop(5); // grass
+			break;
+		case FaceDir::NegY: // bottom
+			tileX = 5; tileY = tileYFromTop(7); // dirt
+			break;
+		default: // sides
+			tileX = 14; tileY = tileYFromTop(2); // grass
+			break;
+		}
+		break;
+	case 3: // stone
+		tileX = 8; tileY = tileYFromTop(2);
+		break;
+	default:
+		tileX = 0; tileY = tileYFromTop(0);
+		break;
+	}
+} // end of getBlockTile()
