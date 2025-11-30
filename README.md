@@ -8,4 +8,4 @@ Preview
 
 | Terrain Generation + Skybox |
 |---------|
-| ![Alt Text 1](milestones\1_terraingen_cubemap.png)|
+| ![Alt Text 1](milestones/1_terraingen_cubemap.png)|
