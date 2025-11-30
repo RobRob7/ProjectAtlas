@@ -157,6 +157,11 @@ glm::mat4 Camera::getProjectionMatrix(float aspectRatio, float nearPlane, float 
 	return glm::perspective(glm::radians(zoom_), aspectRatio, nearPlane, farPlane);
 } // end of getProjectionMatrix()
 
+glm::vec3 Camera::getCameraPosition() const
+{
+	return position_;
+} // end of getCameraPosition()
+
 
 //--- PRIVATE ---//
 // calculates the front vector from the Camera's (updated) Euler angles
