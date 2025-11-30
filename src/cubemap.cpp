@@ -39,24 +39,29 @@ CubeMap::~CubeMap()
 // render cubemap
 void CubeMap::render(glm::mat4& view, glm::mat4& projection, const float time) const
 {
+	// remove translation from camera view
+	glm::mat4 viewStrippedTranslation = glm::mat4(glm::mat3(view));
+
 	if (time > 0.0f)
 	{
 		float speed = 0.005f;
 
 		glm::mat4 skyRot = glm::rotate(glm::mat4(1.0f),
 			time * speed,
-			glm::vec3(1.0f, 0.0f, 0.0f)); // rotate about X
-		view = glm::mat4(glm::mat3(skyRot)) * view;
+			glm::vec3(1.0f, 1.0f, 0.0f));
+		viewStrippedTranslation = glm::mat4(glm::mat3(skyRot)) * viewStrippedTranslation;
 	}
 
 	glDepthFunc(GL_LEQUAL);
 	shader_.use();
-	shader_.setMat4("view", view);
-	shader_.setMat4("projection", projection);
+	shader_.setMat4("u_view", viewStrippedTranslation);
+	shader_.setMat4("u_projection", projection);
+
 	glBindVertexArray(vao_);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture_);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
+
 	glDepthFunc(GL_LESS);
 } // end of render()
