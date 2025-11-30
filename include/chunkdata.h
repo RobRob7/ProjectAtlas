@@ -12,7 +12,7 @@
 // 3 = stone
 using BlockID = uint8_t;
 
-inline constexpr int CHUNK_SIZE = 32;
+inline constexpr int CHUNK_SIZE = 64;
 
 class ChunkData
 {
