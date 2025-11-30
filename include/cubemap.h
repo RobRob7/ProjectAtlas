@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 const float SkyboxVertices[] =
 {
@@ -79,10 +80,10 @@ private:
     Shader shader_;
     // cubemap texture
     Texture texture_;
-    unsigned int cubemapTexture_{};
+    uint32_t cubemapTexture_{};
     // cubemap VAO, VBO
-    unsigned int vao_{};
-    unsigned int vbo_{};
+    uint32_t vao_{};
+    uint32_t vbo_{};
 };
 
 #endif
