@@ -59,3 +59,54 @@ void ChunkManager::render(const glm::mat4& view, const glm::mat4& proj)
 		chunk->renderChunk(view, proj);
 	} // end for
 } // end of render()
+
+BlockID ChunkManager::getBlock(int wx, int wy, int wz) const
+{
+	int chunkX = static_cast<int>(std::floor(wx / static_cast<float>(CHUNK_SIZE)));
+	int chunkZ = static_cast<int>(std::floor(wz / static_cast<float>(CHUNK_SIZE)));
+
+	ChunkCoord coord{ chunkX, chunkZ };
+	auto it = chunks_.find(coord);
+	if (it == chunks_.end())
+	{
+		return 0;
+	}
+
+	int localX = wx - chunkX * CHUNK_SIZE;
+	int localY = wy;
+	int localZ = wz - chunkZ * CHUNK_SIZE;
+
+	if (localX < 0 || localX >= CHUNK_SIZE ||
+		localY < 0 || localY >= CHUNK_SIZE ||
+		localZ < 0 || localZ >= CHUNK_SIZE)
+	{
+		return 0;
+	}
+
+	return it->second->getBlock(localX, localY, localZ);
+} // end of getBlock()
+
+void ChunkManager::setBlock(int wx, int wy, int wz, BlockID id)
+{
+	int chunkX = static_cast<int>(std::floor(wx / static_cast<float>(CHUNK_SIZE)));
+	int chunkZ = static_cast<int>(std::floor(wz / static_cast<float>(CHUNK_SIZE)));
+
+	ChunkCoord coord{ chunkX, chunkZ };
+	auto it = chunks_.find(coord);
+	if (it == chunks_.end())
+	{
+		return;
+	}
+
+	int localX = wx - chunkX * CHUNK_SIZE;
+	int localY = wy;
+	int localZ = wz - chunkZ * CHUNK_SIZE;
+
+	if (localY < 0 || localY >= CHUNK_SIZE)
+	{
+		return;
+	}
+
+	it->second->setBlock(localX, localY, localZ, id);
+	it->second->rebuild();
+} // end of setBlock()

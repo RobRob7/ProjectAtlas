@@ -29,6 +29,18 @@ BlockID ChunkData::getBlockID(int x, int y, int z) const
 	return blocks_[x + CHUNK_SIZE * (z + CHUNK_SIZE * y)];
 } // end of getBlockID()
 
+void ChunkData::setBlockID(int x, int y, int z, BlockID id)
+{
+	if (x < 0 || x >= CHUNK_SIZE ||
+		y < 0 || y >= CHUNK_SIZE ||
+		z < 0 || z >= CHUNK_SIZE)
+	{
+		return;
+	}
+
+	setBlocks(x, y, z, id);
+} // end of setBlockID()
+
 //--- PRIVATE ---//
 void ChunkData::setBlocks(int x, int y, int z, BlockID id)
 {

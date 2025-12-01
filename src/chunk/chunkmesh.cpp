@@ -90,6 +90,22 @@ void ChunkMesh::renderChunk(const glm::mat4& view, const glm::mat4& proj)
 	glBindVertexArray(0);
 } // end of render()
 
+void ChunkMesh::setBlock(int x, int y, int z, BlockID id)
+{
+	chunkData_.setBlockID(x, y, z, id);
+} // end of setBlock()
+
+BlockID ChunkMesh::getBlock(int x, int y, int z) const
+{
+	return chunkData_.getBlockID(x, y, z);
+} // end of getBlock()
+
+void ChunkMesh::rebuild()
+{
+	buildChunkMesh();
+	uploadChunkMesh();
+} // end of rebuild()
+
 //--- PRIVATE ---//
 void ChunkMesh::buildChunkMesh()
 {

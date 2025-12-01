@@ -114,6 +114,10 @@ public:
     void uploadChunkMesh();
     void renderChunk(const glm::mat4& view, const glm::mat4& proj);
 
+    void setBlock(int x, int y, int z, BlockID id);
+    BlockID getBlock(int x, int y, int z) const;
+    void rebuild();
+
 private:
 	std::vector<Vertex> vertices_;
 	std::vector<uint32_t> indices_;

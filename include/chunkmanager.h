@@ -18,6 +18,9 @@ public:
 	void update(const glm::vec3& cameraPos);
 	void render(const glm::mat4& view, const glm::mat4& proj);
 
+	BlockID getBlock(int wx, int wy, int wz) const;
+	void setBlock(int wx, int wy, int wz, BlockID id);
+
 private:
 	int viewRadius_;
 	std::unordered_map<ChunkCoord, std::unique_ptr<ChunkMesh>, ChunkCoordHash> chunks_;

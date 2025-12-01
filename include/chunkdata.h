@@ -23,6 +23,7 @@ public:
 	ChunkData(int cx, int cz);
 
 	BlockID getBlockID(int x, int y, int z) const;
+	void setBlockID(int x, int y, int z, BlockID id);
 
 private:
 	std::array<BlockID, CHUNK_SIZE* CHUNK_SIZE* CHUNK_SIZE> blocks_;
