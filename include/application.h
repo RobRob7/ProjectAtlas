@@ -6,6 +6,7 @@
 
 #include "chunkmanager.h"
 #include "cubemap.h"
+#include "crosshair.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -50,6 +51,9 @@ private:
 
 	// skybox
 	std::unique_ptr<CubeMap> skybox_;
+
+	// crosshair
+	std::unique_ptr<Crosshair> crosshair_;
 
 	// chunk manager
 	ChunkManager world_{2};

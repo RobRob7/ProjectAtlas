@@ -92,6 +92,10 @@ Application::Application(int width, int height, const char* windowTitle)
 		"texture/cubemap/space_alt/back.png"
 	};
 	skybox_ = std::make_unique<CubeMap>(faces);
+
+	// crosshair init
+	const float crosshairSize = 0.004f;
+	crosshair_ = std::make_unique<Crosshair>(crosshairSize);
 } // end of constructor
 
 Application::~Application()
@@ -128,12 +132,16 @@ void Application::run()
 		// init transform matrices
 		glm::mat4 view = camera_->getViewMatrix();
 		glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_);
+		projection = camera_->getProjectionMatrix(width_ / height_);
 
 		// render world
 		world_.render(view, projection);
 
 		// render skybox
 		skybox_->render(view, projection, glfwGetTime());
+
+		// render crosshair
+		crosshair_->render();
 		//////////////////////////////
 
 		// swap buffers
@@ -164,7 +172,7 @@ void Application::processInput()
 		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
 
-	const float speedIncrease = 3.0f;
+	const float speedIncrease = 20.0f;
 	// camera speed increase
 	if (glfwGetKey(window_, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 	{
@@ -173,7 +181,7 @@ void Application::processInput()
 
 	//////////////////////////////////////////////////////////////
 	// max distance to raycast
-	float maxDistance = 4.0f;
+	float maxDistance = 6.0f;
 	// destroy block check
 	int leftState = glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT);
 	bool leftJustPressed = (leftState == GLFW_PRESS && !leftMouseDown_);
