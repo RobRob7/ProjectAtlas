@@ -1,5 +1,5 @@
 # Project Atlas
-- A remake of the beloved Minecraft in OpenGL.
+- A voxel engine in OpenGL.
 - Using OpenGL 4.6 Core, C++17. For use with Windows.
 
 <h2>
