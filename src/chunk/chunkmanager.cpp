@@ -116,7 +116,7 @@ BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& d
 	BlockHit hit;
 	glm::vec3 rayDir = glm::normalize(dir);
 
-	// start in front of camera
+	// start in front of camera by a bit
 	float tStart = 0.3f;
 
 	for (float t = tStart; t <= maxDistance; t += step)
@@ -135,21 +135,30 @@ BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& d
 			hit.hit = true;
 			hit.block = { wx, wy, wz };
 
-			// Compute face normal from ray direction
 			glm::vec3 d = rayDir;
-			glm::vec3 ad = glm::abs(d);
-			glm::ivec3 normal{0};
+			glm::vec3 cell = glm::vec3(wx, wy, wz);
+			glm::vec3 frac = pos - cell;
 
-			if (ad.x > ad.y && ad.x > ad.z)
-			{
+			// distance back to the face we entered from
+			float distX = (d.x > 0.0f) ? frac.x : (1.0f - frac.x);
+			float distY = (d.y > 0.0f) ? frac.y : (1.0f - frac.y);
+			float distZ = (d.z > 0.0f) ? frac.z : (1.0f - frac.z);
+
+			float minDist = distX;
+			int axis = 0; // 0=x, 1=y, 2=z
+
+			if (distY < minDist) { minDist = distY; axis = 1; }
+			if (distZ < minDist) { minDist = distZ; axis = 2; }
+
+			glm::ivec3 normal(0);
+
+			if (axis == 0) {
 				normal.x = (d.x > 0.0f) ? -1 : 1;
 			}
-			else if (ad.y > ad.z)
-			{
+			else if (axis == 1) {
 				normal.y = (d.y > 0.0f) ? -1 : 1;
 			}
-			else
-			{
+			else {
 				normal.z = (d.z > 0.0f) ? -1 : 1;
 			}
 

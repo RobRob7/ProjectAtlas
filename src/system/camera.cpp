@@ -104,8 +104,8 @@ void Camera::processMouseScroll(float yoffset)
 	zoom_ -= (float)yoffset;
 	if (zoom_ < 1.0f)
 		zoom_ = 1.0f;
-	if (zoom_ > 45.0f)
-		zoom_ = 45.0f;
+	if (zoom_ > ZOOM)
+		zoom_ = ZOOM;
 } // end of processMouseScroll()
 
 // invert pitch
