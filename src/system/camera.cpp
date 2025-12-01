@@ -99,14 +99,13 @@ void Camera::processMouseMovement(float xoffset, float yoffset, GLboolean constr
 void Camera::processMouseScroll(float yoffset)
 {
 	// only process if camera is enabled
-	if (isEnabled_)
-	{
-		zoom_ -= (float)yoffset;
-		if (zoom_ < 1.0f)
-			zoom_ = 1.0f;
-		if (zoom_ > 45.0f)
-			zoom_ = 45.0f;
-	}
+	if (!isEnabled_) return;
+
+	zoom_ -= (float)yoffset;
+	if (zoom_ < 1.0f)
+		zoom_ = 1.0f;
+	if (zoom_ > 45.0f)
+		zoom_ = 45.0f;
 } // end of processMouseScroll()
 
 // invert pitch

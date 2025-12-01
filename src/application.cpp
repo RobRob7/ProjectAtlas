@@ -79,7 +79,7 @@ Application::Application(int width, int height, const char* windowTitle)
 		});
 
 	// camera controller
-	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 0.0f, 3.0f));
+	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 10.0f, 3.0f));
 
 	// cubemap init
 	std::vector<std::string> faces
