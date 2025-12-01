@@ -161,6 +161,11 @@ glm::vec3 Camera::getCameraPosition() const
 	return position_;
 } // end of getCameraPosition()
 
+glm::vec3 Camera::getCameraDirection() const
+{
+	return front_;
+} // end of getCameraDirection()
+
 
 //--- PRIVATE ---//
 // calculates the front vector from the Camera's (updated) Euler angles

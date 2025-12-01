@@ -63,6 +63,7 @@ public:
 	glm::mat4 getProjectionMatrix(float aspectRatio, float nearPlane = 0.1f, float farPlane = 200.0f) const;
 
 	glm::vec3 getCameraPosition() const;
+	glm::vec3 getCameraDirection() const;
 
 private:
 	// width of window

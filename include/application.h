@@ -28,6 +28,9 @@ private:
 	void processInput();
 
 private:
+	// place/delete block limit
+	bool leftMouseDown_  = false;
+	bool rightMouseDown_ = false;
 	// width of window
 	float width_;
 	// height of window

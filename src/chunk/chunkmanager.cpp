@@ -110,3 +110,53 @@ void ChunkManager::setBlock(int wx, int wy, int wz, BlockID id)
 	it->second->setBlock(localX, localY, localZ, id);
 	it->second->rebuild();
 } // end of setBlock()
+
+BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float maxDistance, float step) const
+{
+	BlockHit hit;
+	glm::vec3 rayDir = glm::normalize(dir);
+
+	// start in front of camera
+	float tStart = 0.3f;
+
+	for (float t = tStart; t <= maxDistance; t += step)
+	{
+		glm::vec3 pos = origin + rayDir * t;
+
+		int wx = static_cast<int>(std::floor(pos.x));
+		int wy = static_cast<int>(std::floor(pos.y));
+		int wz = static_cast<int>(std::floor(pos.z));
+
+		BlockID id = getBlock(wx, wy, wz);
+
+		// hitting anything other than air
+		if (id != 0)
+		{
+			hit.hit = true;
+			hit.block = { wx, wy, wz };
+
+			// Compute face normal from ray direction
+			glm::vec3 d = rayDir;
+			glm::vec3 ad = glm::abs(d);
+			glm::ivec3 normal{0};
+
+			if (ad.x > ad.y && ad.x > ad.z)
+			{
+				normal.x = (d.x > 0.0f) ? -1 : 1;
+			}
+			else if (ad.y > ad.z)
+			{
+				normal.y = (d.y > 0.0f) ? -1 : 1;
+			}
+			else
+			{
+				normal.z = (d.z > 0.0f) ? -1 : 1;
+			}
+
+			hit.normal = normal;
+			break;
+		}
+	} // end for
+
+	return hit;
+} // end of raycastBlocks()

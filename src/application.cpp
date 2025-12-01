@@ -171,6 +171,36 @@ void Application::processInput()
 		camera_->processKeyboard(FORWARD, deltaTime_ * speedIncrease);
 	}
 
+	//////////////////////////////////////////////////////////////
+	// max distance to raycast
+	float maxDistance = 4.0f;
+	// destroy block check
+	int leftState = glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT);
+	bool leftJustPressed = (leftState == GLFW_PRESS && !leftMouseDown_);
+	if (leftJustPressed)
+	{
+		BlockHit hit = world_.raycastBlocks(camera_->getCameraPosition(), camera_->getCameraDirection(), maxDistance);
+		if (hit.hit)
+		{
+			world_.setBlock(hit.block.x, hit.block.y, hit.block.z, 0);
+		}
+	}
+	leftMouseDown_ = (leftState == GLFW_PRESS);
+
+	// place block check
+	int rightState = glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_RIGHT);
+	bool rightJustPressed = (rightState == GLFW_PRESS && !rightMouseDown_);
+	if (rightJustPressed)
+	{
+		BlockHit hit = world_.raycastBlocks(camera_->getCameraPosition(), camera_->getCameraDirection(), maxDistance);
+		if (hit.hit)
+		{
+			glm::ivec3 placePos = hit.block + hit.normal;
+			world_.setBlock(placePos.x, placePos.y, placePos.z, 1);
+		}
+	}
+	rightMouseDown_ = (rightState == GLFW_PRESS);
+	//////////////////////////////////////////////////////////////
 
 	// camera change (W A S D)
 	if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)

@@ -10,6 +10,13 @@
 #include <memory>
 #include <cmath>
 
+struct BlockHit
+{
+	bool hit = false;
+	glm::ivec3 block;
+	glm::ivec3 normal;
+};
+
 class ChunkManager
 {
 public:
@@ -20,6 +27,8 @@ public:
 
 	BlockID getBlock(int wx, int wy, int wz) const;
 	void setBlock(int wx, int wy, int wz, BlockID id);
+	
+	BlockHit raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float maxDistance, float step = 0.1f) const;
 
 private:
 	int viewRadius_;
