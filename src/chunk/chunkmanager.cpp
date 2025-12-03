@@ -147,18 +147,27 @@ BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& d
 			float minDist = distX;
 			int axis = 0; // 0=x, 1=y, 2=z
 
-			if (distY < minDist) { minDist = distY; axis = 1; }
-			if (distZ < minDist) { minDist = distZ; axis = 2; }
+			if (distY < minDist) 
+			{ 
+				minDist = distY; axis = 1; 
+			}
+			if (distZ < minDist) 
+			{ 
+				minDist = distZ; axis = 2; 
+			}
 
 			glm::ivec3 normal(0);
 
-			if (axis == 0) {
+			if (axis == 0) 
+			{
 				normal.x = (d.x > 0.0f) ? -1 : 1;
 			}
-			else if (axis == 1) {
+			else if (axis == 1) 
+			{
 				normal.y = (d.y > 0.0f) ? -1 : 1;
 			}
-			else {
+			else 
+			{
 				normal.z = (d.z > 0.0f) ? -1 : 1;
 			}
 

@@ -16,9 +16,9 @@ public:
 
 private:
 	Shader crosshairShader_;
-	uint32_t vao_;
-	uint32_t vbo_;
-	const float size_;
+	uint32_t vao_{};
+	uint32_t vbo_{};
+	const float size_{};
 };
 
 #endif
