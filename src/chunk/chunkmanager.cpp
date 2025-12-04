@@ -36,7 +36,6 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 	} // end for
 
 	// identify chunks out of range
-	std::vector<ChunkCoord> chunksToRemove;
 	for (auto it = chunks_.begin(); it != chunks_.end();)
 	{
 		int dx = it->first.x - cameraChunkX;
@@ -49,12 +48,6 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 		{
 			++it;
 		}
-	} // end for
-
-	// remove out of range chunks
-	for (size_t i = 0; i < chunksToRemove.size(); ++i)
-	{
-		chunks_.erase(chunksToRemove[i]);
 	} // end for
 
 	const int maxNewChunksPerFrame = 5;
