@@ -28,6 +28,7 @@ public:
 	BlockID getBlock(int wx, int wy, int wz) const;
 	void setBlock(int wx, int wy, int wz, BlockID id);
 	void setLastBlockUsed(BlockID block);
+	int getViewRadius() const;
 
 	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
 

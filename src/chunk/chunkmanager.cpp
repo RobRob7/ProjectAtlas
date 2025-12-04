@@ -136,6 +136,11 @@ void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin,
 	}
 } // end of placeOrRemoveBlock()
 
+int ChunkManager::getViewRadius() const
+{
+	return viewRadius_;
+} // end of getViewRadius()
+
 
 //--- PRIVATE ---//
 BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float step) const

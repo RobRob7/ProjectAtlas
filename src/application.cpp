@@ -173,8 +173,9 @@ void Application::run()
 		//////////////////////////////
 		// init transform matrices
 		glm::mat4 view = camera_->getViewMatrix();
-		glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_);
-		projection = camera_->getProjectionMatrix(width_ / height_);
+		// calculate the max distance of live chunks to see
+		const float farPlane = world_.getViewRadius() * CHUNK_SIZE * sqrt(2);
+		glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_, 0.1f, farPlane);
 
 		// render world
 		world_.render(view, projection);
