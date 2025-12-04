@@ -23,10 +23,8 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 			// check if we are in "new" chunk
 			if (chunks_.find(coord) == chunks_.end())
 			{
-				// create new chunk
-				std::unique_ptr<ChunkMesh> chunk = std::make_unique<ChunkMesh>(coord.x, coord.z);
-				chunk->uploadChunkMesh();
-				chunks_.emplace(coord, std::move(chunk));
+				// add to pending chunks
+				pendingChunks_.push(coord);
 			}
 		} // end for
 	} // end for
@@ -49,6 +47,26 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 		chunks_.erase(chunksToRemove[i]);
 	} // end for
 
+	const int maxNewChunksPerFrame = 2;
+	int built = 0;
+	// load up to maxNewChunksPerFrame
+	while (!pendingChunks_.empty() && built < maxNewChunksPerFrame)
+	{
+		ChunkCoord coord = pendingChunks_.front();
+		pendingChunks_.pop();
+
+		// chunk already loaded
+		if (chunks_.find(coord) != chunks_.end())
+		{
+			continue;
+		}
+
+		// create chunk and upload
+		std::unique_ptr<ChunkMesh> chunk = std::make_unique<ChunkMesh>(coord.x, coord.z);
+		chunk->uploadChunkMesh();
+		chunks_.emplace(coord, std::move(chunk));
+		++built;
+	} // end while
 
 } // end of update()
 

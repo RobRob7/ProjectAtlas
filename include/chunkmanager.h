@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 
 #include <unordered_map>
+#include <queue>
 #include <vector>
 #include <memory>
 #include <cmath>
@@ -35,6 +36,7 @@ public:
 private:
 	int viewRadius_;
 	std::unordered_map<ChunkCoord, std::unique_ptr<ChunkMesh>, ChunkCoordHash> chunks_;
+	std::queue<ChunkCoord> pendingChunks_;
 
 	// raycast data
 	BlockID lastBlockUsed_;

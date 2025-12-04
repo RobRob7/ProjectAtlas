@@ -60,7 +60,7 @@ private:
 	std::unique_ptr<Crosshair> crosshair_;
 
 	// chunk manager
-	ChunkManager world_{2};
+	ChunkManager world_{12};
 };
 
 #endif
