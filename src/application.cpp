@@ -190,7 +190,7 @@ void Application::processInput()
 		BlockHit hit = world_.raycastBlocks(camera_->getCameraPosition(), camera_->getCameraDirection(), maxDistance);
 		if (hit.hit)
 		{
-			world_.setBlock(hit.block.x, hit.block.y, hit.block.z, 0);
+			world_.setBlock(hit.block.x, hit.block.y, hit.block.z, BlockID::Air);
 		}
 	}
 	leftMouseDown_ = (leftState == GLFW_PRESS);
@@ -204,7 +204,7 @@ void Application::processInput()
 		if (hit.hit)
 		{
 			glm::ivec3 placePos = hit.block + hit.normal;
-			world_.setBlock(placePos.x, placePos.y, placePos.z, 1);
+			world_.setBlock(placePos.x, placePos.y, placePos.z, BlockID::Dirt);
 		}
 	}
 	rightMouseDown_ = (rightState == GLFW_PRESS);

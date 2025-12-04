@@ -150,7 +150,7 @@ void ChunkMesh::buildChunkMesh()
 				BlockID id = chunkData_.getBlockID(x, y, z);
 
 				// air, skip
-				if (id == 0) continue;
+				if (id == BlockID::Air) continue;
 
 				// +X
 				if (isAir(x + 1, y, z))
@@ -197,7 +197,7 @@ bool ChunkMesh::isAir(int x, int y, int z)
 		return true;
 	}
 
-	return chunkData_.getBlockID(x, y, z) == 0;
+	return chunkData_.getBlockID(x, y, z) == BlockID::Air;
 } // end of isAir()
 
 glm::vec2 ChunkMesh::atlasUV(const glm::vec2& localUV, int tileX, int tileY)
@@ -215,10 +215,10 @@ void ChunkMesh::getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY)
 {
 	switch (id)
 	{
-	case 1: // dirt
+	case BlockID::Dirt:
 		tileX = 5; tileY = tileYFromTop(7);
 		break;
-	case 2: // dirt (grass)
+	case BlockID::Grass:
 		switch (face)
 		{
 		case FaceDir::PosY: // top
@@ -232,7 +232,7 @@ void ChunkMesh::getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY)
 			break;
 		}
 		break;
-	case 3: // stone
+	case BlockID::Stone: // stone
 		tileX = 8; tileY = tileYFromTop(2);
 		break;
 	default:

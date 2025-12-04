@@ -69,7 +69,7 @@ BlockID ChunkManager::getBlock(int wx, int wy, int wz) const
 	auto it = chunks_.find(coord);
 	if (it == chunks_.end())
 	{
-		return 0;
+		return BlockID::Air;
 	}
 
 	int localX = wx - chunkX * CHUNK_SIZE;
@@ -80,7 +80,7 @@ BlockID ChunkManager::getBlock(int wx, int wy, int wz) const
 		localY < 0 || localY >= CHUNK_SIZE ||
 		localZ < 0 || localZ >= CHUNK_SIZE)
 	{
-		return 0;
+		return BlockID::Air;
 	}
 
 	return it->second->getBlock(localX, localY, localZ);
@@ -130,7 +130,7 @@ BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& d
 		BlockID id = getBlock(wx, wy, wz);
 
 		// hitting anything other than air
-		if (id != 0)
+		if (id != BlockID::Air)
 		{
 			hit.hit = true;
 			hit.block = { wx, wy, wz };

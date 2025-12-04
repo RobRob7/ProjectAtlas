@@ -5,7 +5,7 @@ ChunkData::ChunkData(int cx, int cz)
 {
 	m_chunkX = cx;
 	m_chunkZ = cz;
-	blocks_.fill(0);
+	blocks_.fill(BlockID::Air);
 
 	int height = 8 + int(4 * sin(0.2 * (cx + m_chunkX * CHUNK_SIZE)) * cos(0.2 * (cz + m_chunkZ * CHUNK_SIZE)));
 
@@ -15,10 +15,22 @@ ChunkData::ChunkData(int cx, int cz)
 		{
 			for (int y = 0; y < CHUNK_SIZE; ++y)
 			{
-				if (y > height) setBlocks(x, y, z, 0);
-				else if (y == height) setBlocks(x, y, z, 2);
-				else if (y > height - 3) setBlocks(x, y, z, 1);
-				else setBlocks(x, y, z, 3);
+				if (y > height)
+				{
+					setBlocks(x, y, z, BlockID::Air);
+				}
+				else if (y == height)
+				{
+					setBlocks(x, y, z, BlockID::Grass);
+				}
+				else if (y > height - 3)
+				{
+					setBlocks(x, y, z, BlockID::Dirt);
+				}
+				else
+				{
+					setBlocks(x, y, z, BlockID::Stone);
+				}
 			} // end for
 		} // end for
 	} // end for

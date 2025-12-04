@@ -6,11 +6,14 @@
 #include <cstdint>
 #include <array>
 
-// 0 = air
-// 1 = dirt
-// 2 = dirt (grass)
-// 3 = stone
-using BlockID = uint8_t;
+// blocks
+enum class BlockID : uint8_t
+{
+	Air,
+	Dirt,
+	Grass,
+	Stone
+};
 
 inline constexpr int CHUNK_SIZE = 64;
 
