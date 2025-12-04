@@ -143,6 +143,12 @@ void Camera::handleMouseScroll(float yoffset)
 
 void Camera::setEnabled(bool enabled)
 {
+	// from disabled to enabled, treat next
+	// mouse event as first one
+	if (enabled && !isEnabled_)
+	{
+		isFirstMouse_ = true;
+	}
 	isEnabled_ = enabled;
 } // end of setEnabled()
 
