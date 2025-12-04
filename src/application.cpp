@@ -231,7 +231,7 @@ void Application::processInput()
 	// destroy block check
 	int leftState = glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT);
 	bool leftJustPressed = (leftState == GLFW_PRESS && !leftMouseDown_);
-	if (leftJustPressed)
+	if (leftJustPressed && camera_->isEnabled())
 	{
 		BlockHit hit = world_.raycastBlocks(camera_->getCameraPosition(), camera_->getCameraDirection(), maxDistance);
 		if (hit.hit)
@@ -244,7 +244,7 @@ void Application::processInput()
 	// place block check
 	int rightState = glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_RIGHT);
 	bool rightJustPressed = (rightState == GLFW_PRESS && !rightMouseDown_);
-	if (rightJustPressed)
+	if (rightJustPressed && camera_->isEnabled())
 	{
 		BlockHit hit = world_.raycastBlocks(camera_->getCameraPosition(), camera_->getCameraDirection(), maxDistance);
 		if (hit.hit)
