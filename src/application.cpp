@@ -40,12 +40,6 @@ Application::Application(int width, int height, const char* windowTitle)
 		throw std::runtime_error("GLAD initialization failure!");
 	} // end if
 
-	// set viewport
-	glViewport(0, 0, width_, height_);
-
-	// enable depth test
-	glEnable(GL_DEPTH_TEST);
-
 	// set callbacks
 	glfwSetWindowUserPointer(window_, this);
 	glfwSetFramebufferSizeCallback(window_, [](GLFWwindow* window, int width, int height)
@@ -78,6 +72,28 @@ Application::Application(int width, int height, const char* windowTitle)
 			}
 		});
 
+	////////// IMGUI //////////
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+
+	// enable keyboard controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+	// enable docking
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+	// setup glfw/opengl backends
+	ImGui_ImplGlfw_InitForOpenGL(window_, true);
+	ImGui_ImplOpenGL3_Init();
+	///////////////////////////
+
+	// set viewport
+	glViewport(0, 0, width_, height_);
+
+	// enable depth test
+	glEnable(GL_DEPTH_TEST);
+
 	// camera controller
 	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 10.0f, 3.0f));
 
@@ -103,6 +119,11 @@ Application::~Application()
 	// destroy window if still active
 	if (window_) glfwDestroyWindow(window_);
 	glfwTerminate();
+
+	// IMGUI shutdown
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 } // end of destructor
 
 void Application::run()
@@ -119,6 +140,12 @@ void Application::run()
 
 		// process user input
 		processInput();
+
+		// IMGUI
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		ImGui::ShowDemoWindow();
 
 		// update world
 		world_.update(camera_->getCameraPosition());
@@ -143,6 +170,10 @@ void Application::run()
 		// render crosshair
 		crosshair_->render();
 		//////////////////////////////
+
+		// IMGUI
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		// swap buffers
 		glfwSwapBuffers(window_);

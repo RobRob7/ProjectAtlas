@@ -24,6 +24,7 @@ add_subdirectory(deps/glad)					# opengl loader
 add_subdirectory(deps/glm-1.01)				# math
 add_subdirectory(deps/freetype-2.10.0)		# freetype
 add_subdirectory(deps/stb)					# stb image
+add_subdirectory(deps/imgui-1.92.5)			# imgui
 
 # VS set startup project main
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${CMAKE_PROJECT_NAME})
@@ -47,4 +48,4 @@ target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC RESOURCES_PATH="${CMAK
 #target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC RESOURCES_PATH="./res/") # Uncomment this line to setup the ASSETS_PATH macro to the final assets directory when you share the game
 
 # link libs
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE glm glfw glad freetype stb)
+target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE glm glfw glad freetype stb imgui)
