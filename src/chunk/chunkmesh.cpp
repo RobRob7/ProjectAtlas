@@ -4,7 +4,32 @@
 ChunkMesh::ChunkMesh(int chunkX, int chunkY, Shader& shader, Texture& texture)
 	: chunkData_(chunkX, chunkY), shader_(shader), texture_(texture)
 {
+	// create VAO + buffers
+	glCreateVertexArrays(1, &vao_);
+	glCreateBuffers(1, &vbo_);
+	glCreateBuffers(1, &ebo_);
+
+	// attach buffers to vao
+	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, sizeof(Vertex));
+	glVertexArrayElementBuffer(vao_, ebo_);
+
+	// position
+	glEnableVertexArrayAttrib(vao_, 0);
+	glVertexArrayAttribFormat(vao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+	glVertexArrayAttribBinding(vao_, 0, 0);
+
+	// normal
+	glEnableVertexArrayAttrib(vao_, 1);
+	glVertexArrayAttribFormat(vao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+	glVertexArrayAttribBinding(vao_, 1, 0);
+
+	// uv
+	glEnableVertexArrayAttrib(vao_, 2);
+	glVertexArrayAttribFormat(vao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+	glVertexArrayAttribBinding(vao_, 2, 0);
+
 	buildChunkMesh();
+	uploadChunkMesh();
 } // end of other constructor
 
 ChunkMesh::~ChunkMesh()
@@ -31,32 +56,21 @@ void ChunkMesh::uploadChunkMesh()
 	shader_.use();
 	shader_.setInt("u_atlas", 0);
 
-	glCreateVertexArrays(1, &vao_);
-	glCreateBuffers(1, &vbo_);
-	glCreateBuffers(1, &ebo_);
+	// reupload into vbo
+	glNamedBufferData(
+		vbo_,
+		vertices_.size() * sizeof(Vertex),
+		vertices_.empty() ? nullptr : vertices_.data(),
+		GL_STATIC_DRAW
+	);
 
-	// vbo
-	glNamedBufferData(vbo_, vertices_.size() * sizeof(Vertex), vertices_.data(), GL_STATIC_DRAW);
-	// ebo
-	glNamedBufferData(ebo_, indices_.size() * sizeof(uint32_t), indices_.data(), GL_STATIC_DRAW);
-	// attach buffers to vao
-	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, sizeof(Vertex));
-	glVertexArrayElementBuffer(vao_, ebo_);
-
-	// position
-	glEnableVertexArrayAttrib(vao_, 0);
-	glVertexArrayAttribFormat(vao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
-	glVertexArrayAttribBinding(vao_, 0, 0);
-
-	// normal
-	glEnableVertexArrayAttrib(vao_, 1);
-	glVertexArrayAttribFormat(vao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-	glVertexArrayAttribBinding(vao_, 1, 0);
-
-	// uv
-	glEnableVertexArrayAttrib(vao_, 2);
-	glVertexArrayAttribFormat(vao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
-	glVertexArrayAttribBinding(vao_, 2, 0);
+	// reupload into ebo
+	glNamedBufferData(
+		ebo_,
+		indices_.size() * sizeof(uint32_t),
+		indices_.empty() ? nullptr : indices_.data(),
+		GL_STATIC_DRAW
+	);
 
 	indexCount_ = static_cast<int32_t>(indices_.size());
 } // end of uploadChunkMesh()
