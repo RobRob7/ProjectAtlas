@@ -93,8 +93,8 @@ void ChunkMesh::buildChunkMesh()
 {
 	vertices_.clear();
 	indices_.clear();
-	vertices_.reserve(10000);
-	indices_.reserve(10000);
+	vertices_.reserve(CHUNK_SIZE * CHUNK_SIZE * 24);
+	indices_.reserve(CHUNK_SIZE * CHUNK_SIZE * 24);
 
 	// indexing
 	auto addFace = [&](const std::array<Vertex, 4> faceVerts,

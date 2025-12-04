@@ -7,7 +7,7 @@ ChunkData::ChunkData(int cx, int cz)
 	m_chunkZ = cz;
 	blocks_.fill(BlockID::Air);
 
-	int height = 8 + int(4 * sin(0.2 * (cx + m_chunkX * CHUNK_SIZE)) * cos(0.2 * (cz + m_chunkZ * CHUNK_SIZE)));
+	int height = 0;
 
 	for (int x = 0; x < CHUNK_SIZE; ++x)
 	{
@@ -15,6 +15,7 @@ ChunkData::ChunkData(int cx, int cz)
 		{
 			for (int y = 0; y < CHUNK_SIZE; ++y)
 			{
+				height = 8 + int(4 * sin(0.4 * (m_chunkX * CHUNK_SIZE + x + y)) * cos(0.2 * (m_chunkZ * CHUNK_SIZE + z)));
 				if (y > height)
 				{
 					setBlocks(x, y, z, BlockID::Air);
