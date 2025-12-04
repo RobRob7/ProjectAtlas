@@ -29,8 +29,6 @@ public:
 	// move assignment operator
 	Texture& operator=(Texture&& other) noexcept;
 
-	void setupTexture();
-
 private:
 	std::string filePath_;
 	// texture width
