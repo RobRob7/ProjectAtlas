@@ -237,6 +237,9 @@ void ChunkMesh::getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY)
 	case BlockID::Tree_Leaf:
 		tileX = 8; tileY = tileYFromTop(10);
 		break;
+	case BlockID::Glow_Block:
+		tileX = 10; tileY = tileYFromTop(14);
+		break;
 	default:
 		tileX = 0; tileY = tileYFromTop(0);
 		break;

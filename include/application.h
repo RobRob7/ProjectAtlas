@@ -61,6 +61,9 @@ private:
 
 	// chunk manager
 	ChunkManager world_{2};
+
+	// current block
+	BlockID currentBlock_ = BlockID::Dirt;
 };
 
 #endif

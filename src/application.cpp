@@ -145,7 +145,22 @@ void Application::run()
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		ImGui::ShowDemoWindow();
+		
+		ImGui::Begin("Hello Window");
+		ImGui::Text("Select Block");
+		if (ImGui::Button("Dirt"))
+		{
+			currentBlock_ = BlockID::Dirt;
+		}
+		if (ImGui::Button("Stone"))
+		{
+			currentBlock_ = BlockID::Stone;
+		}
+		if (ImGui::Button("Glow"))
+		{
+			currentBlock_ = BlockID::Glow_Block;
+		}
+		ImGui::End();
 
 		// update world
 		world_.update(camera_->getCameraPosition());
@@ -235,7 +250,7 @@ void Application::processInput()
 		if (hit.hit)
 		{
 			glm::ivec3 placePos = hit.block + hit.normal;
-			world_.setBlock(placePos.x, placePos.y, placePos.z, BlockID::Tree_Leaf);
+			world_.setBlock(placePos.x, placePos.y, placePos.z, currentBlock_);
 		}
 	}
 	rightMouseDown_ = (rightState == GLFW_PRESS);
