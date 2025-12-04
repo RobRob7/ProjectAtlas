@@ -107,8 +107,7 @@ struct ChunkCoordHash
 class ChunkMesh
 {
 public:
-	ChunkMesh();
-    ChunkMesh(int chunkX, int chunkY);
+    ChunkMesh(int chunkX, int chunkY, Shader& shader, Texture& texture);
     ~ChunkMesh();
 
     void uploadChunkMesh();
@@ -122,10 +121,10 @@ private:
 	std::vector<Vertex> vertices_;
 	std::vector<uint32_t> indices_;
 	ChunkData chunkData_;
-    // texture
-    Texture texture_{"blocks.png", true};
+    // shader + texture
+    Shader& shader_;
+    Texture& texture_;
     // render
-    Shader chunkShader_;
     uint32_t vao_{};
     uint32_t vbo_{};
     uint32_t ebo_{};

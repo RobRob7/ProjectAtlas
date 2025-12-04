@@ -6,6 +6,12 @@ ChunkManager::ChunkManager(int viewRadiusInChunks)
 {
 } // end of constructor
 
+void ChunkManager::initShaderTexture()
+{
+	shader_ = Shader("chunk/chunk.vert", "chunk/chunk.frag");
+	texture_ = Texture("blocks.png", true);
+} // end of initShaderTexture()
+
 void ChunkManager::update(const glm::vec3& cameraPos)
 {
 	// find current chunk camera is in
@@ -47,7 +53,7 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 		chunks_.erase(chunksToRemove[i]);
 	} // end for
 
-	const int maxNewChunksPerFrame = 2;
+	const int maxNewChunksPerFrame = 5;
 	int built = 0;
 	// load up to maxNewChunksPerFrame
 	while (!pendingChunks_.empty() && built < maxNewChunksPerFrame)
@@ -62,7 +68,7 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 		}
 
 		// create chunk and upload
-		std::unique_ptr<ChunkMesh> chunk = std::make_unique<ChunkMesh>(coord.x, coord.z);
+		std::unique_ptr<ChunkMesh> chunk = std::make_unique<ChunkMesh>(coord.x, coord.z, shader_, texture_);
 		chunk->uploadChunkMesh();
 		chunks_.emplace(coord, std::move(chunk));
 		++built;

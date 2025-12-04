@@ -2,6 +2,8 @@
 #define CHUNKMANAGER_H
 
 #include "chunkmesh.h"
+#include "shader.h"
+#include "texture.h"
 
 #include <glm/glm.hpp>
 
@@ -23,6 +25,8 @@ class ChunkManager
 public:
 	ChunkManager(int viewRadiusInChunks = 2);
 
+	void initShaderTexture();
+
 	void update(const glm::vec3& cameraPos);
 	void render(const glm::mat4& view, const glm::mat4& proj);
 
@@ -34,6 +38,9 @@ public:
 	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
 
 private:
+	Shader shader_;
+	Texture texture_;
+
 	int viewRadius_;
 	std::unordered_map<ChunkCoord, std::unique_ptr<ChunkMesh>, ChunkCoordHash> chunks_;
 	std::queue<ChunkCoord> pendingChunks_;

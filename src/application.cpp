@@ -112,6 +112,9 @@ Application::Application(int width, int height, const char* windowTitle)
 	// crosshair init
 	const float crosshairSize = 0.004f;
 	crosshair_ = std::make_unique<Crosshair>(crosshairSize);
+
+	//
+	world_.initShaderTexture();
 } // end of constructor
 
 Application::~Application()
