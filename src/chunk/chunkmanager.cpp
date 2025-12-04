@@ -114,67 +114,81 @@ void ChunkManager::setBlock(int wx, int wy, int wz, BlockID id)
 BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float maxDistance, float step) const
 {
 	BlockHit hit;
+
 	glm::vec3 rayDir = glm::normalize(dir);
 
-	// start in front of camera by a bit
-	float tStart = 0.3f;
+	// invalid direction
+	if (glm::dot(rayDir, rayDir) < 1e-8f) {
+		return hit;
+	}
 
-	for (float t = tStart; t <= maxDistance; t += step)
+	// start slightly in front of the camera to avoid hitting inside the player cell
+	glm::vec3 start = origin + rayDir * 0.001f;
+
+	int x = static_cast<int>(std::floor(start.x));
+	int y = static_cast<int>(std::floor(start.y));
+	int z = static_cast<int>(std::floor(start.z));
+
+	// step on each axis
+	int stepX = (rayDir.x > 0.0f) ? 1 : (rayDir.x < 0.0f ? -1 : 0);
+	int stepY = (rayDir.y > 0.0f) ? 1 : (rayDir.y < 0.0f ? -1 : 0);
+	int stepZ = (rayDir.z > 0.0f) ? 1 : (rayDir.z < 0.0f ? -1 : 0);
+
+	// distance to first voxel boundary on each axis
+	auto initAxis = [&](float originCoord, float dirCoord, int gridCoord, int step) {
+		if (step == 0) {
+			return std::make_pair(std::numeric_limits<float>::infinity(),
+				std::numeric_limits<float>::infinity());
+		}
+
+		float nextBoundary = (step > 0) ? (gridCoord + 1.0f) : static_cast<float>(gridCoord);
+		float tMax = (nextBoundary - originCoord) / dirCoord;
+		float tDelta = std::abs(1.0f / dirCoord);
+		return std::make_pair(tMax, tDelta);
+		};
+
+	auto [tMaxX, tDeltaX] = initAxis(start.x, rayDir.x, x, stepX);
+	auto [tMaxY, tDeltaY] = initAxis(start.y, rayDir.y, y, stepY);
+	auto [tMaxZ, tDeltaZ] = initAxis(start.z, rayDir.z, z, stepZ);
+
+	float t = 0.0f;
+	glm::ivec3 normal(0);
+
+	while (t <= maxDistance)
 	{
-		glm::vec3 pos = origin + rayDir * t;
-
-		int wx = static_cast<int>(std::floor(pos.x));
-		int wy = static_cast<int>(std::floor(pos.y));
-		int wz = static_cast<int>(std::floor(pos.z));
-
-		BlockID id = getBlock(wx, wy, wz);
-
-		// hitting anything other than air
+		// check current cell
+		BlockID id = getBlock(x, y, z);
 		if (id != BlockID::Air)
 		{
 			hit.hit = true;
-			hit.block = { wx, wy, wz };
-
-			glm::vec3 d = rayDir;
-			glm::vec3 cell = glm::vec3(wx, wy, wz);
-			glm::vec3 frac = pos - cell;
-
-			// distance back to the face we entered from
-			float distX = (d.x > 0.0f) ? frac.x : (1.0f - frac.x);
-			float distY = (d.y > 0.0f) ? frac.y : (1.0f - frac.y);
-			float distZ = (d.z > 0.0f) ? frac.z : (1.0f - frac.z);
-
-			float minDist = distX;
-			int axis = 0; // 0=x, 1=y, 2=z
-
-			if (distY < minDist) 
-			{ 
-				minDist = distY; axis = 1; 
-			}
-			if (distZ < minDist) 
-			{ 
-				minDist = distZ; axis = 2; 
-			}
-
-			glm::ivec3 normal(0);
-
-			if (axis == 0) 
-			{
-				normal.x = (d.x > 0.0f) ? -1 : 1;
-			}
-			else if (axis == 1) 
-			{
-				normal.y = (d.y > 0.0f) ? -1 : 1;
-			}
-			else 
-			{
-				normal.z = (d.z > 0.0f) ? -1 : 1;
-			}
-
+			hit.block = glm::ivec3(x, y, z);
 			hit.normal = normal;
-			break;
+			return hit;
 		}
-	} // end for
+
+		// step to next voxel
+		if (tMaxX < tMaxY && tMaxX < tMaxZ)
+		{
+			x += stepX;
+			t = tMaxX;
+			tMaxX += tDeltaX;
+			normal = glm::ivec3(-stepX, 0, 0);
+		}
+		else if (tMaxY < tMaxZ)
+		{
+			y += stepY;
+			t = tMaxY;
+			tMaxY += tDeltaY;
+			normal = glm::ivec3(0, -stepY, 0);
+		}
+		else
+		{
+			z += stepZ;
+			t = tMaxZ;
+			tMaxZ += tDeltaZ;
+			normal = glm::ivec3(0, 0, -stepZ);
+		}
+	}
 
 	return hit;
 } // end of raycastBlocks()
