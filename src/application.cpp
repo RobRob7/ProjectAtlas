@@ -85,7 +85,7 @@ Application::Application(int width, int height, const char* windowTitle)
 
 	// setup glfw/opengl backends
 	ImGui_ImplGlfw_InitForOpenGL(window_, true);
-	ImGui_ImplOpenGL3_Init();
+	ImGui_ImplOpenGL3_Init("#version 460");
 	///////////////////////////
 
 	// set viewport
@@ -150,15 +150,15 @@ void Application::run()
 		ImGui::Text("Select Block");
 		if (ImGui::Button("Dirt"))
 		{
-			currentBlock_ = BlockID::Dirt;
+			world_.setLastBlockUsed(BlockID::Dirt);
 		}
 		if (ImGui::Button("Stone"))
 		{
-			currentBlock_ = BlockID::Stone;
+			world_.setLastBlockUsed(BlockID::Stone);
 		}
 		if (ImGui::Button("Glow"))
 		{
-			currentBlock_ = BlockID::Glow_Block;
+			world_.setLastBlockUsed(BlockID::Glow_Block);
 		}
 		ImGui::End();
 
@@ -226,18 +226,12 @@ void Application::processInput()
 	}
 
 	//////////////////////////////////////////////////////////////
-	// max distance to raycast
-	float maxDistance = 6.0f;
 	// destroy block check
 	int leftState = glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT);
 	bool leftJustPressed = (leftState == GLFW_PRESS && !leftMouseDown_);
 	if (leftJustPressed && camera_->isEnabled())
 	{
-		BlockHit hit = world_.raycastBlocks(camera_->getCameraPosition(), camera_->getCameraDirection(), maxDistance);
-		if (hit.hit)
-		{
-			world_.setBlock(hit.block.x, hit.block.y, hit.block.z, BlockID::Air);
-		}
+		world_.placeOrRemoveBlock(false, camera_->getCameraPosition(), camera_->getCameraDirection());
 	}
 	leftMouseDown_ = (leftState == GLFW_PRESS);
 
@@ -246,12 +240,7 @@ void Application::processInput()
 	bool rightJustPressed = (rightState == GLFW_PRESS && !rightMouseDown_);
 	if (rightJustPressed && camera_->isEnabled())
 	{
-		BlockHit hit = world_.raycastBlocks(camera_->getCameraPosition(), camera_->getCameraDirection(), maxDistance);
-		if (hit.hit)
-		{
-			glm::ivec3 placePos = hit.block + hit.normal;
-			world_.setBlock(placePos.x, placePos.y, placePos.z, currentBlock_);
-		}
+		world_.placeOrRemoveBlock(true, camera_->getCameraPosition(), camera_->getCameraDirection());
 	}
 	rightMouseDown_ = (rightState == GLFW_PRESS);
 	//////////////////////////////////////////////////////////////

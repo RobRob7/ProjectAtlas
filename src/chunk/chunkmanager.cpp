@@ -2,7 +2,7 @@
 
 //--- PUBLIC ---//
 ChunkManager::ChunkManager(int viewRadiusInChunks)
-	: viewRadius_(viewRadiusInChunks)
+	: viewRadius_(viewRadiusInChunks), lastBlockUsed_(BlockID::Dirt)
 {
 } // end of constructor
 
@@ -111,7 +111,34 @@ void ChunkManager::setBlock(int wx, int wy, int wz, BlockID id)
 	it->second->rebuild();
 } // end of setBlock()
 
-BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float maxDistance, float step) const
+void ChunkManager::setLastBlockUsed(BlockID block)
+{
+	lastBlockUsed_ = block;
+} // end of setLastBlockUsed()
+
+void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step)
+{
+	BlockHit hit = raycastBlocks(origin, dir, maxDistanceRay_);
+	if (shouldPlace)
+	{
+		if (hit.hit)
+		{
+			glm::ivec3 placePos = hit.block + hit.normal;
+			setBlock(placePos.x, placePos.y, placePos.z, lastBlockUsed_);
+		}
+	}
+	else
+	{
+		if (hit.hit)
+		{
+			setBlock(hit.block.x, hit.block.y, hit.block.z, BlockID::Air);
+		}
+	}
+} // end of placeOrRemoveBlock()
+
+
+//--- PRIVATE ---//
+BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float step) const
 {
 	BlockHit hit;
 
@@ -154,7 +181,7 @@ BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& d
 	float t = 0.0f;
 	glm::ivec3 normal(0);
 
-	while (t <= maxDistance)
+	while (t <= maxDistanceRay_)
 	{
 		// check current cell
 		BlockID id = getBlock(x, y, z);

@@ -27,12 +27,19 @@ public:
 
 	BlockID getBlock(int wx, int wy, int wz) const;
 	void setBlock(int wx, int wy, int wz, BlockID id);
-	
-	BlockHit raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float maxDistance, float step = 0.1f) const;
+	void setLastBlockUsed(BlockID block);
+
+	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
 
 private:
 	int viewRadius_;
 	std::unordered_map<ChunkCoord, std::unique_ptr<ChunkMesh>, ChunkCoordHash> chunks_;
+
+	// raycast data
+	BlockID lastBlockUsed_;
+	const float maxDistanceRay_ = 5.0f;
+private:
+	BlockHit raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f) const;
 };
 
 #endif
