@@ -69,7 +69,6 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 
 		// create chunk and upload
 		std::unique_ptr<ChunkMesh> chunk = std::make_unique<ChunkMesh>(coord.x, coord.z, shader_, texture_);
-		chunk->uploadChunkMesh();
 		chunks_.emplace(coord, std::move(chunk));
 		++built;
 	} // end while
