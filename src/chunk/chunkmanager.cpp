@@ -37,13 +37,17 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 
 	// identify chunks out of range
 	std::vector<ChunkCoord> chunksToRemove;
-	for (auto& [coord, chunk] : chunks_)
+	for (auto it = chunks_.begin(); it != chunks_.end();)
 	{
-		int dx = coord.x - cameraChunkX;
-		int dz = coord.z - cameraChunkZ;
+		int dx = it->first.x - cameraChunkX;
+		int dz = it->first.z - cameraChunkZ;
 		if (std::abs(dx) > viewRadius_ || std::abs(dz) > viewRadius_)
 		{
-			chunksToRemove.push_back(coord);
+			it = chunks_.erase(it);
+		}
+		else
+		{
+			++it;
 		}
 	} // end for
 
