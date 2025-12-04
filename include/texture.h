@@ -14,10 +14,20 @@ public:
 	// texture ID
 	uint32_t m_ID{};
 public:
+	Texture() = default;
 	Texture(const std::string& filePath, const bool needToFlip = false);
 	// constructor for cubemap texture
 	Texture(const std::vector<std::string>& textures, const bool needToFlip = false);
 	~Texture();
+
+	// disallow copy
+	Texture(const Texture&) = delete;
+	Texture& operator=(const Texture&) = delete;
+
+	// move constructor
+	Texture(Texture&& other) noexcept;
+	// move assignment operator
+	Texture& operator=(Texture&& other) noexcept;
 
 	void setupTexture();
 

@@ -9,6 +9,66 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 {
 	// flip image vertically
 	stbi_set_flip_vertically_on_load(needToFlip);
+
+	// texture path
+	std::string pathToTexture = std::string(RESOURCES_PATH) + "texture/" + filePath_;
+
+#ifdef _DEBUG
+	std::cout << "Loading Texture: " << pathToTexture << "\n";
+#endif
+
+	// load texture
+	int w, h, nrChannels;
+	unsigned char* data = stbi_load(pathToTexture.c_str(), &w, &h, &nrChannels, 0);
+
+	// creation failure check
+	if (!data)
+	{
+		std::cerr << "Failed to load texture!\n";
+		return;
+	}
+
+#ifdef _DEBUG
+	std::cout << "TEXTURE LOADED" << "\n";
+#endif
+
+	// set texture parameters
+	width_ = w;
+	height_ = h;
+	colorChannels_ = nrChannels;
+
+	// setup depending on color channels
+	GLenum format = GL_RGBA;
+	GLenum internalFormat = GL_RGBA8;
+
+	if (colorChannels_ == 1)
+	{
+		format = GL_RED;
+		internalFormat = GL_R8;
+	}
+	else if (colorChannels_ == 3)
+	{
+		format = GL_RGB;
+		internalFormat = GL_RGB8;
+	}
+	else if (colorChannels_ == 4)
+	{
+		format = GL_RGBA;
+		internalFormat = GL_RGBA8;
+	}
+
+	// generate texture OpenGL
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_ID);
+	glTextureStorage2D(m_ID, 1, internalFormat, width_, height_);
+	glTextureSubImage2D(m_ID, 0, 0, 0, width_, height_, format, GL_UNSIGNED_BYTE, data);
+
+	glTextureParameteri(m_ID, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(m_ID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	// free image
+	stbi_image_free(data);
 } // end of constructor
 
 Texture::Texture(const std::vector<std::string>& textures, const bool needToFlip)
@@ -65,65 +125,101 @@ Texture::~Texture()
 	}
 } // end of destructor
 
+Texture::Texture(Texture&& other) noexcept
+	: m_ID(other.m_ID),
+	  filePath_(std::move(other.filePath_)),
+	  width_(other.width_),
+      height_(other.height_),
+	  colorChannels_(other.colorChannels_)
+{
+	other.m_ID = 0;
+	other.width_ = 0;
+	other.height_ = 0;
+	other.colorChannels_ = 0;
+} // end of move constructor
+
+Texture& Texture::operator=(Texture&& other) noexcept
+{
+	if (this != &other)
+	{
+		if (m_ID != 0)
+		{
+			glDeleteTextures(1, &m_ID);
+		}
+
+		m_ID = other.m_ID;
+		filePath_ = std::move(other.filePath_);
+		width_ = other.width_;
+		height_ = other.height_;
+		colorChannels_ = other.colorChannels_;
+
+		other.m_ID = 0;
+		other.width_ = 0;
+		other.height_ = 0;
+		other.colorChannels_ = 0;
+	}
+	return *this;
+} // end of move assignment
+
 void Texture::setupTexture()
 {
-	// texture path
-	std::string pathToTexture = std::string(RESOURCES_PATH) + "texture/" + filePath_;
-
-#ifdef _DEBUG
-	std::cout << "Loading Texture: " << pathToTexture << "\n";
-#endif
-
-	// load texture
-	int w, h, nrChannels;
-	unsigned char* data = stbi_load(pathToTexture.c_str(), &w, &h, &nrChannels, 0);
-
-	// creation failure check
-	if (!data)
-	{
-		std::cerr << "Failed to load texture!\n";
-		return;
-	}
-
-#ifdef _DEBUG
-	std::cout << "TEXTURE LOADED" << "\n";
-#endif
-
-	// set texture parameters
-	width_ = w;
-	height_ = h;
-	colorChannels_ = nrChannels;
-
-	// setup depending on color channels
-	GLenum format = GL_RGBA;
-	GLenum internalFormat = GL_RGBA8;
-
-	if (colorChannels_ == 1)
-	{
-		format =		 GL_RED;
-		internalFormat = GL_R8;
-	}
-	else if (colorChannels_ == 3)
-	{
-		format = GL_RGB;
-		internalFormat = GL_RGB8;
-	}
-	else if (colorChannels_ == 4)
-	{
-		format = GL_RGBA;
-		internalFormat = GL_RGBA8;
-	}
-
-	// generate texture OpenGL
-	glCreateTextures(GL_TEXTURE_2D, 1, &m_ID);
-	glTextureStorage2D(m_ID, 1, internalFormat, width_, height_);
-	glTextureSubImage2D(m_ID, 0, 0, 0, width_, height_, format, GL_UNSIGNED_BYTE, data);
-
-	glTextureParameteri(m_ID, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(m_ID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	// free image
-	stbi_image_free(data);
+//	// texture path
+//	std::string pathToTexture = std::string(RESOURCES_PATH) + "texture/" + filePath_;
+//
+//#ifdef _DEBUG
+//	std::cout << "Loading Texture: " << pathToTexture << "\n";
+//#endif
+//
+//	// load texture
+//	int w, h, nrChannels;
+//	unsigned char* data = stbi_load(pathToTexture.c_str(), &w, &h, &nrChannels, 0);
+//
+//	// creation failure check
+//	if (!data)
+//	{
+//		std::cerr << "Failed to load texture!\n";
+//		return;
+//	}
+//
+//#ifdef _DEBUG
+//	std::cout << "TEXTURE LOADED" << "\n";
+//#endif
+//
+//	// set texture parameters
+//	width_ = w;
+//	height_ = h;
+//	colorChannels_ = nrChannels;
+//
+//	// setup depending on color channels
+//	GLenum format = GL_RGBA;
+//	GLenum internalFormat = GL_RGBA8;
+//
+//	if (colorChannels_ == 1)
+//	{
+//		format =		 GL_RED;
+//		internalFormat = GL_R8;
+//	}
+//	else if (colorChannels_ == 3)
+//	{
+//		format = GL_RGB;
+//		internalFormat = GL_RGB8;
+//	}
+//	else if (colorChannels_ == 4)
+//	{
+//		format = GL_RGBA;
+//		internalFormat = GL_RGBA8;
+//	}
+//
+//	// generate texture OpenGL
+//	glCreateTextures(GL_TEXTURE_2D, 1, &m_ID);
+//	glTextureStorage2D(m_ID, 1, internalFormat, width_, height_);
+//	glTextureSubImage2D(m_ID, 0, 0, 0, width_, height_, format, GL_UNSIGNED_BYTE, data);
+//
+//	glTextureParameteri(m_ID, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//	glTextureParameteri(m_ID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, GL_REPEAT);
+//	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+//
+//	// free image
+//	stbi_image_free(data);
 } // end of setupTexture()
