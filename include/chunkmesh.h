@@ -111,7 +111,7 @@ public:
     ~ChunkMesh();
 
     void uploadChunkMesh();
-    void renderChunk(const glm::mat4& view, const glm::mat4& proj);
+    void renderChunk();
 
     void setBlock(int x, int y, int z, BlockID id);
     BlockID getBlock(int x, int y, int z) const;

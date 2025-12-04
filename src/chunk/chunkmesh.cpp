@@ -28,9 +28,6 @@ ChunkMesh::~ChunkMesh()
 
 void ChunkMesh::uploadChunkMesh()
 {
-	// texture
-	//texture_.setupTexture();
-	//chunkShader_ = { "chunk/chunk.vert", "chunk/chunk.frag" };
 	shader_.use();
 	shader_.setInt("u_atlas", 0);
 
@@ -64,21 +61,15 @@ void ChunkMesh::uploadChunkMesh()
 	indexCount_ = static_cast<int32_t>(indices_.size());
 } // end of uploadChunkMesh()
 
-void ChunkMesh::renderChunk(const glm::mat4& view, const glm::mat4& proj)
+void ChunkMesh::renderChunk()
 {
-	shader_.use();
-	glBindTextureUnit(0, texture_.m_ID);
-
 	glm::mat4 model = glm::translate(glm::mat4(1.0f), 
 		glm::vec3(chunkData_.m_chunkX * CHUNK_SIZE, 0.0f, chunkData_.m_chunkZ * CHUNK_SIZE));
 
 	shader_.setMat4("u_model", model);
-	shader_.setMat4("u_view", view);
-	shader_.setMat4("u_proj", proj);
 
 	glBindVertexArray(vao_);
 	glDrawElements(GL_TRIANGLES, indexCount_, GL_UNSIGNED_INT, nullptr);
-	glBindVertexArray(0);
 } // end of render()
 
 void ChunkMesh::setBlock(int x, int y, int z, BlockID id)

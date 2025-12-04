@@ -78,9 +78,14 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 
 void ChunkManager::render(const glm::mat4& view, const glm::mat4& proj)
 {
+	shader_.use();
+	glBindTextureUnit(0, texture_.m_ID);
+	shader_.setMat4("u_view", view);
+	shader_.setMat4("u_proj", proj);
+
 	for (auto& [coord, chunk] : chunks_)
 	{
-		chunk->renderChunk(view, proj);
+		chunk->renderChunk();
 	} // end for
 } // end of render()
 
