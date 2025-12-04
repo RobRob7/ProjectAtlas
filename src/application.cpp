@@ -204,7 +204,7 @@ void Application::processInput()
 		if (hit.hit)
 		{
 			glm::ivec3 placePos = hit.block + hit.normal;
-			world_.setBlock(placePos.x, placePos.y, placePos.z, BlockID::Dirt);
+			world_.setBlock(placePos.x, placePos.y, placePos.z, BlockID::Tree_Leaf);
 		}
 	}
 	rightMouseDown_ = (rightState == GLFW_PRESS);

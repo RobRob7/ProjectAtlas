@@ -12,7 +12,8 @@ enum class BlockID : uint8_t
 	Air,
 	Dirt,
 	Grass,
-	Stone
+	Stone,
+	Tree_Leaf,
 };
 
 inline constexpr int CHUNK_SIZE = 64;

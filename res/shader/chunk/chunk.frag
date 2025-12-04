@@ -8,5 +8,11 @@ out vec4 FragColor;
 
 void main()
 {
-    FragColor = texture(u_atlas, UV);
+    vec4 texColor = texture(u_atlas, UV);
+    if (texColor.a < 0.1)
+    {
+        discard;
+    }
+
+    FragColor = texColor;
 }

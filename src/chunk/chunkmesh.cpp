@@ -150,32 +150,32 @@ void ChunkMesh::buildChunkMesh()
 				if (id == BlockID::Air) continue;
 
 				// +X
-				if (isAir(x + 1, y, z))
+				if (isTransparent(x + 1, y, z))
 				{
 					addFace(FACE_POS_X, FACE_INDICES, x, y, z, id, FaceDir::PosX);
 				}
 				// -X
-				if (isAir(x - 1, y, z))
+				if (isTransparent(x - 1, y, z))
 				{
 					addFace(FACE_NEG_X, FACE_INDICES, x, y, z, id, FaceDir::NegX);
 				}
 				// +Y
-				if (isAir(x, y + 1, z))
+				if (isTransparent(x, y + 1, z))
 				{
 					addFace(FACE_POS_Y, FACE_INDICES, x, y, z, id, FaceDir::PosY);
 				}
 				// -Y
-				if (isAir(x, y - 1, z))
+				if (isTransparent(x, y - 1, z))
 				{
 					addFace(FACE_NEG_Y, FACE_INDICES, x, y, z, id, FaceDir::NegY);
 				}
 				// +Z
-				if (isAir(x, y, z + 1))
+				if (isTransparent(x, y, z + 1))
 				{
 					addFace(FACE_POS_Z, FACE_INDICES, x, y, z, id, FaceDir::PosZ);
 				}
 				// -Z
-				if (isAir(x, y, z - 1))
+				if (isTransparent(x, y, z - 1))
 				{
 					addFace(FACE_NEG_Z, FACE_INDICES, x, y, z, id, FaceDir::NegZ);
 				}
@@ -184,7 +184,7 @@ void ChunkMesh::buildChunkMesh()
 	} // end for
 } // end of buildChunkMesh()
 
-bool ChunkMesh::isAir(int x, int y, int z)
+bool ChunkMesh::isTransparent(int x, int y, int z)
 {
 	// check for outside chunk (= air)
 	if (x < 0 || x >= CHUNK_SIZE ||
@@ -194,8 +194,10 @@ bool ChunkMesh::isAir(int x, int y, int z)
 		return true;
 	}
 
-	return chunkData_.getBlockID(x, y, z) == BlockID::Air;
-} // end of isAir()
+	BlockID id = chunkData_.getBlockID(x, y, z);
+
+	return id == BlockID::Air || id == BlockID::Tree_Leaf;
+} // end of isTransparent()
 
 glm::vec2 ChunkMesh::atlasUV(const glm::vec2& localUV, int tileX, int tileY)
 {
@@ -229,8 +231,11 @@ void ChunkMesh::getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY)
 			break;
 		}
 		break;
-	case BlockID::Stone: // stone
+	case BlockID::Stone:
 		tileX = 8; tileY = tileYFromTop(2);
+		break;
+	case BlockID::Tree_Leaf:
+		tileX = 8; tileY = tileYFromTop(10);
 		break;
 	default:
 		tileX = 0; tileY = tileYFromTop(0);

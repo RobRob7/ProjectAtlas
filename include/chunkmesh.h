@@ -132,7 +132,7 @@ private:
     int32_t indexCount_{};
 private:
 	void buildChunkMesh();
-	bool isAir(int x, int y, int z);
+	bool isTransparent(int x, int y, int z);
 
     // atlas
     glm::vec2 atlasUV(const glm::vec2& localUV, int tileX, int tileY);
