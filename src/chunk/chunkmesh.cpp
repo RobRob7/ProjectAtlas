@@ -67,9 +67,6 @@ void ChunkMesh::uploadChunkMesh()
 	glVertexArrayAttribFormat(vao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
 	glVertexArrayAttribBinding(vao_, 2, 0);
 
-	//// texture
-	//texture_.setupTexture();
-
 	indexCount_ = static_cast<int32_t>(indices_.size());
 } // end of uploadChunkMesh()
 
