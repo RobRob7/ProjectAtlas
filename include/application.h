@@ -61,6 +61,10 @@ private:
 
 	// chunk manager
 	ChunkManager world_{12};
+
+	// light position + color
+	glm::vec3 lightPos_{0.0f, 15.0f, 3.0f};
+	glm::vec3 lightColor_{ 1.0f, 1.0f, 1.0f };
 };
 
 #endif

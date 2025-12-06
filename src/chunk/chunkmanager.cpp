@@ -29,8 +29,11 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 			// check if we are in "new" chunk
 			if (chunks_.find(coord) == chunks_.end())
 			{
-				// add to pending chunks
-				pendingChunks_.push(coord);
+				if (queuedChunks_.insert(coord).second)
+				{
+					// add to pending chunks
+					pendingChunks_.push(coord);
+				}
 			}
 		} // end for
 	} // end for
@@ -50,13 +53,14 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 		}
 	} // end for
 
-	const int maxNewChunksPerFrame = 5;
+	const int maxNewChunksPerFrame = 2;
 	int built = 0;
 	// load up to maxNewChunksPerFrame
 	while (!pendingChunks_.empty() && built < maxNewChunksPerFrame)
 	{
 		ChunkCoord coord = pendingChunks_.front();
 		pendingChunks_.pop();
+		queuedChunks_.erase(coord);
 
 		// chunk already loaded
 		if (chunks_.find(coord) != chunks_.end())
@@ -102,7 +106,7 @@ BlockID ChunkManager::getBlock(int wx, int wy, int wz) const
 	int localZ = wz - chunkZ * CHUNK_SIZE;
 
 	if (localX < 0 || localX >= CHUNK_SIZE ||
-		localY < 0 || localY >= CHUNK_SIZE ||
+		localY < 0 || localY >= CHUNK_SIZE_Y ||
 		localZ < 0 || localZ >= CHUNK_SIZE)
 	{
 		return BlockID::Air;
@@ -127,7 +131,7 @@ void ChunkManager::setBlock(int wx, int wy, int wz, BlockID id)
 	int localY = wy;
 	int localZ = wz - chunkZ * CHUNK_SIZE;
 
-	if (localY < 0 || localY >= CHUNK_SIZE)
+	if (localY < 0 || localY >= CHUNK_SIZE_Y)
 	{
 		return;
 	}
@@ -165,6 +169,11 @@ int ChunkManager::getViewRadius() const
 {
 	return viewRadius_;
 } // end of getViewRadius()
+
+const Shader& ChunkManager::getShader() const
+{
+	return shader_;
+} // end of getShader()
 
 
 //--- PRIVATE ---//

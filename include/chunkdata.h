@@ -17,7 +17,8 @@ enum class BlockID : uint8_t
 	Glow_Block
 };
 
-inline constexpr int CHUNK_SIZE = 64;
+inline constexpr int CHUNK_SIZE = 16;
+inline constexpr int CHUNK_SIZE_Y = 256;
 
 class ChunkData
 {
@@ -31,7 +32,7 @@ public:
 	void setBlockID(int x, int y, int z, BlockID id);
 
 private:
-	std::array<BlockID, CHUNK_SIZE* CHUNK_SIZE* CHUNK_SIZE> blocks_;
+	std::array<BlockID, CHUNK_SIZE* CHUNK_SIZE_Y* CHUNK_SIZE> blocks_;
 private:
 	void setBlocks(int x, int y, int z, BlockID id);
 };

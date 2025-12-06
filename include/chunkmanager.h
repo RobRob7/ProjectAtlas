@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 
 #include <unordered_map>
+#include <unordered_set>
 #include <queue>
 #include <vector>
 #include <memory>
@@ -34,6 +35,7 @@ public:
 	void setBlock(int wx, int wy, int wz, BlockID id);
 	void setLastBlockUsed(BlockID block);
 	int getViewRadius() const;
+	const Shader& getShader() const;
 
 	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
 
@@ -44,6 +46,7 @@ private:
 	int viewRadius_;
 	std::unordered_map<ChunkCoord, std::unique_ptr<ChunkMesh>, ChunkCoordHash> chunks_;
 	std::queue<ChunkCoord> pendingChunks_;
+	std::unordered_set<ChunkCoord, ChunkCoordHash> queuedChunks_;
 
 	// raycast data
 	BlockID lastBlockUsed_;

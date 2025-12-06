@@ -12,7 +12,7 @@ ChunkData::ChunkData(int cx, int cz)
 		for (int z = 0; z < CHUNK_SIZE; ++z)
 		{
 			int height = height = 8 + int(4 * sin(0.7 * (m_chunkX * CHUNK_SIZE + x)) * cos(0.2 * (m_chunkZ * CHUNK_SIZE + z)));
-			for (int y = 0; y < CHUNK_SIZE; ++y)
+			for (int y = 0; y < CHUNK_SIZE_Y; ++y)
 			{
 				if (y > height)
 				{
@@ -43,7 +43,7 @@ BlockID ChunkData::getBlockID(int x, int y, int z) const
 void ChunkData::setBlockID(int x, int y, int z, BlockID id)
 {
 	if (x < 0 || x >= CHUNK_SIZE ||
-		y < 0 || y >= CHUNK_SIZE ||
+		y < 0 || y >= CHUNK_SIZE_Y ||
 		z < 0 || z >= CHUNK_SIZE)
 	{
 		return;

@@ -163,6 +163,10 @@ void Application::run()
 		{
 			world_.setLastBlockUsed(BlockID::Glow_Block);
 		}
+		if (ImGui::Button("Tree Leaf"))
+		{
+			world_.setLastBlockUsed(BlockID::Tree_Leaf);
+		}
 		ImGui::End();
 
 		// update world
@@ -180,6 +184,14 @@ void Application::run()
 		const float farPlane = world_.getViewRadius() * CHUNK_SIZE * sqrt(2);
 		glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_, 0.1f, farPlane);
 
+		world_.getShader().use();
+		world_.getShader().setVec3("u_viewPos", camera_->getCameraPosition());
+		static float t = 0.0f;
+		t += deltaTime_;
+		//lightPos_.z += sin(t * 1.0f) * 1.1f;
+		world_.getShader().setVec3("u_lightPos", lightPos_);
+		world_.getShader().setVec3("u_lightColor", lightColor_);
+		
 		// render world
 		world_.render(view, projection);
 
