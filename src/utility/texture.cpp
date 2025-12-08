@@ -59,10 +59,12 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 
 	// generate texture OpenGL
 	glCreateTextures(GL_TEXTURE_2D, 1, &m_ID);
-	glTextureStorage2D(m_ID, 1, internalFormat, width_, height_);
+	int levels = 1 + static_cast<int>(std::floor(std::log2(std::max(width_, height_))));
+	glTextureStorage2D(m_ID, levels, internalFormat, width_, height_);
 	glTextureSubImage2D(m_ID, 0, 0, 0, width_, height_, format, GL_UNSIGNED_BYTE, data);
+	glGenerateTextureMipmap(m_ID);
 
-	glTextureParameteri(m_ID, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(m_ID, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	glTextureParameteri(m_ID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, GL_REPEAT);
