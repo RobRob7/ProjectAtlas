@@ -14,6 +14,8 @@ void ChunkManager::initShaderTexture()
 
 void ChunkManager::update(const glm::vec3& cameraPos)
 {
+	lastCameraPos_ = cameraPos;
+
 	// find current chunk camera is in
 	int cameraChunkX = static_cast<int>(std::floor(cameraPos.x / CHUNK_SIZE));
 	int cameraChunkZ = static_cast<int>(std::floor(cameraPos.z / CHUNK_SIZE));
@@ -180,6 +182,18 @@ void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin,
 		}
 	}
 } // end of placeOrRemoveBlock()
+
+void ChunkManager::saveWorld()
+{
+	// find current chunk camera is in
+	int cameraChunkX = static_cast<int>(std::floor(lastCameraPos_.x / CHUNK_SIZE));
+	int cameraChunkZ = static_cast<int>(std::floor(lastCameraPos_.z / CHUNK_SIZE));
+
+	ChunkCoord coord{ cameraChunkX, cameraChunkZ };
+	auto it = chunks_.find(coord);
+
+	saveWorld_.saveChunkToFile(it->second->getChunk(), "HelloWorld");
+} // end of saveWorld()
 
 int ChunkManager::getViewRadius() const
 {

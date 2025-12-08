@@ -40,10 +40,13 @@ public:
 
 	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
 
+	void saveWorld();
 private:
 	Save saveWorld_;
 	Shader shader_;
 	Texture texture_;
+
+	glm::vec3 lastCameraPos_;
 
 	int viewRadius_;
 	std::unordered_map<ChunkCoord, std::unique_ptr<ChunkMesh>, ChunkCoordHash> chunks_;

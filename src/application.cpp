@@ -167,6 +167,10 @@ void Application::run()
 		{
 			world_.setLastBlockUsed(BlockID::Tree_Leaf);
 		}
+		if (ImGui::Button("SAVE"))
+		{
+			world_.saveWorld();
+		}
 		ImGui::End();
 
 		// update world
@@ -217,6 +221,7 @@ void Application::processInput()
 	// press 'esc' key to close window
 	if (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
+		world_.saveWorld();
 		glfwSetWindowShouldClose(window_, true);
 	}
 
