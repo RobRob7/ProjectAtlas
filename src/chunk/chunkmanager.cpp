@@ -18,7 +18,6 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 	int cameraChunkX = static_cast<int>(std::floor(cameraPos.x / CHUNK_SIZE));
 	int cameraChunkZ = static_cast<int>(std::floor(cameraPos.z / CHUNK_SIZE));
 
-	//
 	for (int dz = -viewRadius_; dz <= viewRadius_; ++dz)
 	{
 		for (int dx = -viewRadius_; dx <= viewRadius_; ++dx)
@@ -45,6 +44,13 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 		int dz = it->first.z - cameraChunkZ;
 		if (std::abs(dx) > viewRadius_ || std::abs(dz) > viewRadius_)
 		{
+			// save to file if chunk is dirty
+			if (it->second->getChunk().m_dirty)
+			{
+				saveWorld_.saveChunkToFile(it->second->getChunk(), "HelloWorld");
+				it->second->getChunk().m_dirty = false;
+			}
+
 			it = chunks_.erase(it);
 		}
 		else
@@ -70,6 +76,13 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 
 		// create chunk and upload
 		std::unique_ptr<ChunkMesh> chunk = std::make_unique<ChunkMesh>(coord.x, coord.z, shader_, texture_);
+		std::unique_ptr<ChunkData> loaded = saveWorld_.loadChunkFromFile(coord.x, coord.z, "HelloWorld");
+		if (loaded)
+		{
+			chunk->getChunk() = *loaded;
+			chunk->rebuild();
+		}
+
 		chunks_.emplace(coord, std::move(chunk));
 		++built;
 	} // end while
@@ -138,6 +151,9 @@ void ChunkManager::setBlock(int wx, int wy, int wz, BlockID id)
 
 	it->second->setBlock(localX, localY, localZ, id);
 	it->second->rebuild();
+
+	// mark chunk as modified
+	it->second->getChunk().m_dirty = true;
 } // end of setBlock()
 
 void ChunkManager::setLastBlockUsed(BlockID block)

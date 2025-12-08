@@ -3,8 +3,8 @@
 // #include <iostream>
 
 // window settings
-unsigned int width = 800;
-unsigned int height = 600;
+unsigned int width = 1600;
+unsigned int height = 1200;
 const char* windowName = "Atlas";
 
 // main driver

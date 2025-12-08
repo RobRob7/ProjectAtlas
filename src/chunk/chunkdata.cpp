@@ -11,7 +11,7 @@ ChunkData::ChunkData(int cx, int cz)
 	{
 		for (int z = 0; z < CHUNK_SIZE; ++z)
 		{
-			int height = height = 8 + int(4 * sin(0.7 * (m_chunkX * CHUNK_SIZE + x)) * cos(0.2 * (m_chunkZ * CHUNK_SIZE + z)));
+			int height = 8 + int(4 * sin(0.7 * (m_chunkX * CHUNK_SIZE + x)) * cos(0.2 * (m_chunkZ * CHUNK_SIZE + z)));
 			for (int y = 0; y < CHUNK_SIZE_Y; ++y)
 			{
 				if (y > height)
@@ -51,6 +51,19 @@ void ChunkData::setBlockID(int x, int y, int z, BlockID id)
 
 	setBlocks(x, y, z, id);
 } // end of setBlockID()
+
+const std::array<BlockID, CHUNK_SIZE* CHUNK_SIZE_Y* CHUNK_SIZE>& ChunkData::getBlocks() const
+{
+	return blocks_;
+} // end of getBlocks()
+
+void ChunkData::loadData(std::istream& in)
+{
+	in.read(
+		reinterpret_cast<char*>(blocks_.data()),
+		static_cast<std::streamsize>(blocks_.size() * sizeof(BlockID))
+		);
+} // end of loadData()
 
 //--- PRIVATE ---//
 void ChunkData::setBlocks(int x, int y, int z, BlockID id)

@@ -4,6 +4,7 @@
 #include "chunkmesh.h"
 #include "shader.h"
 #include "texture.h"
+#include "save.h"
 
 #include <glm/glm.hpp>
 
@@ -40,6 +41,7 @@ public:
 	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
 
 private:
+	Save saveWorld_;
 	Shader shader_;
 	Texture texture_;
 

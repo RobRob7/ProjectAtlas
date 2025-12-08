@@ -96,6 +96,11 @@ BlockID ChunkMesh::getBlock(int x, int y, int z) const
 	return chunkData_.getBlockID(x, y, z);
 } // end of getBlock()
 
+ChunkData& ChunkMesh::getChunk()
+{
+	return chunkData_;
+} // end of getChunk()
+
 void ChunkMesh::rebuild()
 {
 	buildChunkMesh();
@@ -187,7 +192,7 @@ bool ChunkMesh::isTransparent(int x, int y, int z)
 {
 	// check for outside chunk (= air)
 	if (x < 0 || x >= CHUNK_SIZE ||
-		y < 0 || y >= CHUNK_SIZE ||
+		y < 0 || y >= CHUNK_SIZE_Y ||
 		z < 0 || z >= CHUNK_SIZE)
 	{
 		return true;
