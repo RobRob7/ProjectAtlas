@@ -2,6 +2,16 @@
 - A voxel engine in OpenGL.
 - Using OpenGL 4.6 Core, C++17. For use with Windows.
 
+<h3>
+Features:
+</h3>
+
+- Terrain generation using libnoise
+- Placement and deletion of blocks
+- World data persistence:
+    - Auto-saving world state
+    - Manual save system
+
 <h2>
 Preview
 </h2>
@@ -9,3 +19,91 @@ Preview
 | Terrain Generation + Skybox |
 |---------|
 | ![Alt Text 1](milestones/1_terraingen_cubemap.png)|
+
+| Terrain Generation w/libnoise |
+|---------|
+| ![Alt Text 1](milestones/2_betterterrain_blocksplace.png)|
+
+<h2>
+Requirements
+</h2>
+
+> - [Download](https://visualstudio.microsoft.com/vs/community/) Visual Studio 2022 Community Edition.
+> -- Install workloads: *Desktop development with C++*.
+> - [Download](https://cmake.org/download/) and install CMake (>= v3.31.0).
+
+<h2>
+Build
+</h2>
+
+- Clone repo:
+```
+git clone https://github.com/RobRob7/ProjectAtlas.git
+```
+- Then run commands:
+```
+cd ProjectAtlas
+mkdir build
+cd build
+cmake ..
+cmake --build . --config Release
+```
+<h2>
+Run
+</h2>
+
+- For Command Prompt:
+
+```
+cd Release
+Atlas.exe
+```
+- For Git Bash:
+```
+cd Release
+./Atlas.exe
+```
+
+
+<h2>
+Dependencies
+</h2>
+
+Libraries already provided, the following are used:
+|Library|Usage|Version|
+|-------|-------|-----|
+|[FreeType](https://freetype.org/download.html)|Font rendering|v2.10.0|
+|[Glad](https://glad.dav1d.de/)|OpenGL loader generator|N/A|
+|[GLFW](https://www.glfw.org/download.html)|API for creating windows, contexts and surfaces, receiving input and events|v3.4|
+|[GLM](https://github.com/g-truc/glm/releases/tag/1.0.1)|Header only C++ mathematics library|v1.01|
+|[ImGui](https://github.com/ocornut/imgui/releases/tag/v1.92.5)|Bloat-free Graphical User interface for C++|v1.92.5|
+|[libnoise](https://libnoise.sourceforge.net/)|A portable, open-source, coherent noise-generating library for C++|v1.0.0|
+
+<h2>
+Project Structure
+</h2>
+
+Project layout:
+- **include/**
+  - all my header files
+- **src/**
+    - main.cpp → main driver
+    - application.cpp → main application
+    - **chunk/**
+        - chunkdata.cpp → chunk data
+        - chunkmanager.cpp → management of chunk meshes
+        - chunkmesh.cpp → chunk mesh
+    - **player/**
+        - crosshair.cpp → crosshair UI icon
+    - **save/**
+        - save.cpp → saving world state
+    - **system/**
+        - camera.cpp → camera system
+    - **utility/**
+        - cubemap.cpp → setup + render cubemap
+        - shader.cpp → shader helper class
+        - texture.cpp → setup texture
+- **res/**
+  - **shader/** → Shaders
+  - **texture/** → Textures (cubemap + blocks)
+- **deps/** → Dependency files
