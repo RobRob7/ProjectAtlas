@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.12)
 project(libnoise)
 
 # Collect all .cpp files in src and its subdirectories
