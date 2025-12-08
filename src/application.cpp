@@ -144,11 +144,24 @@ void Application::run()
 		// process user input
 		processInput();
 
+		// update save timer
+		saveTimer_ += deltaTime_;
+
+		// update world
+		world_.update(camera_->getCameraPosition());
+
+		// auto saving
+		if (saveTimer_ >= (autoSaveTime_ * 60.0f))
+		{
+			world_.saveWorld();
+			saveTimer_ -= autoSaveTime_ * 60.0f;
+		}
+
 		// IMGUI
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		
+
 		ImGui::Begin("Hello Window");
 		ImGui::Text("Select Block");
 		if (ImGui::Button("Dirt"))
@@ -172,9 +185,6 @@ void Application::run()
 			world_.saveWorld();
 		}
 		ImGui::End();
-
-		// update world
-		world_.update(camera_->getCameraPosition());
 
 		// set color to display after clear (state-setting function)
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
