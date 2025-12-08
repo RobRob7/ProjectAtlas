@@ -200,6 +200,11 @@ bool ChunkMesh::isTransparent(int x, int y, int z)
 
 	BlockID id = chunkData_.getBlockID(x, y, z);
 
+	if (id == BlockID::Tree_Leaf)
+	{
+		return true;
+	}
+
 	return id == BlockID::Air;
 } // end of isTransparent()
 
