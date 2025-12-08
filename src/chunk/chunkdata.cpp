@@ -9,10 +9,6 @@ ChunkData::ChunkData(int cx, int cz)
 
 	setupHeightMap(cx, cz);
 
-	const int seaLevel = 64;
-	const int minGround = 40;
-	const int maxTerrain = 40;
-
 	for (int x = 0; x < CHUNK_SIZE; ++x)
 	{
 		for (int z = 0; z < CHUNK_SIZE; ++z)
@@ -20,7 +16,7 @@ ChunkData::ChunkData(int cx, int cz)
 			float n = heightMap_.GetValue(x, z);
 			float n01 = (n + 1.0f) * 0.5f;
 
-			int height = minGround + static_cast<int>(n01 * maxTerrain);
+			int height = MIN_GROUND + static_cast<int>(n01 * MAX_TERRAIN);
 
 			if (height < 0)
 			{
@@ -36,7 +32,7 @@ ChunkData::ChunkData(int cx, int cz)
 			{
 				if (y > height)
 				{
-					if (y <= seaLevel)
+					if (y <= SEA_LEVEL)
 					{
 						setBlocks(x, y, z, BlockID::Water);
 					}
@@ -47,7 +43,7 @@ ChunkData::ChunkData(int cx, int cz)
 				}
 				else if (y == height)
 				{
-					if (height < seaLevel + 2)
+					if (height < SEA_LEVEL + 2)
 					{
 						setBlocks(x, y, z, BlockID::Sand);
 					}
@@ -65,6 +61,7 @@ ChunkData::ChunkData(int cx, int cz)
 					setBlocks(x, y, z, BlockID::Stone);
 				}
 			} // end for
+			placeTree(x, height, z);
 		} // end for
 	} // end for
 } // end of constructor
@@ -129,3 +126,67 @@ void ChunkData::setupHeightMap(int cx, int cz)
 	heightMapBuilder.SetBounds(worldX0, worldX1, worldZ0, worldZ1);
 	heightMapBuilder.Build();
 } // end of setupHeightMap()
+
+void ChunkData::placeTree(int x, int groundY, int z)
+{
+	// should place above sea level
+	if (groundY <= SEA_LEVEL + 1)
+	{
+		return;
+	}
+
+	// do not place tree if leaves crossover to next chunk
+	const int leafRadius = 4;
+	if (x < leafRadius || x >= CHUNK_SIZE - leafRadius ||
+		z < leafRadius || z >= CHUNK_SIZE - leafRadius)
+	{
+		return;
+	}
+
+	// ensure enough space for tree
+	if (groundY + 7 >= CHUNK_SIZE_Y)
+	{
+		return;
+	}
+
+	// tree should be placed on grass block only
+	if (getBlockID(x, groundY, z) != BlockID::Grass)
+	{
+		return;
+	}
+
+	// compute world space coord
+	int worldX = m_chunkX * CHUNK_SIZE + x;
+	int worldZ = m_chunkZ * CHUNK_SIZE + z;
+
+	// get deterministic random
+	uint32_t h = 2166136261u;
+	auto mix = [&](int v) {
+		h ^= static_cast<uint32_t>(v);
+		h *= 16777619u;
+		};
+	mix(worldX);
+	mix(worldZ);
+
+	std::minstd_rand rng(h);
+
+	int percentageOfGrassHaveTree = 7;
+	if ((rng() % 100) >= percentageOfGrassHaveTree)
+	{
+		return;
+	}
+
+	// trunk height [4,6] blocks
+	int trunkHeight = 4 + (rng() % 3);
+	int baseY = groundY + 1;
+
+	// place trunk
+	for (int i = 0; i < trunkHeight; ++i)
+	{
+		int ty = baseY + i;
+		if (ty >= 0 && ty < CHUNK_SIZE_Y)
+		{
+			setBlocks(x, ty, z, BlockID::Tree_Trunk);
+		}
+	} // end for
+} // end of placeTree()

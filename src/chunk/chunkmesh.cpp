@@ -200,7 +200,7 @@ bool ChunkMesh::isTransparent(int x, int y, int z)
 
 	BlockID id = chunkData_.getBlockID(x, y, z);
 
-	return id == BlockID::Air || id == BlockID::Tree_Leaf;
+	return id == BlockID::Air;
 } // end of isTransparent()
 
 glm::vec2 ChunkMesh::atlasUV(const glm::vec2& localUV, int tileX, int tileY)
@@ -240,6 +240,18 @@ void ChunkMesh::getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY)
 		break;
 	case BlockID::Tree_Leaf:
 		tileX = 8; tileY = tileYFromTop(10);
+		break;
+	case BlockID::Tree_Trunk:
+		switch (face)
+		{
+		case FaceDir::PosY: // top
+		case FaceDir::NegY: // bottom
+			tileX = 11; tileY = tileYFromTop(10);
+			break;
+		default: // sides
+			tileX = 10; tileY = tileYFromTop(10);
+			break;
+		}
 		break;
 	case BlockID::Glow_Block:
 		tileX = 10; tileY = tileYFromTop(14);

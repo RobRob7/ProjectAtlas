@@ -9,6 +9,7 @@
 #include <array>
 #include <cmath>
 #include <istream>
+#include <random>
 
 // blocks
 enum class BlockID : uint8_t
@@ -18,6 +19,7 @@ enum class BlockID : uint8_t
 	Grass,
 	Stone,
 	Tree_Leaf,
+	Tree_Trunk,
 	Glow_Block,
 	Sand,
 	Water
@@ -25,6 +27,10 @@ enum class BlockID : uint8_t
 
 inline constexpr int CHUNK_SIZE = 16;
 inline constexpr int CHUNK_SIZE_Y = 256;
+
+inline constexpr int SEA_LEVEL = 64;
+inline constexpr int MIN_GROUND = 40;
+inline constexpr int MAX_TERRAIN = 40;
 
 class ChunkData
 {
@@ -49,6 +55,7 @@ private:
 private:
 	void setBlocks(int x, int y, int z, BlockID id);
 	void setupHeightMap(int cx, int cz);
+	void placeTree(int x, int groundY, int z);
 };
 
 #endif
