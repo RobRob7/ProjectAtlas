@@ -13,7 +13,7 @@ Features:
     - Manual save system
 
 <h2>
-Preview
+Milestones
 </h2>
 
 | Terrain Generation + Skybox |
@@ -23,6 +23,10 @@ Preview
 | Terrain Generation w/libnoise |
 |---------|
 | ![Alt Text 1](milestones/2_betterterrain_blocksplace.png)|
+
+| Proper Tree Generation |
+|---------|
+| ![Alt Text 1](milestones/3_propertrees.png)|
 
 <h2>
 Requirements
@@ -107,3 +111,4 @@ Project layout:
   - **shader/** → Shaders
   - **texture/** → Textures (cubemap + blocks)
 - **deps/** → Dependency files
+- **papers/** → Papers implemented

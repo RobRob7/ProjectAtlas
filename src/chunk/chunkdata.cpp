@@ -9,6 +9,8 @@ ChunkData::ChunkData(int cx, int cz)
 
 	setupHeightMap(cx, cz);
 
+	std::array<int, CHUNK_SIZE* CHUNK_SIZE> columnHeights;
+
 	for (int x = 0; x < CHUNK_SIZE; ++x)
 	{
 		for (int z = 0; z < CHUNK_SIZE; ++z)
@@ -27,6 +29,9 @@ ChunkData::ChunkData(int cx, int cz)
 			{
 				height = CHUNK_SIZE_Y - 1;
 			}
+
+			// remember columns ground height
+			columnHeights[x + CHUNK_SIZE * z] = height;
 
 			for (int y = 0; y < CHUNK_SIZE_Y; ++y)
 			{
@@ -61,7 +66,16 @@ ChunkData::ChunkData(int cx, int cz)
 					setBlocks(x, y, z, BlockID::Stone);
 				}
 			} // end for
-			placeTree(x, height, z);
+
+			// second pass: place trees after terrain
+			for (int x = 0; x < CHUNK_SIZE; ++x)
+			{
+				for (int z = 0; z < CHUNK_SIZE; ++z)
+				{
+					int height = columnHeights[x + CHUNK_SIZE * z];
+					placeTree(x, height, z);
+				}
+			} // end for
 		} // end for
 	} // end for
 } // end of constructor
@@ -179,14 +193,70 @@ void ChunkData::placeTree(int x, int groundY, int z)
 	// trunk height [4,6] blocks
 	int trunkHeight = 4 + (rng() % 3);
 	int baseY = groundY + 1;
+	int topY = baseY + trunkHeight - 1;
 
 	// place trunk
-	for (int i = 0; i < trunkHeight; ++i)
+	for (int ty = baseY; ty <= topY; ++ty)
 	{
-		int ty = baseY + i;
 		if (ty >= 0 && ty < CHUNK_SIZE_Y)
 		{
 			setBlocks(x, ty, z, BlockID::Tree_Trunk);
 		}
+	} // end for
+
+
+	// place leaves
+	int canopyBottom = topY - 2;
+	int canopyTop = topY + 1;
+
+	for (int y = canopyBottom; y <= canopyTop; ++y)
+	{
+		if (y < 0 || y >= CHUNK_SIZE_Y)
+		{
+			continue;
+		}
+
+		int dy = y - topY;
+
+		// vertical taper: smaller radius at very top/bottom
+		int radius = (dy == -2 || dy == 1) ? 1 : 2;
+
+		for (int dx = -radius; dx <= radius; ++dx)
+		{
+			int lx = x + dx;
+			if (lx < 0 || lx >= CHUNK_SIZE)
+				continue;
+
+			for (int dz = -radius; dz <= radius; ++dz)
+			{
+				int lz = z + dz;
+				if (lz < 0 || lz >= CHUNK_SIZE)
+					continue;
+
+				// don't overwrite the trunk column on lower layers
+				if (dx == 0 && dz == 0 && y <= topY)
+				{
+					continue;
+				}
+
+				// skip corners on the full layers to round it off,
+				if (radius == 2 && std::abs(dx) == 2 && std::abs(dz) == 2)
+				{
+					continue;
+				}
+
+				// add tiny randomness for holes in outer leaves.
+				if (radius == 2 && (rng() % 5) == 0)
+				{
+					continue;
+				}
+
+				BlockID cur = getBlockID(lx, y, lz);
+				if (cur == BlockID::Air || cur == BlockID::Water)
+				{
+					setBlocks(lx, y, lz, BlockID::Tree_Leaf);
+				}
+			} // end for
+		} // end for
 	} // end for
 } // end of placeTree()
