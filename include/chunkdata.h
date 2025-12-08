@@ -2,6 +2,8 @@
 #define CHUNKDATA_H
 
 #include <glm/glm.hpp>
+#include <noise/noise.h>
+#include <noise/noiseutils.h>
 
 #include <cstdint>
 #include <array>
@@ -16,7 +18,9 @@ enum class BlockID : uint8_t
 	Grass,
 	Stone,
 	Tree_Leaf,
-	Glow_Block
+	Glow_Block,
+	Sand,
+	Water
 };
 
 inline constexpr int CHUNK_SIZE = 16;
@@ -40,8 +44,11 @@ public:
 
 private:
 	std::array<BlockID, CHUNK_SIZE* CHUNK_SIZE_Y* CHUNK_SIZE> blocks_;
+	// libnoise
+	utils::NoiseMap heightMap_;
 private:
 	void setBlocks(int x, int y, int z, BlockID id);
+	void setupHeightMap(int cx, int cz);
 };
 
 #endif

@@ -25,6 +25,7 @@ add_subdirectory(deps/glm-1.01)				# math
 add_subdirectory(deps/freetype-2.10.0)		# freetype
 add_subdirectory(deps/stb)					# stb image
 add_subdirectory(deps/imgui-1.92.5)			# imgui
+add_subdirectory(deps/libnoise)				# libnoise
 
 # VS set startup project main
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${CMAKE_PROJECT_NAME})
@@ -49,4 +50,4 @@ target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC RESOURCES_PATH="${CMAK
 target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC SAVE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/world/") 
 
 # link libs
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE glm glfw glad freetype stb imgui)
+target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE glm glfw glad freetype stb imgui libnoise)

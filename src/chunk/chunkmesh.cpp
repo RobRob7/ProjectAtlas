@@ -244,6 +244,12 @@ void ChunkMesh::getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY)
 	case BlockID::Glow_Block:
 		tileX = 10; tileY = tileYFromTop(14);
 		break;
+	case BlockID::Sand:
+		tileX = 0, tileY = tileYFromTop(15);
+		break;
+	case BlockID::Water:
+		tileX = 2; tileY = tileYFromTop(0);
+		break;
 	default:
 		tileX = 0; tileY = tileYFromTop(0);
 		break;
