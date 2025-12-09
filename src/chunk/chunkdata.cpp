@@ -66,16 +66,16 @@ ChunkData::ChunkData(int cx, int cz)
 					setBlocks(x, y, z, BlockID::Stone);
 				}
 			} // end for
+		} // end for
+	} // end for
 
-			// second pass: place trees after terrain
-			for (int x = 0; x < CHUNK_SIZE; ++x)
-			{
-				for (int z = 0; z < CHUNK_SIZE; ++z)
-				{
-					int height = columnHeights[x + CHUNK_SIZE * z];
-					placeTree(x, height, z);
-				}
-			} // end for
+	// second pass: place trees after terrain
+	for (int x = 0; x < CHUNK_SIZE; ++x)
+	{
+		for (int z = 0; z < CHUNK_SIZE; ++z)
+		{
+			int height = columnHeights[x + CHUNK_SIZE * z];
+			placeTree(x, height, z);
 		} // end for
 	} // end for
 } // end of constructor
