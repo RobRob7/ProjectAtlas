@@ -10,6 +10,7 @@
 #include <glad/glad.h>
 
 #include <vector>
+#include <array>
 #include <cstdint>
 
 struct Vertex
