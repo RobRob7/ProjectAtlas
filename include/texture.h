@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <iostream>
 #include <string>
-#include <vector>
+#include <array>
 #include <cmath>
 
 class Texture
@@ -18,7 +18,7 @@ public:
 	Texture() = default;
 	Texture(const std::string& filePath, const bool needToFlip = false);
 	// constructor for cubemap texture
-	Texture(const std::vector<std::string>& textures, const bool needToFlip = false);
+	Texture(const std::array<std::string, 6>& textures, const bool needToFlip = false);
 	~Texture();
 
 	// disallow copy

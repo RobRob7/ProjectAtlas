@@ -63,7 +63,7 @@ public:
     // default constructor
 	CubeMap() = default;
 	// constructor
-    CubeMap(const std::vector<std::string>& textures);
+    CubeMap(const std::array<std::string, 6>& textures);
     // destructor
     ~CubeMap();
 

@@ -1,7 +1,7 @@
 #include "cubemap.h"
 
 //--- PUBLIC ---//
-CubeMap::CubeMap(const std::vector<std::string>& textures)
+CubeMap::CubeMap(const std::array<std::string, 6>& textures)
 	: shader_("/cubemap/cubemap.vert", "/cubemap/cubemap.frag"), texture_(textures), cubemapTexture_(texture_.m_ID)
 {
 	// VAO + VBO

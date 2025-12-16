@@ -98,7 +98,7 @@ Application::Application(int width, int height, const char* windowTitle)
 	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 10.0f, 3.0f));
 
 	// cubemap init
-	std::vector<std::string> faces
+	std::array<std::string, 6> faces
 	{
 		"texture/cubemap/space_alt/right.png",
 		"texture/cubemap/space_alt/left.png",
