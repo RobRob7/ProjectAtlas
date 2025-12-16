@@ -117,7 +117,7 @@ public:
 
     void setBlock(int x, int y, int z, BlockID id);
     BlockID getBlock(int x, int y, int z) const;
-    ChunkData& ChunkMesh::getChunk();
+    ChunkData& getChunk();
     void rebuild();
 
 private:
