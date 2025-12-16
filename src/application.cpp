@@ -163,6 +163,7 @@ void Application::run()
 		ImGui::NewFrame();
 
 		ImGui::Begin("Hello Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Text("Player Position: (%.1f,%.1f,%.1f)", world_.getLastCameraPos().x, world_.getLastCameraPos().y, world_.getLastCameraPos().z);
 		ImGui::Text("Camera Acceleration Multiplier: %.1f", camera_->getAccelerationMultiplier());
 
 		ImGui::Text("Select Block");

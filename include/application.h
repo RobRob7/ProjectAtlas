@@ -20,6 +20,7 @@
 #include <memory>
 #include <stdexcept>
 #include <array>
+#include <cmath>
 
 class Application
 {

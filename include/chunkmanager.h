@@ -37,6 +37,7 @@ public:
 	void setLastBlockUsed(BlockID block);
 	int getViewRadius() const;
 	const Shader& getShader() const;
+	const glm::vec3& getLastCameraPos() const;
 
 	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
 

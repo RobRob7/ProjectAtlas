@@ -185,14 +185,19 @@ void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin,
 
 void ChunkManager::saveWorld()
 {
-	// find current chunk camera is in
-	int cameraChunkX = static_cast<int>(std::floor(lastCameraPos_.x / CHUNK_SIZE));
-	int cameraChunkZ = static_cast<int>(std::floor(lastCameraPos_.z / CHUNK_SIZE));
+	// save all loaded chunks that have been modified
+	for (auto& [coord, chunkMesh] : chunks_)
+	{
+		ChunkData& chunk = chunkMesh->getChunk();
 
-	ChunkCoord coord{ cameraChunkX, cameraChunkZ };
-	auto it = chunks_.find(coord);
+		if (!chunk.m_dirty)
+		{
+			continue;
+		}
+		saveWorld_.saveChunkToFile(chunk, "HelloWorld");
+		chunk.m_dirty = false;
 
-	saveWorld_.saveChunkToFile(it->second->getChunk(), "HelloWorld");
+	} // end for
 } // end of saveWorld()
 
 int ChunkManager::getViewRadius() const
@@ -204,6 +209,11 @@ const Shader& ChunkManager::getShader() const
 {
 	return shader_;
 } // end of getShader()
+
+const glm::vec3& ChunkManager::getLastCameraPos() const
+{
+	return lastCameraPos_;
+} // end of getLastCameraPos()
 
 
 //--- PRIVATE ---//
