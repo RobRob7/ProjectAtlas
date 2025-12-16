@@ -17,10 +17,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <memory>
-#include <stdexcept>
-#include <array>
-#include <cmath>
+#include <optional>
+#include <string_view>
 
 class Application
 {
@@ -52,25 +50,21 @@ private:
 	float lastFrame_ = 0.0f;
 
 	// camera system
-	std::unique_ptr<Camera> camera_;
+	std::optional<Camera> camera_;
 
 	// skybox
-	std::unique_ptr<CubeMap> skybox_;
+	std::optional<CubeMap> skybox_;
 
 	// crosshair
-	std::unique_ptr<Crosshair> crosshair_;
+	std::optional<Crosshair> crosshair_;
 
 	// chunk manager
-	ChunkManager world_{12};
+	std::optional<ChunkManager> world_;
 
 	// save timer
 	float saveTimer_ = 0.0f;
 	// auto save time threshold (in min)
 	float autoSaveTime_ = 5;
-
-	// light position + color
-	glm::vec3 lightPos_{0.0f, 15.0f, 3.0f};
-	glm::vec3 lightColor_{ 1.0f, 1.0f, 1.0f };
 };
 
 #endif

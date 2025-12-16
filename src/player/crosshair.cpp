@@ -1,10 +1,9 @@
 #include "crosshair.h"
 
 //--- PUBLIC ---//
-Crosshair::Crosshair(const float size)
+Crosshair::Crosshair(float size)
 	: size_(size)
 {
-	crosshairShader_ = Shader("crosshair/crosshair.vert", "crosshair/crosshair.frag");
 } // end of constructor
 
 Crosshair::~Crosshair()
@@ -18,6 +17,11 @@ Crosshair::~Crosshair()
 		glDeleteBuffers(1, &vbo_);
 	}
 } // end of destructor
+
+void Crosshair::init()
+{
+	crosshairShader_.emplace("crosshair/crosshair.vert", "crosshair/crosshair.frag");
+} // end of init()
 
 void Crosshair::render()
 {
@@ -43,7 +47,7 @@ void Crosshair::render()
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	crosshairShader_.use();
+	crosshairShader_->use();
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 

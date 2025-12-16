@@ -11,9 +11,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
-#include <vector>
 #include <memory>
-#include <cmath>
+#include <optional>
 
 struct BlockHit
 {
@@ -27,7 +26,7 @@ class ChunkManager
 public:
 	ChunkManager(int viewRadiusInChunks = 2);
 
-	void initShaderTexture();
+	void init();
 
 	void update(const glm::vec3& cameraPos);
 	void render(const glm::mat4& view, const glm::mat4& proj);
@@ -36,7 +35,7 @@ public:
 	void setBlock(int wx, int wy, int wz, BlockID id);
 	void setLastBlockUsed(BlockID block);
 	int getViewRadius() const;
-	const Shader& getShader() const;
+	const std::optional<Shader>& getShader() const;
 	const glm::vec3& getLastCameraPos() const;
 
 	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
@@ -44,8 +43,8 @@ public:
 	void saveWorld();
 private:
 	Save saveWorld_;
-	Shader shader_;
-	Texture texture_;
+	std::optional<Shader> shader_;
+	std::optional<Texture> texture_;
 
 	glm::vec3 lastCameraPos_{};
 

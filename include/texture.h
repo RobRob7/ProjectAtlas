@@ -7,7 +7,6 @@
 #include <iostream>
 #include <string>
 #include <array>
-#include <cmath>
 
 class Texture
 {
@@ -15,7 +14,6 @@ public:
 	// texture ID
 	uint32_t m_ID{};
 public:
-	Texture() = default;
 	Texture(const std::string& filePath, const bool needToFlip = false);
 	// constructor for cubemap texture
 	Texture(const std::array<std::string, 6>& textures, const bool needToFlip = false);

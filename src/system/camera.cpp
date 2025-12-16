@@ -79,7 +79,7 @@ void Camera::processKeyboard(Camera_Movement direction, float deltaTime)
 
 // processes input received from a mouse input system. expects the offset value
 // in both the x and y direction
-void Camera::processMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch)
+void Camera::processMouseMovement(float xoffset, float yoffset, bool constrainPitch)
 {
 	// only process if camera is enabled
 	if (isEnabled_)
@@ -126,7 +126,7 @@ void Camera::invertPitch()
 } // end of invertPitch()
 
 // mouse handlers
-void Camera::handleMousePosition(float xpos, float ypos, GLboolean constrainPitch)
+void Camera::handleMousePosition(float xpos, float ypos, bool constrainPitch)
 {
 	if (!isEnabled_) return;
 

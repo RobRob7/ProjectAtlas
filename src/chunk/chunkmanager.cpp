@@ -6,10 +6,10 @@ ChunkManager::ChunkManager(int viewRadiusInChunks)
 {
 } // end of constructor
 
-void ChunkManager::initShaderTexture()
+void ChunkManager::init()
 {
-	shader_ = Shader("chunk/chunk.vert", "chunk/chunk.frag");
-	texture_ = Texture("blocks.png", true);
+	shader_.emplace("chunk/chunk.vert", "chunk/chunk.frag");
+	texture_.emplace("blocks.png", true);
 } // end of initShaderTexture()
 
 void ChunkManager::update(const glm::vec3& cameraPos)
@@ -77,7 +77,7 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 		}
 
 		// create chunk and upload
-		std::unique_ptr<ChunkMesh> chunk = std::make_unique<ChunkMesh>(coord.x, coord.z, shader_, texture_);
+		std::unique_ptr<ChunkMesh> chunk = std::make_unique<ChunkMesh>(coord.x, coord.z, *shader_, *texture_);
 		std::unique_ptr<ChunkData> loaded = saveWorld_.loadChunkFromFile(coord.x, coord.z, "HelloWorld");
 		if (loaded)
 		{
@@ -93,10 +93,10 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 
 void ChunkManager::render(const glm::mat4& view, const glm::mat4& proj)
 {
-	shader_.use();
-	glBindTextureUnit(0, texture_.m_ID);
-	shader_.setMat4("u_view", view);
-	shader_.setMat4("u_proj", proj);
+	shader_->use();
+	glBindTextureUnit(0, texture_->m_ID);
+	shader_->setMat4("u_view", view);
+	shader_->setMat4("u_proj", proj);
 
 	for (auto& [coord, chunk] : chunks_)
 	{
@@ -205,7 +205,7 @@ int ChunkManager::getViewRadius() const
 	return viewRadius_;
 } // end of getViewRadius()
 
-const Shader& ChunkManager::getShader() const
+const std::optional<Shader>& ChunkManager::getShader() const
 {
 	return shader_;
 } // end of getShader()

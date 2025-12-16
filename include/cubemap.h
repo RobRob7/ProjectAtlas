@@ -8,8 +8,18 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <string>
-#include <vector>
 #include <cstdint>
+#include <optional>
+
+// cubemap default
+inline const std::array<std::string, 6> DEFAULT_FACES = { {
+    "texture/cubemap/space_alt/right.png",
+    "texture/cubemap/space_alt/left.png",
+    "texture/cubemap/space_alt/top.png",
+    "texture/cubemap/space_alt/bottom.png",
+    "texture/cubemap/space_alt/front.png",
+    "texture/cubemap/space_alt/back.png"
+} };
 
 const float SkyboxVertices[] =
 {
@@ -60,10 +70,8 @@ const float SkyboxVertices[] =
 class CubeMap
 {
 public:
-    // default constructor
-	CubeMap() = default;
 	// constructor
-    CubeMap(const std::array<std::string, 6>& textures);
+    CubeMap(const std::array<std::string, 6>& textures = DEFAULT_FACES);
     // destructor
     ~CubeMap();
 
@@ -72,12 +80,14 @@ public:
     // disallow copy assignment
     CubeMap& operator=(const CubeMap&) = delete;
 
+    void init();
+
     // render cubemap
     void render(glm::mat4& view, glm::mat4& projection, const float time = -1.0) const;
 
 private:
     // cubemap shader
-    Shader shader_;
+    std::optional<Shader> shader_;
     // cubemap texture
     Texture texture_;
     uint32_t& cubemapTexture_;

@@ -95,26 +95,19 @@ Application::Application(int width, int height, const char* windowTitle)
 	glEnable(GL_DEPTH_TEST);
 
 	// camera controller
-	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 10.0f, 3.0f));
+	camera_.emplace(width_, height_, glm::vec3(0.0f, 10.0f, 3.0f));
 
-	// cubemap init
-	std::array<std::string, 6> faces
-	{
-		"texture/cubemap/space_alt/right.png",
-		"texture/cubemap/space_alt/left.png",
-		"texture/cubemap/space_alt/top.png",
-		"texture/cubemap/space_alt/bottom.png",
-		"texture/cubemap/space_alt/front.png",
-		"texture/cubemap/space_alt/back.png"
-	};
-	skybox_ = std::make_unique<CubeMap>(faces);
+	// cubemap
+	skybox_.emplace();
+	skybox_->init();
 
-	// crosshair init
-	const float crosshairSize = 0.004f;
-	crosshair_ = std::make_unique<Crosshair>(crosshairSize);
+	// setup shader + texture
+	world_.emplace(12);
+	world_->init();
 
-	//
-	world_.initShaderTexture();
+	// crosshair
+	crosshair_.emplace();
+	crosshair_->init();
 } // end of constructor
 
 Application::~Application()
@@ -148,12 +141,12 @@ void Application::run()
 		saveTimer_ += deltaTime_;
 
 		// update world
-		world_.update(camera_->getCameraPosition());
+		world_->update(camera_->getCameraPosition());
 
 		// auto saving
 		if (saveTimer_ >= (autoSaveTime_ * 60.0f))
 		{
-			world_.saveWorld();
+			world_->saveWorld();
 			saveTimer_ -= autoSaveTime_ * 60.0f;
 		}
 
@@ -161,27 +154,28 @@ void Application::run()
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-
 		ImGui::Begin("Hello Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-		ImGui::Text("Player Position: (%.1f,%.1f,%.1f)", world_.getLastCameraPos().x, world_.getLastCameraPos().y, world_.getLastCameraPos().z);
+		std::string_view camState = camera_->isEnabled() ? "ON" : "OFF";
+		ImGui::Text("Camera: %s", camState.data());
+		ImGui::Text("Player Position: (%.1f,%.1f,%.1f)", world_->getLastCameraPos().x, world_->getLastCameraPos().y, world_->getLastCameraPos().z);
 		ImGui::Text("Camera Acceleration Multiplier: %.1f", camera_->getAccelerationMultiplier());
 
 		ImGui::Text("Select Block");
 		if (ImGui::Button("Dirt"))
 		{
-			world_.setLastBlockUsed(BlockID::Dirt);
+			world_->setLastBlockUsed(BlockID::Dirt);
 		}
 		if (ImGui::Button("Stone"))
 		{
-			world_.setLastBlockUsed(BlockID::Stone);
+			world_->setLastBlockUsed(BlockID::Stone);
 		}
 		if (ImGui::Button("Glow"))
 		{
-			world_.setLastBlockUsed(BlockID::Glow_Block);
+			world_->setLastBlockUsed(BlockID::Glow_Block);
 		}
 		if (ImGui::Button("Tree Leaf"))
 		{
-			world_.setLastBlockUsed(BlockID::Tree_Leaf);
+			world_->setLastBlockUsed(BlockID::Tree_Leaf);
 		}
 		ImGui::End();
 
@@ -193,20 +187,13 @@ void Application::run()
 		//////////////////////////////
 		// init transform matrices
 		glm::mat4 view = camera_->getViewMatrix();
-		// calculate the max distance of live chunks to see
-		const float farPlane = world_.getViewRadius() * CHUNK_SIZE * sqrt(2);
-		glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_, 0.1f, farPlane);
+		glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_);
 
-		world_.getShader().use();
-		world_.getShader().setVec3("u_viewPos", camera_->getCameraPosition());
-		static float t = 0.0f;
-		t += deltaTime_;
-		//lightPos_.z += sin(t * 1.0f) * 1.1f;
-		world_.getShader().setVec3("u_lightPos", lightPos_);
-		world_.getShader().setVec3("u_lightColor", lightColor_);
+		world_->getShader()->use();
+		world_->getShader()->setVec3("u_viewPos", camera_->getCameraPosition());
 		
 		// render world
-		world_.render(view, projection);
+		world_->render(view, projection);
 
 		// render skybox
 		skybox_->render(view, projection, glfwGetTime());
@@ -230,19 +217,19 @@ void Application::processInput()
 	// press 'esc' key to close window
 	if (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
-		world_.saveWorld();
+		world_->saveWorld();
 		glfwSetWindowShouldClose(window_, true);
 	}
 
-	// press 'down' arrow key to disable camera
-	if (glfwGetKey(window_, GLFW_KEY_DOWN) == GLFW_PRESS)
+	// press key to disable camera
+	if (glfwGetKey(window_, GLFW_KEY_MINUS) == GLFW_PRESS)
 	{
 		camera_->setEnabled(false);
 		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
 
-	// press 'up' arrow key to enable camera
-	if (glfwGetKey(window_, GLFW_KEY_UP) == GLFW_PRESS)
+	// press key to enable camera
+	if (glfwGetKey(window_, GLFW_KEY_EQUAL) == GLFW_PRESS)
 	{
 		camera_->setEnabled(true);
 		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -261,7 +248,7 @@ void Application::processInput()
 	bool leftJustPressed = (leftState == GLFW_PRESS && !leftMouseDown_);
 	if (leftJustPressed && camera_->isEnabled())
 	{
-		world_.placeOrRemoveBlock(false, camera_->getCameraPosition(), camera_->getCameraDirection());
+		world_->placeOrRemoveBlock(false, camera_->getCameraPosition(), camera_->getCameraDirection());
 	}
 	leftMouseDown_ = (leftState == GLFW_PRESS);
 
@@ -270,7 +257,7 @@ void Application::processInput()
 	bool rightJustPressed = (rightState == GLFW_PRESS && !rightMouseDown_);
 	if (rightJustPressed && camera_->isEnabled())
 	{
-		world_.placeOrRemoveBlock(true, camera_->getCameraPosition(), camera_->getCameraDirection());
+		world_->placeOrRemoveBlock(true, camera_->getCameraPosition(), camera_->getCameraDirection());
 	}
 	rightMouseDown_ = (rightState == GLFW_PRESS);
 	//////////////////////////////////////////////////////////////

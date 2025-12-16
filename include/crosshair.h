@@ -3,19 +3,22 @@
 
 #include "shader.h"
 
+#include <glad/glad.h>
+
 #include <cstdint>
+#include <optional>
 
 class Crosshair
 {
 public:
-	Crosshair() = default;
-	Crosshair(const float size);
+	Crosshair(float size = 0.004f);
 	~Crosshair();
 
+	void init();
 	void render();
 
 private:
-	Shader crosshairShader_;
+	std::optional<Shader> crosshairShader_;
 	uint32_t vao_{};
 	uint32_t vbo_{};
 	const float size_{};

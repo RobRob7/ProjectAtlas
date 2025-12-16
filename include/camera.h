@@ -1,7 +1,6 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -47,7 +46,7 @@ public:
 
 	// processes input received from a mouse input system. expects the offset value
 	// in both the x and y direction
-	void processMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
+	void processMouseMovement(float xoffset, float yoffset, bool constrainPitch = true);
 
 	// processes input received from a mouse scroll-wheel event. only requires
 	// input on the vertical wheel-axis
@@ -57,7 +56,7 @@ public:
 	void invertPitch();
 
 	// mouse handlers
-	void handleMousePosition(float xpos, float ypos, GLboolean constrainPitch = true);
+	void handleMousePosition(float xpos, float ypos, bool constrainPitch = true);
 	void handleMouseScroll(float yoffset);
 
 	void setEnabled(bool enabled);

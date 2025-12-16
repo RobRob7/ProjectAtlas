@@ -12,7 +12,6 @@
 class Shader
 {
 public:
-	Shader() = default;
 	// constructor
 	Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr);
 	// destructor

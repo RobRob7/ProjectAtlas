@@ -2,19 +2,8 @@
 
 //--- PUBLIC ---//
 CubeMap::CubeMap(const std::array<std::string, 6>& textures)
-	: shader_("/cubemap/cubemap.vert", "/cubemap/cubemap.frag"), texture_(textures), cubemapTexture_(texture_.m_ID)
+	: texture_(textures), cubemapTexture_(texture_.m_ID)
 {
-	// VAO + VBO
-	glGenVertexArrays(1, &vao_);
-	glGenBuffers(1, &vbo_);
-	glBindVertexArray(vao_);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(SkyboxVertices), &SkyboxVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-	shader_.use();
-	shader_.setInt("skybox", 0);
 } // end of constructor
 
 // destructor
@@ -33,6 +22,23 @@ CubeMap::~CubeMap()
 
 } // end of destructor
 
+void CubeMap::init()
+{
+	shader_.emplace("/cubemap/cubemap.vert", "/cubemap/cubemap.frag");
+
+	// VAO + VBO
+	glGenVertexArrays(1, &vao_);
+	glGenBuffers(1, &vbo_);
+	glBindVertexArray(vao_);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(SkyboxVertices), &SkyboxVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	shader_->use();
+	shader_->setInt("skybox", 0);
+} // end of init()
+
 // render cubemap
 void CubeMap::render(glm::mat4& view, glm::mat4& projection, const float time) const
 {
@@ -50,9 +56,9 @@ void CubeMap::render(glm::mat4& view, glm::mat4& projection, const float time) c
 	}
 
 	glDepthFunc(GL_LEQUAL);
-	shader_.use();
-	shader_.setMat4("u_view", viewStrippedTranslation);
-	shader_.setMat4("u_projection", projection);
+	shader_->use();
+	shader_->setMat4("u_view", viewStrippedTranslation);
+	shader_->setMat4("u_projection", projection);
 
 	glBindVertexArray(vao_);
 	glActiveTexture(GL_TEXTURE0);
