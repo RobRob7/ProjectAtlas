@@ -46,7 +46,7 @@ private:
 	Shader shader_;
 	Texture texture_;
 
-	glm::vec3 lastCameraPos_;
+	glm::vec3 lastCameraPos_{};
 
 	int viewRadius_;
 	std::unordered_map<ChunkCoord, std::unique_ptr<ChunkMesh>, ChunkCoordHash> chunks_;
