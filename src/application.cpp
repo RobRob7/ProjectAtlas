@@ -162,7 +162,9 @@ void Application::run()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::Begin("Hello Window");
+		ImGui::Begin("Hello Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Text("Camera Acceleration Multiplier: %.1f", camera_->getAccelerationMultiplier());
+
 		ImGui::Text("Select Block");
 		if (ImGui::Button("Dirt"))
 		{
@@ -179,10 +181,6 @@ void Application::run()
 		if (ImGui::Button("Tree Leaf"))
 		{
 			world_.setLastBlockUsed(BlockID::Tree_Leaf);
-		}
-		if (ImGui::Button("SAVE"))
-		{
-			world_.saveWorld();
 		}
 		ImGui::End();
 
@@ -249,11 +247,11 @@ void Application::processInput()
 		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
 
-	const float speedIncrease = 20.0f;
+	camera_->setAccelerationMultiplier(1.0f);
 	// camera speed increase
 	if (glfwGetKey(window_, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 	{
-		camera_->processKeyboard(FORWARD, deltaTime_ * speedIncrease);
+		camera_->setAccelerationMultiplier(15.0f);
 	}
 
 	//////////////////////////////////////////////////////////////

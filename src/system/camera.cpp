@@ -43,6 +43,16 @@ void Camera::setFirstMouse(bool isFirstMouse)
 	isFirstMouse_ = isFirstMouse;
 } // end of setFirstMouse()
 
+void Camera::setAccelerationMultiplier(float multiplier)
+{
+	accelerationMultiplier_ = multiplier;
+} // end of setAccelerationMultiplier() 
+
+float Camera::getAccelerationMultiplier() const
+{
+	return accelerationMultiplier_;
+} // end of getAccelerationMultiplier()
+
 // returns the view matrix calculated using Euler angles and LookAt matrix
 glm::mat4 Camera::getViewMatrix() const
 {
@@ -55,7 +65,7 @@ void Camera::processKeyboard(Camera_Movement direction, float deltaTime)
 {
 	if (isEnabled_)
 	{
-		float velocity = movementSpeed_ * deltaTime;
+		float velocity = movementSpeed_ * deltaTime * accelerationMultiplier_;
 		if (direction == FORWARD)
 			position_ += front_ * velocity;
 		if (direction == BACKWARD)

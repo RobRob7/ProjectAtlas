@@ -34,6 +34,9 @@ public:
 	void setLastX(float lastX);
 	void setLastY(float lastY);
 	void setFirstMouse(bool isFirstMouse);
+	void setAccelerationMultiplier(float multiplier);
+
+	float getAccelerationMultiplier() const;
 
 	// returns the view matrix calculated using Euler angles and LookAt matrix
 	glm::mat4 getViewMatrix() const;
@@ -93,6 +96,7 @@ private:
 	float movementSpeed_;
 	float mouseSensitivity_;
 	float zoom_;
+	float accelerationMultiplier_ = 1.0f;
 private:
 	// calculates the front vector from the Camera's (updated) Euler angles
 	void updateCameraVectors();
