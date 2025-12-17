@@ -45,73 +45,60 @@ Application::Application(int width, int height, const char* windowTitle)
 	glfwSetFramebufferSizeCallback(window_, [](GLFWwindow* window, int width, int height)
 		{
 			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
-			if (self)
+			if (!self) return;
+
+			self->width_ = width;
+			self->height_ = height;
+
+			glViewport(0, 0, width, height);
+
+			if (self->scene_)
 			{
-				self->width_ = width;
-				self->height_ = height;
-				glViewport(0, 0, width, height);
+				self->scene_->onResize(self->width_, self->height_);
 			}
 		});
 	glfwSetCursorPosCallback(window_, [](GLFWwindow* window, double xposIn, double yposIn)
 		{
 			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
-			if (self && self->camera_)
-			{
-				self->camera_->handleMousePosition(
-					static_cast<float>(xposIn),
-					static_cast<float>(yposIn)
-				);
-			}
+			if (!self || !self->scene_) return;
+
+			self->scene_->onMouseMove(static_cast<float>(xposIn),
+				static_cast<float>(yposIn));
 		});
 	glfwSetScrollCallback(window_, [](GLFWwindow* window, double xoffset, double yoffset)
 		{
 			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
-			if (self && self->camera_)
-			{
-				self->camera_->handleMouseScroll(static_cast<float>(yoffset));
-			}
+			if (!self || !self->scene_) return;
+
+
+			self->scene_->onScroll(static_cast<float>(yoffset));
 		});
 
 	////////// IMGUI //////////
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
+	//IMGUI_CHECKVERSION();
+	//ImGui::CreateContext();
+	//ImGuiIO& io = ImGui::GetIO();
 
-	// enable keyboard controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	//// enable keyboard controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-	// enable docking
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	//// enable docking
+	//io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-	// setup glfw/opengl backends
-	ImGui_ImplGlfw_InitForOpenGL(window_, true);
-	ImGui_ImplOpenGL3_Init("#version 460");
+	//// setup glfw/opengl backends
+	//ImGui_ImplGlfw_InitForOpenGL(window_, true);
+	//ImGui_ImplOpenGL3_Init("#version 460");
 	///////////////////////////
 
-	// set viewport
-	glViewport(0, 0, width_, height_);
+	//// set viewport
+	//glViewport(0, 0, width_, height_);
 
 	// enable depth test
 	glEnable(GL_DEPTH_TEST);
-
-	// camera controller
-	camera_.emplace(width_, height_, glm::vec3(0.0f, 100.0f, 3.0f));
-
-	// cubemap
-	skybox_.emplace();
-	skybox_->init();
-
-	// setup shader + texture
-	world_.emplace(12);
-	world_->init();
-
-	// crosshair
-	crosshair_.emplace();
-	crosshair_->init();
-
-	// light
-	light_.emplace(camera_->getCameraPosition());
-	light_->init();
+	
+	// setup scene
+	scene_ = std::make_unique<Scene>(width_, height_);
+	scene_->init();
 } // end of constructor
 
 Application::~Application()
@@ -120,10 +107,10 @@ Application::~Application()
 	if (window_) glfwDestroyWindow(window_);
 	glfwTerminate();
 
-	// IMGUI shutdown
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
+	//// IMGUI shutdown
+	//ImGui_ImplOpenGL3_Shutdown();
+	//ImGui_ImplGlfw_Shutdown();
+	//ImGui::DestroyContext();
 } // end of destructor
 
 void Application::run()
@@ -144,78 +131,52 @@ void Application::run()
 		// update save timer
 		saveTimer_ += deltaTime_;
 
-		// update world
-		world_->update(camera_->getCameraPosition());
+		scene_->render(width_, height_, glfwGetTime());
 
-		// auto saving
-		if (saveTimer_ >= (autoSaveTime_ * 60.0f))
-		{
-			world_->saveWorld();
-			saveTimer_ -= autoSaveTime_ * 60.0f;
-		}
+		//// auto saving
+		//if (saveTimer_ >= (autoSaveTime_ * 60.0f))
+		//{
+		//	world_->saveWorld();
+		//	saveTimer_ -= autoSaveTime_ * 60.0f;
+		//}
 
-		// IMGUI
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-		ImGui::Begin("Hello Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-		std::string_view camState = camera_->isEnabled() ? "ON" : "OFF";
-		ImGui::Text("Camera: %s", camState.data());
-		ImGui::Text("Player Position: (%.1f,%.1f,%.1f)", world_->getLastCameraPos().x, world_->getLastCameraPos().y, world_->getLastCameraPos().z);
-		ImGui::Text("Camera Acceleration Multiplier: %.1f", camera_->getAccelerationMultiplier());
+		//// IMGUI
+		//ImGui_ImplOpenGL3_NewFrame();
+		//ImGui_ImplGlfw_NewFrame();
+		//ImGui::NewFrame();
+		//ImGui::Begin("Hello Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+		//std::string_view camState = camera_->isEnabled() ? "ON" : "OFF";
+		//ImGui::Text("Camera: %s", camState.data());
+		//ImGui::Text("Player Position: (%.1f,%.1f,%.1f)", world_->getLastCameraPos().x, world_->getLastCameraPos().y, world_->getLastCameraPos().z);
+		//ImGui::Text("Camera Acceleration Multiplier: %.1f", camera_->getAccelerationMultiplier());
 
-		ImGui::Text("Select Block");
-		if (ImGui::Button("Dirt"))
-		{
-			world_->setLastBlockUsed(BlockID::Dirt);
-		}
-		if (ImGui::Button("Stone"))
-		{
-			world_->setLastBlockUsed(BlockID::Stone);
-		}
-		if (ImGui::Button("Glow"))
-		{
-			world_->setLastBlockUsed(BlockID::Glow_Block);
-		}
-		if (ImGui::Button("Tree Leaf"))
-		{
-			world_->setLastBlockUsed(BlockID::Tree_Leaf);
-		}
-		ImGui::End();
+		//ImGui::Text("Select Block");
+		//if (ImGui::Button("Dirt"))
+		//{
+		//	world_->setLastBlockUsed(BlockID::Dirt);
+		//}
+		//if (ImGui::Button("Stone"))
+		//{
+		//	world_->setLastBlockUsed(BlockID::Stone);
+		//}
+		//if (ImGui::Button("Glow"))
+		//{
+		//	world_->setLastBlockUsed(BlockID::Glow_Block);
+		//}
+		//if (ImGui::Button("Tree Leaf"))
+		//{
+		//	world_->setLastBlockUsed(BlockID::Tree_Leaf);
+		//}
+		//ImGui::End();
 
-		ImGui::Begin("Light Controls");
-		ImGui::SliderFloat3("Light Position", &light_->getPosition().x, 0.0f, 100.0f);
-		ImGui::End();
-
-		// set color to display after clear (state-setting function)
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		// clear the screen colors (state-using function)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		//////////////////////////////
-		// init transform matrices
-		glm::mat4 view = camera_->getViewMatrix();
-		glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_);
-
-		world_->getShader()->use();
-		world_->getShader()->setVec3("u_viewPos", camera_->getCameraPosition());
-		world_->getShader()->setVec3("u_lightPos", light_->getPosition());
-		world_->getShader()->setVec3("u_lightColor", light_->getColor());
-		
-		// render world
-		world_->render(view, projection);
-		light_->render(view, projection);
-
-		// render skybox
-		skybox_->render(view, projection, glfwGetTime());
-
-		// render crosshair
-		crosshair_->render();
+		//ImGui::Begin("Light Controls");
+		//ImGui::SliderFloat3("Light Position", &light_->getPosition().x, 0.0f, 100.0f);
+		//ImGui::End();
 		//////////////////////////////
 
-		// IMGUI
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		//// IMGUI
+		//ImGui::Render();
+		//ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		// swap buffers
 		glfwSwapBuffers(window_);
@@ -225,50 +186,52 @@ void Application::run()
 //--- PRIVATE ---//
 void Application::processInput()
 {
+	if (!scene_) return;
+
 	// press 'esc' key to close window
 	if (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
-		world_->saveWorld();
+		scene_->saveWorld();
 		glfwSetWindowShouldClose(window_, true);
 	}
 
 	// press key to disable camera
 	if (glfwGetKey(window_, GLFW_KEY_MINUS) == GLFW_PRESS)
 	{
-		camera_->setEnabled(false);
+		scene_->setCameraEnabled(false);
 		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
 
 	// press key to enable camera
 	if (glfwGetKey(window_, GLFW_KEY_EQUAL) == GLFW_PRESS)
 	{
-		camera_->setEnabled(true);
+		scene_->setCameraEnabled(true);
 		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
 
-	camera_->setAccelerationMultiplier(1.0f);
+	scene_->setSpeedMultiplier(1.0f);
 	// camera speed increase
 	if (glfwGetKey(window_, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 	{
-		camera_->setAccelerationMultiplier(15.0f);
+		scene_->setSpeedMultiplier(15.0f);
 	}
 
 	//////////////////////////////////////////////////////////////
 	// destroy block check
 	int leftState = glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT);
 	bool leftJustPressed = (leftState == GLFW_PRESS && !leftMouseDown_);
-	if (leftJustPressed && camera_->isEnabled())
+	if (leftJustPressed && scene_->isCameraEnabled())
 	{
-		world_->placeOrRemoveBlock(false, camera_->getCameraPosition(), camera_->getCameraDirection());
+		scene_->placeOrRemoveBlock(false);
 	}
 	leftMouseDown_ = (leftState == GLFW_PRESS);
 
 	// place block check
 	int rightState = glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_RIGHT);
 	bool rightJustPressed = (rightState == GLFW_PRESS && !rightMouseDown_);
-	if (rightJustPressed && camera_->isEnabled())
+	if (rightJustPressed && scene_->isCameraEnabled())
 	{
-		world_->placeOrRemoveBlock(true, camera_->getCameraPosition(), camera_->getCameraDirection());
+		scene_->placeOrRemoveBlock(true);
 	}
 	rightMouseDown_ = (rightState == GLFW_PRESS);
 	//////////////////////////////////////////////////////////////
@@ -276,18 +239,18 @@ void Application::processInput()
 	// camera change (W A S D)
 	if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		camera_->processKeyboard(FORWARD, deltaTime_);
+		scene_->moveForward(deltaTime_);
 	}
 	if (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS)
 	{
-		camera_->processKeyboard(BACKWARD, deltaTime_);
+		scene_->moveBackward(deltaTime_);
 	}
 	if (glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS)
 	{
-		camera_->processKeyboard(LEFT, deltaTime_);
+		scene_->moveLeft(deltaTime_);
 	}
 	if (glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS)
 	{
-		camera_->processKeyboard(RIGHT, deltaTime_);
+		scene_->moveRight(deltaTime_);
 	}
 } // end of processInput()

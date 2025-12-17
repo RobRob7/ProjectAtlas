@@ -1,13 +1,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "camera.h"
-#include "shader.h"
-
-#include "chunkmanager.h"
-#include "cubemap.h"
-#include "crosshair.h"
-#include "light.h"
+#include "scene.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -15,12 +9,8 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
-#include <optional>
-#include <string_view>
-#include <stdexcept>
+#include <memory>
 
 class Application
 {
@@ -51,25 +41,12 @@ private:
 	// time of last frame
 	float lastFrame_ = 0.0f;
 
-	// camera system
-	std::optional<Camera> camera_;
-
-	// skybox
-	std::optional<CubeMap> skybox_;
-
-	// crosshair
-	std::optional<Crosshair> crosshair_;
-
-	// chunk manager
-	std::optional<ChunkManager> world_;
-
-	// light
-	std::optional<Light> light_;
-
 	// save timer
 	float saveTimer_ = 0.0f;
 	// auto save time threshold (in min)
 	float autoSaveTime_ = 5;
+
+	std::unique_ptr<Scene> scene_;
 };
 
 #endif
