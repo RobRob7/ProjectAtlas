@@ -4,6 +4,7 @@
 #include "chunkdata.h"
 #include "shader.h"
 #include "texture.h"
+#include "data.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -13,15 +14,6 @@
 #include <array>
 #include <cstdint>
 #include <cstddef>
-
-struct Vertex
-{
-	glm::vec3 pos;
-	glm::vec3 normal;
-	glm::vec2 uv;
-};
-
-inline constexpr std::array<uint32_t, 6> FACE_INDICES = { 0, 1, 2, 0, 2, 3 };
 
 // +X (right) face
 inline constexpr std::array<Vertex, 4> FACE_POS_X = { {

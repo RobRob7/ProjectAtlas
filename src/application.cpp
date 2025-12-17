@@ -95,7 +95,7 @@ Application::Application(int width, int height, const char* windowTitle)
 	glEnable(GL_DEPTH_TEST);
 
 	// camera controller
-	camera_.emplace(width_, height_, glm::vec3(0.0f, 10.0f, 3.0f));
+	camera_.emplace(width_, height_, glm::vec3(0.0f, 100.0f, 3.0f));
 
 	// cubemap
 	skybox_.emplace();
@@ -108,6 +108,10 @@ Application::Application(int width, int height, const char* windowTitle)
 	// crosshair
 	crosshair_.emplace();
 	crosshair_->init();
+
+	// light
+	light_.emplace(camera_->getCameraPosition());
+	light_->init();
 } // end of constructor
 
 Application::~Application()
@@ -179,6 +183,10 @@ void Application::run()
 		}
 		ImGui::End();
 
+		ImGui::Begin("Light Controls");
+		ImGui::SliderFloat3("Light Position", &light_->getPosition().x, 0.0f, 100.0f);
+		ImGui::End();
+
 		// set color to display after clear (state-setting function)
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		// clear the screen colors (state-using function)
@@ -191,9 +199,12 @@ void Application::run()
 
 		world_->getShader()->use();
 		world_->getShader()->setVec3("u_viewPos", camera_->getCameraPosition());
+		world_->getShader()->setVec3("u_lightPos", light_->getPosition());
+		world_->getShader()->setVec3("u_lightColor", light_->getColor());
 		
 		// render world
 		world_->render(view, projection);
+		light_->render(view, projection);
 
 		// render skybox
 		skybox_->render(view, projection, glfwGetTime());

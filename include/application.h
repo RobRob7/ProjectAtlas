@@ -7,6 +7,7 @@
 #include "chunkmanager.h"
 #include "cubemap.h"
 #include "crosshair.h"
+#include "light.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -61,6 +62,9 @@ private:
 
 	// chunk manager
 	std::optional<ChunkManager> world_;
+
+	// light
+	std::optional<Light> light_;
 
 	// save timer
 	float saveTimer_ = 0.0f;
