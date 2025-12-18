@@ -74,25 +74,6 @@ Application::Application(int width, int height, const char* windowTitle)
 			self->scene_->onScroll(static_cast<float>(yoffset));
 		});
 
-	////////// IMGUI //////////
-	//IMGUI_CHECKVERSION();
-	//ImGui::CreateContext();
-	//ImGuiIO& io = ImGui::GetIO();
-
-	//// enable keyboard controls
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
-	//// enable docking
-	//io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-	//// setup glfw/opengl backends
-	//ImGui_ImplGlfw_InitForOpenGL(window_, true);
-	//ImGui_ImplOpenGL3_Init("#version 460");
-	///////////////////////////
-
-	//// set viewport
-	//glViewport(0, 0, width_, height_);
-
 	// enable depth test
 	glEnable(GL_DEPTH_TEST);
 	
@@ -106,77 +87,54 @@ Application::~Application()
 	// destroy window if still active
 	if (window_) glfwDestroyWindow(window_);
 	glfwTerminate();
-
-	//// IMGUI shutdown
-	//ImGui_ImplOpenGL3_Shutdown();
-	//ImGui_ImplGlfw_Shutdown();
-	//ImGui::DestroyContext();
 } // end of destructor
 
 void Application::run()
 {
 	while (!glfwWindowShouldClose(window_))
 	{
+		///////// BEFORE RENDER ///////////
 		// per-frame time logic
 		float currentFrame = glfwGetTime();
 		deltaTime_ = currentFrame - lastFrame_;
 		lastFrame_ = currentFrame;
 
+		// update save timer
+		saveTimer_ += deltaTime_;
+
+		// auto saving
+		if (saveTimer_ >= (autoSaveTime_ * 60.0f))
+		{
+			scene_->requestSave();
+			saveTimer_ = 0.0f;
+		}
+
 		// poll user input events
 		glfwPollEvents();
 
 		// process user input
-		processInput();
+		InputState input = buildInputState();
+		scene_->update(deltaTime_, input);
 
-		// update save timer
-		saveTimer_ += deltaTime_;
+		// process window close request
+		if (input.quitRequested)
+		{
+			glfwSetWindowShouldClose(window_, true);
+		}
 
-		scene_->render(width_, height_, glfwGetTime());
+		// process camera active/inactive mouse cursor
+		if (input.enableCameraPressed)
+		{
+			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		}
+		if (input.disableCameraPressed)
+		{
+			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		}
+		///////////////////////////////////
 
-		//// auto saving
-		//if (saveTimer_ >= (autoSaveTime_ * 60.0f))
-		//{
-		//	world_->saveWorld();
-		//	saveTimer_ -= autoSaveTime_ * 60.0f;
-		//}
-
-		//// IMGUI
-		//ImGui_ImplOpenGL3_NewFrame();
-		//ImGui_ImplGlfw_NewFrame();
-		//ImGui::NewFrame();
-		//ImGui::Begin("Hello Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-		//std::string_view camState = camera_->isEnabled() ? "ON" : "OFF";
-		//ImGui::Text("Camera: %s", camState.data());
-		//ImGui::Text("Player Position: (%.1f,%.1f,%.1f)", world_->getLastCameraPos().x, world_->getLastCameraPos().y, world_->getLastCameraPos().z);
-		//ImGui::Text("Camera Acceleration Multiplier: %.1f", camera_->getAccelerationMultiplier());
-
-		//ImGui::Text("Select Block");
-		//if (ImGui::Button("Dirt"))
-		//{
-		//	world_->setLastBlockUsed(BlockID::Dirt);
-		//}
-		//if (ImGui::Button("Stone"))
-		//{
-		//	world_->setLastBlockUsed(BlockID::Stone);
-		//}
-		//if (ImGui::Button("Glow"))
-		//{
-		//	world_->setLastBlockUsed(BlockID::Glow_Block);
-		//}
-		//if (ImGui::Button("Tree Leaf"))
-		//{
-		//	world_->setLastBlockUsed(BlockID::Tree_Leaf);
-		//}
-		//ImGui::End();
-
-		//ImGui::Begin("Light Controls");
-		//ImGui::SliderFloat3("Light Position", &light_->getPosition().x, 0.0f, 100.0f);
-		//ImGui::End();
-		//////////////////////////////
-
-		//// IMGUI
-		//ImGui::Render();
-		//ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		// render scene
+		scene_->render(glfwGetTime());
 
 		// swap buffers
 		glfwSwapBuffers(window_);
@@ -184,73 +142,33 @@ void Application::run()
 } // end of run()
 
 //--- PRIVATE ---//
-void Application::processInput()
+InputState Application::buildInputState()
 {
-	if (!scene_) return;
+	InputState in{};
 
-	// press 'esc' key to close window
-	if (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-	{
-		scene_->saveWorld();
-		glfwSetWindowShouldClose(window_, true);
-	}
+	// quit
+	in.quitRequested = (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS);
+	
 
-	// press key to disable camera
-	if (glfwGetKey(window_, GLFW_KEY_MINUS) == GLFW_PRESS)
-	{
-		scene_->setCameraEnabled(false);
-		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-	}
+	// camera enable/disable (edge-trigger optional; using "held" is okay but can spam)
+	in.disableCameraPressed = (glfwGetKey(window_, GLFW_KEY_MINUS) == GLFW_PRESS);
+	in.enableCameraPressed = (glfwGetKey(window_, GLFW_KEY_EQUAL) == GLFW_PRESS);
 
-	// press key to enable camera
-	if (glfwGetKey(window_, GLFW_KEY_EQUAL) == GLFW_PRESS)
-	{
-		scene_->setCameraEnabled(true);
-		glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	}
+	// movement
+	in.w = (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS);
+	in.s = (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS);
+	in.a = (glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS);
+	in.d = (glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS);
+	in.sprint = (glfwGetKey(window_, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS);
 
-	scene_->setSpeedMultiplier(1.0f);
-	// camera speed increase
-	if (glfwGetKey(window_, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-	{
-		scene_->setSpeedMultiplier(15.0f);
-	}
-
-	//////////////////////////////////////////////////////////////
-	// destroy block check
+	// LMB
 	int leftState = glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_LEFT);
-	bool leftJustPressed = (leftState == GLFW_PRESS && !leftMouseDown_);
-	if (leftJustPressed && scene_->isCameraEnabled())
-	{
-		scene_->placeOrRemoveBlock(false);
-	}
+	in.removeBlockPressed = (leftState == GLFW_PRESS && !leftMouseDown_);
 	leftMouseDown_ = (leftState == GLFW_PRESS);
-
-	// place block check
+	// RMB
 	int rightState = glfwGetMouseButton(window_, GLFW_MOUSE_BUTTON_RIGHT);
-	bool rightJustPressed = (rightState == GLFW_PRESS && !rightMouseDown_);
-	if (rightJustPressed && scene_->isCameraEnabled())
-	{
-		scene_->placeOrRemoveBlock(true);
-	}
+	in.placeBlockPressed = (rightState == GLFW_PRESS && !rightMouseDown_);
 	rightMouseDown_ = (rightState == GLFW_PRESS);
-	//////////////////////////////////////////////////////////////
 
-	// camera change (W A S D)
-	if (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS)
-	{
-		scene_->moveForward(deltaTime_);
-	}
-	if (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS)
-	{
-		scene_->moveBackward(deltaTime_);
-	}
-	if (glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS)
-	{
-		scene_->moveLeft(deltaTime_);
-	}
-	if (glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		scene_->moveRight(deltaTime_);
-	}
-} // end of processInput()
+	return in;
+} // end of buildInputState()

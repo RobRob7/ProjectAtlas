@@ -21,7 +21,7 @@ public:
 	void run();
 
 private:
-	void processInput();
+	InputState buildInputState();
 
 private:
 	// place/delete block limit

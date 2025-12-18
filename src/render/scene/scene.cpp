@@ -28,40 +28,78 @@ void Scene::init()
 	light_->init();
 } // end of init
 
-void Scene::render(float w, float h, float glfwTime)
+void Scene::render(float glfwTime)
 {
-	// update width, height
-	width_ = w;
-	height_ = h;
+	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
 	// update world
 	world_->update(camera_->getCameraPosition());
 
-	// set color to display after clear (state-setting function)
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	// clear the screen colors (state-using function)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//////////////////////////////
-	// init transform matrices
 	glm::mat4 view = camera_->getViewMatrix();
 	glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_);
 
-	world_->getShader()->use();
-	world_->getShader()->setVec3("u_viewPos", camera_->getCameraPosition());
-	world_->getShader()->setVec3("u_lightPos", light_->getPosition());
-	world_->getShader()->setVec3("u_lightColor", light_->getColor());
+	// update uniforms of world shader
+	auto& worldShader = world_->getShader();
+	worldShader->use();
+	worldShader->setVec3("u_viewPos", camera_->getCameraPosition());
+	worldShader->setVec3("u_lightPos", light_->getPosition());
+	worldShader->setVec3("u_lightColor", light_->getColor());
 
-	// render world
 	world_->render(view, projection);
 	light_->render(view, projection);
 
-	// render skybox
 	skybox_->render(view, projection, glfwTime);
-
-	// render crosshair
 	crosshair_->render();
 } // end of render()
+
+void Scene::update(float dt, const InputState& in)
+{
+	if (!camera_ || !world_) return;
+
+	if (in.quitRequested)
+	{
+		world_->saveWorld();
+		return;
+	}
+
+	if (in.disableCameraPressed)
+	{
+		camera_->setEnabled(false);
+	}
+
+	if (in.enableCameraPressed)
+	{
+		camera_->setEnabled(true);
+	}
+
+	// functionality ONLY when camera active
+	if (camera_->isEnabled())
+	{
+		camera_->setAccelerationMultiplier(in.sprint ? 15.0f : 1.0f);
+
+		if (in.w) camera_->processKeyboard(FORWARD, dt);
+		if (in.a) camera_->processKeyboard(LEFT, dt);
+		if (in.s) camera_->processKeyboard(BACKWARD, dt);
+		if (in.d) camera_->processKeyboard(RIGHT, dt);
+
+		if (in.removeBlockPressed)
+		{
+			world_->placeOrRemoveBlock(false,
+				camera_->getCameraPosition(),
+				camera_->getCameraDirection());
+		}
+
+		if (in.placeBlockPressed)
+		{
+			world_->placeOrRemoveBlock(true,
+				camera_->getCameraPosition(),
+				camera_->getCameraDirection());
+		}
+	}
+} // end of update()
 
 void Scene::onResize(float w, float h)
 {
@@ -71,7 +109,7 @@ void Scene::onResize(float w, float h)
 
 void Scene::onMouseMove(float x, float y)
 {
-	if (camera_)
+	if (camera_ && camera_->isEnabled())
 	{
 		camera_->handleMousePosition(x, y);
 	}
@@ -79,78 +117,16 @@ void Scene::onMouseMove(float x, float y)
 
 void Scene::onScroll(float yoffset)
 {
-	if (camera_)
+	if (camera_ && camera_->isEnabled())
 	{
 		camera_->handleMouseScroll(yoffset);
 	}
 } // end of onScroll()
 
-void Scene::saveWorld()
+void Scene::requestSave()
 {
 	if (world_)
 	{
 		world_->saveWorld();
 	}
-} // end of saveWorld()
-
-void Scene::setCameraEnabled(bool enabled)
-{
-	if (camera_)
-	{
-		camera_->setEnabled(enabled);
-	}
-} // end of setCameraEnabled()
-
-bool Scene::isCameraEnabled() const
-{
-	return camera_ && camera_->isEnabled();
-} // end of isCameraEnabled()
-
-void Scene::setSpeedMultiplier(float m)
-{
-	if (camera_)
-	{
-		camera_->setAccelerationMultiplier(m);
-	}
-} // end of setSpeedMultiplier()
-
-void Scene::placeOrRemoveBlock(bool place)
-{
-	if (!camera_ || !world_) return;
-
-	world_->placeOrRemoveBlock(place,
-		camera_->getCameraPosition(),
-		camera_->getCameraDirection());
-} // end of placeOrRemoveBlock()
-
-void Scene::moveForward(float dt)
-{
-	if (camera_)
-	{
-		camera_->processKeyboard(FORWARD, dt);
-	}
-} // end of moveForward()
-
-void Scene::moveBackward(float dt)
-{
-	if (camera_)
-	{
-		camera_->processKeyboard(BACKWARD, dt);
-	}
-} // end of moveBackward()
-
-void Scene::moveLeft(float dt)
-{
-	if (camera_)
-	{
-		camera_->processKeyboard(LEFT, dt);
-	}
-} // end of moveLeft()
-
-void Scene::moveRight(float dt)
-{
-	if (camera_)
-	{
-		camera_->processKeyboard(RIGHT, dt);
-	}
-} // end of moveRight()
+} // end of requestSave()

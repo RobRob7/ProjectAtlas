@@ -9,30 +9,44 @@
 
 #include <optional>
 
+struct InputState
+{
+	// keys
+	bool w = false;
+	bool a = false;
+	bool s = false;
+	bool d = false;
+	bool sprint = false;
+
+	// actions
+	bool enableCameraPressed = false;
+	bool disableCameraPressed = false;
+	bool placeBlockPressed = false;
+	bool removeBlockPressed = false;
+	bool quitRequested = false;
+};
+
 class Scene
 {
 public:
 	Scene(float w, float h);
 
+	// setup scene entities
 	void init();
-	void render(float w, float h, float glfwTime);
 
+	// render scene entities
+	void render(float glfwTime);
+
+	// handle user inputs
+	void update(float dt, const InputState& in);
+
+	// window events
 	void onResize(float w, float h);
 	void onMouseMove(float x, float y);
 	void onScroll(float yoffset);
 
-	void saveWorld();
-
-	void setCameraEnabled(bool enabled);
-	bool isCameraEnabled() const;
-
-	void setSpeedMultiplier(float m);
-
-	void placeOrRemoveBlock(bool place);
-	void moveForward(float dt);
-	void moveBackward(float dt);
-	void moveLeft(float dt);
-	void moveRight(float dt);
+	// saving feature
+	void requestSave();
 
 private:
 	// width of window
@@ -40,19 +54,11 @@ private:
 	// height of window
 	float height_;
 
-	// camera system
+	// objects
 	std::optional<Camera> camera_;
-
-	// skybox
 	std::optional<CubeMap> skybox_;
-
-	// crosshair
 	std::optional<Crosshair> crosshair_;
-
-	// chunk manager
 	std::optional<ChunkManager> world_;
-
-	// light
 	std::optional<Light> light_;
 };
 
