@@ -1,6 +1,5 @@
 # Project Atlas
-- A voxel engine in OpenGL.
-- Using OpenGL 4.6 Core, C++17. For use with Windows.
+- A voxel engine using OpenGL 4.6 Core, C++17. For use with Windows.
 
 <h3>
 Features:
@@ -11,6 +10,7 @@ Features:
 - World data persistence:
     - Auto-saving world state
     - Manual save system
+- SSAO (WIP)
 
 <h2>
 Milestones
@@ -18,15 +18,23 @@ Milestones
 
 | Terrain Generation + Skybox |
 |---------|
+| *Inital terrain generation using a simple heightmap.* |
 | ![Alt Text 1](milestones/1_terraingen_cubemap.png)|
 
 | Terrain Generation w/libnoise |
 |---------|
+| *Terrain generation using libnoise for more interesting views, trees are WIP.* |
 | ![Alt Text 1](milestones/2_betterterrain_blocksplace.png)|
 
 | Proper Tree Generation |
 |---------|
+| *Updated tree generation to randomly construct canopy.* |
 | ![Alt Text 1](milestones/3_propertrees.png)|
+
+| G-Buffer Normal | G-Buffer Depth |
+|----------------------------|--------------------------------|
+| *Working on implementing SSAO. Implemented G-Buffer with debug view for surface normals.* | *Working on implementing SSAO. Implemented G-Buffer with debug view for depth.* |
+| ![](milestones/4a_normals.png) | ![](milestones/4b_depth.png) |
 
 <h2>
 Requirements
@@ -92,15 +100,21 @@ Project layout:
   - all my header files
 - **src/**
     - main.cpp → main driver
-    - application.cpp → main application
     - **chunk/**
         - chunkdata.cpp → chunk data
         - chunkmanager.cpp → management of chunk meshes
         - chunkmesh.cpp → chunk mesh
+    - **core/**
+        - application.cpp → main application
+        - scene.cpp → object setup + renderer call
     - **player/**
         - crosshair.cpp → crosshair UI icon
+    - **renderer/**
+        - debugpass.cpp → gBuffer normal + depth view
+        - gbufferpass.cpp → gBuffer pass
+        - renderer.cpp → render pipeline
     - **save/**
-        - save.cpp → saving world state
+        - save.cpp → world state saving
     - **system/**
         - camera.cpp → camera system
     - **utility/**
