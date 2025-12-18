@@ -24,7 +24,7 @@ void main()
     float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
 
     // ambient
-    vec3 ambient = 0.1 * u_lightColor * texColor.rgb;
+    vec3 ambient = 0.5 * u_lightColor * texColor.rgb;
 
     // diffuse
     vec3 lightDir = normalize(u_lightPos - FragPos);

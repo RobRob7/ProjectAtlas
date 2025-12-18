@@ -86,6 +86,17 @@ void ChunkMesh::renderChunk()
 	glDrawElements(GL_TRIANGLES, indexCount_, GL_UNSIGNED_INT, nullptr);
 } // end of render()
 
+void ChunkMesh::renderChunk(Shader& shader)
+{
+	glm::mat4 model = glm::translate(glm::mat4(1.0f),
+		glm::vec3(chunkData_.m_chunkX * CHUNK_SIZE, 0.0f, chunkData_.m_chunkZ * CHUNK_SIZE));
+
+	shader.setMat4("u_model", model);
+
+	glBindVertexArray(vao_);
+	glDrawElements(GL_TRIANGLES, indexCount_, GL_UNSIGNED_INT, nullptr);
+} // end of render()
+
 void ChunkMesh::setBlock(int x, int y, int z, BlockID id)
 {
 	chunkData_.setBlockID(x, y, z, id);

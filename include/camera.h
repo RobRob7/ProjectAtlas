@@ -67,34 +67,40 @@ public:
 	glm::vec3 getCameraPosition() const;
 	glm::vec3 getCameraDirection() const;
 
+	float getNearPlane() const;
+	float getFarPlane() const;
+
 private:
 	// width of window
-	int width_;
+	int width_{};
 	// height of window
-	int height_;
+	int height_{};
 	// camera x,y position center
-	float lastX_;
-	float lastY_;
+	float lastX_{};
+	float lastY_{};
 	// first mouse movement
 	bool isFirstMouse_ = true;
 
 	bool isEnabled_ = true;
 
 	// camera attributes
-	glm::vec3 position_;
-	glm::vec3 front_;
-	glm::vec3 up_;
-	glm::vec3 right_;
-	glm::vec3 worldUp_;
+	glm::vec3 position_{};
+	glm::vec3 front_{};
+	glm::vec3 up_{};
+	glm::vec3 right_{};
+	glm::vec3 worldUp_{};
+
+	float nearPlane_{0.1f};
+	float farPlane_{200.0f};
 
 	// euler angles
-	float yaw_;
-	float pitch_;
+	float yaw_{};
+	float pitch_{};
 
 	// camera options
-	float movementSpeed_;
-	float mouseSensitivity_;
-	float zoom_;
+	float movementSpeed_{};
+	float mouseSensitivity_{};
+	float zoom_{};
 	float accelerationMultiplier_ = 1.0f;
 private:
 	// calculates the front vector from the Camera's (updated) Euler angles

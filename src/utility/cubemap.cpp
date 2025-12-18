@@ -40,7 +40,7 @@ void CubeMap::init()
 } // end of init()
 
 // render cubemap
-void CubeMap::render(glm::mat4& view, glm::mat4& projection, const float time) const
+void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const float time) const
 {
 	// remove translation from camera view
 	glm::mat4 viewStrippedTranslation = glm::mat4(glm::mat3(view));

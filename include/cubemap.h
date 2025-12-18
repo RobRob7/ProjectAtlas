@@ -83,7 +83,7 @@ public:
     void init();
 
     // render cubemap
-    void render(glm::mat4& view, glm::mat4& projection, const float time = -1.0) const;
+    void render(const glm::mat4& view, const glm::mat4& projection, const float time = -1.0) const;
 
 private:
     // cubemap shader

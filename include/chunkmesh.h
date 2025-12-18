@@ -106,6 +106,7 @@ public:
 
     void uploadChunkMesh();
     void renderChunk();
+    void renderChunk(Shader& shader);
 
     void setBlock(int x, int y, int z, BlockID id);
     BlockID getBlock(int x, int y, int z) const;

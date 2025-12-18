@@ -8,22 +8,21 @@ Scene::Scene(float w, float h)
 
 void Scene::init()
 {
-	// camera controller
+	// init renderer
+	renderer_.init();
+	renderer_.resize(width_, height_);
+
 	camera_.emplace(width_, height_, glm::vec3(0.0f, 100.0f, 3.0f));
 
-	// cubemap
 	skybox_.emplace();
 	skybox_->init();
 
-	// setup shader + texture
 	world_.emplace(12);
 	world_->init();
 
-	// crosshair
 	crosshair_.emplace();
 	crosshair_->init();
 
-	// light
 	light_.emplace(camera_->getCameraPosition());
 	light_->init();
 } // end of init
@@ -32,32 +31,30 @@ void Scene::render(float glfwTime)
 {
 	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
-	// update world
-	world_->update(camera_->getCameraPosition());
+	renderer_.resize(width_, height_);
 
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	RenderInputs in;
+	in.world = &*world_;
+	in.camera = &*camera_;
+	in.light = &*light_;
+	in.skybox = &*skybox_;
+	in.crosshair = &*crosshair_;
 
-	glm::mat4 view = camera_->getViewMatrix();
-	glm::mat4 projection = camera_->getProjectionMatrix(width_ / height_);
+	in.time = glfwTime;
+	in.debugMode = debugMode_;
 
-	// update uniforms of world shader
-	auto& worldShader = world_->getShader();
-	worldShader->use();
-	worldShader->setVec3("u_viewPos", camera_->getCameraPosition());
-	worldShader->setVec3("u_lightPos", light_->getPosition());
-	worldShader->setVec3("u_lightColor", light_->getColor());
-
-	world_->render(view, projection);
-	light_->render(view, projection);
-
-	skybox_->render(view, projection, glfwTime);
-	crosshair_->render();
+	renderer_.renderFrame(in);
 } // end of render()
 
 void Scene::update(float dt, const InputState& in)
 {
 	if (!camera_ || !world_) return;
+
+	// debug mode
+	if (in.debugNormalPressed)	debugMode_ = DebugMode::Normals;
+	if (in.debugDepthPressed)	debugMode_ = DebugMode::Depth;
+	if (in.debugOffPressed)		debugMode_ = DebugMode::None;
+
 
 	if (in.quitRequested)
 	{

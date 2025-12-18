@@ -169,7 +169,7 @@ bool Camera::isEnabled() const
 
 glm::mat4 Camera::getProjectionMatrix(float aspectRatio, float nearPlane, float farPlane) const
 {
-	return glm::perspective(glm::radians(zoom_), aspectRatio, nearPlane, farPlane);
+	return glm::perspective(glm::radians(zoom_), aspectRatio, nearPlane_, farPlane_);
 } // end of getProjectionMatrix()
 
 glm::vec3 Camera::getCameraPosition() const
@@ -181,6 +181,16 @@ glm::vec3 Camera::getCameraDirection() const
 {
 	return front_;
 } // end of getCameraDirection()
+
+float Camera::getNearPlane() const
+{
+	return nearPlane_;
+} // end of getNearPlane()
+
+float Camera::getFarPlane() const
+{
+	return farPlane_;
+} // end of getFarPlane()
 
 
 //--- PRIVATE ---//

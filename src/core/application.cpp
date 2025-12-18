@@ -146,9 +146,13 @@ InputState Application::buildInputState()
 {
 	InputState in{};
 
+	// debug
+	in.debugOffPressed = (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS);
+	in.debugNormalPressed = (glfwGetKey(window_, GLFW_KEY_2) == GLFW_PRESS);
+	in.debugDepthPressed = (glfwGetKey(window_, GLFW_KEY_3) == GLFW_PRESS);
+
 	// quit
 	in.quitRequested = (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS);
-	
 
 	// camera enable/disable (edge-trigger optional; using "held" is okay but can spam)
 	in.disableCameraPressed = (glfwGetKey(window_, GLFW_KEY_MINUS) == GLFW_PRESS);

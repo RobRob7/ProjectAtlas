@@ -104,6 +104,18 @@ void ChunkManager::render(const glm::mat4& view, const glm::mat4& proj)
 	} // end for
 } // end of render()
 
+void ChunkManager::render(Shader& shader, const glm::mat4& view, const glm::mat4& proj)
+{
+	shader.use();
+	shader.setMat4("u_view", view);
+	shader.setMat4("u_proj", proj);
+
+	for (auto& [coord, chunk] : chunks_)
+	{
+		chunk->renderChunk(shader);
+	} // end for
+} // end of render()
+
 BlockID ChunkManager::getBlock(int wx, int wy, int wz) const
 {
 	int chunkX = static_cast<int>(std::floor(wx / static_cast<float>(CHUNK_SIZE)));
