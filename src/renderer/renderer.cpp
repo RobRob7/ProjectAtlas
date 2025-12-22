@@ -5,6 +5,7 @@ void Renderer::init()
 {
 	gbuffer_.init();
 	debugPass_.init();
+    ssaoPass_.init();
 } // end of init()
 
 void Renderer::resize(float w, float h)
@@ -16,6 +17,7 @@ void Renderer::resize(float w, float h)
     height_ = h;
 
     gbuffer_.resize(width_, height_);
+    ssaoPass_.resize(width_, height_);
 } // end of resize()
 
 void Renderer::renderFrame(const RenderInputs& in)
@@ -28,6 +30,13 @@ void Renderer::renderFrame(const RenderInputs& in)
 
     // gbuffer pass
     gbuffer_.render(*in.world, view, proj);
+
+    // ssao pass
+    if (in.useSSAO)
+    {
+        glm::mat4 invProj = glm::inverse(proj);
+        ssaoPass_.render(gbuffer_.getNormalTexture(), gbuffer_.getDepthTexture(), proj, invProj);
+    }
 
     // debug pass
     if (in.debugMode == DebugMode::Normals || in.debugMode == DebugMode::Depth)
@@ -57,6 +66,18 @@ void Renderer::renderFrame(const RenderInputs& in)
     worldShader->setVec3("u_viewPos", in.camera->getCameraPosition());
     worldShader->setVec3("u_lightPos", in.light->getPosition());
     worldShader->setVec3("u_lightColor", in.light->getColor());
+    // ssao
+    worldShader->setVec2("u_screenSize", glm::vec2(static_cast<int>(width_), static_cast<int>(height_)));
+    worldShader->setBool("u_useSSAO", in.useSSAO);
+    worldShader->setInt("u_ssao", 3);
+    if (in.useSSAO)
+    {
+        glBindTextureUnit(3, ssaoPass_.aoBlurTexture());
+    }
+    else
+    {
+        glBindTextureUnit(3, 0);
+    }
 
     // render objects
     in.world->render(view, proj);

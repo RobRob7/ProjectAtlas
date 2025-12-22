@@ -43,6 +43,8 @@ void Scene::render(float glfwTime)
 	in.time = glfwTime;
 	in.debugMode = debugMode_;
 
+	in.useSSAO = useSSAO_;
+
 	renderer_.renderFrame(in);
 } // end of render()
 
@@ -55,6 +57,11 @@ void Scene::update(float dt, const InputState& in)
 	if (in.debugDepthPressed)	debugMode_ = DebugMode::Depth;
 	if (in.debugOffPressed)		debugMode_ = DebugMode::None;
 
+	// graphics options
+	if (in.enableSSAO)
+	{
+		useSSAO_ = !useSSAO_;
+	}
 
 	if (in.quitRequested)
 	{

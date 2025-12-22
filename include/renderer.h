@@ -9,6 +9,7 @@
 
 #include "gbufferpass.h"
 #include "debugpass.h"
+#include "ssaopass.h"
 
 #include <glm/glm.hpp>
 
@@ -30,6 +31,8 @@ struct RenderInputs
 	float time = 0.0f;
 
 	DebugMode debugMode = DebugMode::None;
+
+	bool useSSAO = false;
 };
 
 class Renderer
@@ -46,6 +49,7 @@ private:
 	// passes
 	GBufferPass gbuffer_;
 	DebugPass debugPass_;
+	SSAOPass ssaoPass_;
 };
 
-#endif // !RENDERER_H
+#endif

@@ -9,6 +9,10 @@ uniform vec3 u_viewPos;
 uniform vec3 u_lightPos;
 uniform vec3 u_lightColor;
 
+uniform vec2 u_screenSize;
+uniform bool u_useSSAO;
+uniform sampler2D u_ssao;
+
 out vec4 FragColor;
 
 void main()
@@ -19,12 +23,20 @@ void main()
         discard;
     }
 
+    float ao = 1.0;
+    if (u_useSSAO)
+    {
+        vec2 ssUV = gl_FragCoord.xy / u_screenSize;
+        ao = texture(u_ssao, ssUV).r;
+    }
+
     // add attenuation
     float distance = length(u_lightPos - FragPos);
     float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
 
     // ambient
-    vec3 ambient = 0.5 * u_lightColor * texColor.rgb;
+    float ambientStrength = 0.5;
+    vec3 ambient = ambientStrength * texColor.rgb * ao;
 
     // diffuse
     vec3 lightDir = normalize(u_lightPos - FragPos);
@@ -38,9 +50,10 @@ void main()
     float spec = 0.0;
     // blinn-phong
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    float shininess = 32.0;
+    float shininess = 16.0;
+    float specStrength = 0.08;
     spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
-    vec3 specular = u_lightColor * spec;
+    vec3 specular = u_lightColor * spec * specStrength * texColor.rgb;
 
     // ambient receives no attenuation
     FragColor = vec4(ambient + (diffuse + specular) * attenuation, 1.0);

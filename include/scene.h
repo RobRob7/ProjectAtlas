@@ -27,6 +27,9 @@ struct InputState
 	bool removeBlockPressed = false;
 	bool quitRequested = false;
 
+	// graphics options
+	bool enableSSAO = false;
+
 	// debug
 	bool debugOffPressed = false;		// '1' key
 	bool debugNormalPressed = false;	// '2' key
@@ -64,6 +67,9 @@ private:
 	// render pipeline
 	Renderer renderer_;
 	DebugMode debugMode_ = DebugMode::None;
+
+	// graphics options
+	bool useSSAO_ = false;
 
 	// objects
 	std::optional<Camera> camera_;

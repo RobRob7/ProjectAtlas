@@ -146,6 +146,12 @@ InputState Application::buildInputState()
 {
 	InputState in{};
 
+	// graphics options
+	static bool spaceWasDown = false;
+	bool spaceDown = glfwGetKey(window_, GLFW_KEY_SPACE) == GLFW_PRESS;
+	in.enableSSAO = (spaceDown && !spaceWasDown);
+	spaceWasDown = spaceDown;
+
 	// debug
 	in.debugOffPressed = (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS);
 	in.debugNormalPressed = (glfwGetKey(window_, GLFW_KEY_2) == GLFW_PRESS);
