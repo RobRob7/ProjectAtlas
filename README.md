@@ -5,12 +5,12 @@
 Features:
 </h3>
 
+- SSAO
 - Terrain generation using libnoise
 - Placement and deletion of blocks
 - World data persistence:
     - Auto-saving world state
     - Manual save system
-- SSAO
 
 <h2>
 Milestones
@@ -118,6 +118,7 @@ Project layout:
         - debugpass.cpp → gBuffer normal + depth view
         - gbufferpass.cpp → gBuffer pass
         - renderer.cpp → render pipeline
+        - ssaopass.cpp → SSAO pass
     - **save/**
         - save.cpp → world state saving
     - **system/**
@@ -128,6 +129,6 @@ Project layout:
         - texture.cpp → setup texture
 - **res/**
   - **shader/** → Shaders
-  - **texture/** → Textures (cubemap + blocks)
+  - **texture/** → Textures
 - **deps/** → Dependency files
 - **papers/** → Papers implemented
