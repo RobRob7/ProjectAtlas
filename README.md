@@ -10,7 +10,7 @@ Features:
 - World data persistence:
     - Auto-saving world state
     - Manual save system
-- SSAO (WIP)
+- SSAO
 
 <h2>
 Milestones
@@ -35,6 +35,11 @@ Milestones
 |----------------------------|--------------------------------|
 | *Working on implementing SSAO. Implemented G-Buffer with debug view for surface normals.* | *Working on implementing SSAO. Implemented G-Buffer with debug view for depth.* |
 | ![](milestones/4a_normals.png) | ![](milestones/4b_depth.png) |
+
+| SSAO (Off) | SSAO (On) |
+|----------------------------|--------------------------------|
+| *Previous version of engine before implementation of SSAO.* | *SSAO significantly improves scene depth by enhancing contact shadows at the intersections where blocks meet. This helps remove the flat appearance of the geometry.* |
+| ![](milestones/5a_SSAO_OFF.png) | ![](milestones/5b_SSAO_ON.png) |
 
 <h2>
 Requirements
