@@ -169,7 +169,7 @@ void Application::run()
 		scene_->render(glfwGetTime());
 
 		// draw top nav bar + inspector (on top)
-		DrawTopBar(window_, logoTex_);
+		drawTopBar(window_, logoTex_);
 		scene_->drawImGui(deltaTime_);
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -206,7 +206,7 @@ InputState Application::buildInputState()
 	// quit
 	in.quitRequested = (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS);
 
-	// camera enable/disable (edge-trigger optional; using "held" is okay but can spam)
+	// camera enable/disable
 	in.disableCameraPressed = (glfwGetKey(window_, GLFW_KEY_MINUS) == GLFW_PRESS);
 	in.enableCameraPressed = (glfwGetKey(window_, GLFW_KEY_EQUAL) == GLFW_PRESS);
 
@@ -229,9 +229,7 @@ InputState Application::buildInputState()
 	return in;
 } // end of buildInputState()
 
-
-//--- HELPER ---//
-void DrawTopBar(GLFWwindow* window, ImTextureID logoTex)
+void Application::drawTopBar(GLFWwindow* window, ImTextureID logoTex)
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 
@@ -274,7 +272,7 @@ void DrawTopBar(GLFWwindow* window, ImTextureID logoTex)
 	ImGui::SameLine();
 
 	// maximize/restore
-	if (ImGui::Button("|-|", ImVec2(btnSize, btnSize)))
+	if (ImGui::Button("[]", ImVec2(btnSize, btnSize)))
 	{
 		if (glfwGetWindowAttrib(window, GLFW_MAXIMIZED))
 			glfwRestoreWindow(window);

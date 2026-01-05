@@ -22,6 +22,7 @@ public:
 
 private:
 	InputState buildInputState();
+	void drawTopBar(GLFWwindow* window, ImTextureID logoTex);
 private:
 	// window top bar logo
 	uint32_t logoTex_;
@@ -50,6 +51,4 @@ private:
 
 	std::unique_ptr<Scene> scene_;
 };
-
-void DrawTopBar(GLFWwindow* window, ImTextureID logoTex);
 #endif
