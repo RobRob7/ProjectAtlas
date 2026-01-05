@@ -65,7 +65,7 @@ void Scene::update(float dt, const InputState& in)
 
 	if (in.quitRequested)
 	{
-		world_->saveWorld();
+		requestSave();
 		return;
 	}
 
