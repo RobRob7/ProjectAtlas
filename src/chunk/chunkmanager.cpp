@@ -178,6 +178,7 @@ void ChunkManager::setLastBlockUsed(BlockID block)
 void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step)
 {
 	BlockHit hit = raycastBlocks(origin, dir, maxDistanceRay_);
+	// place op
 	if (shouldPlace)
 	{
 		if (hit.hit)
@@ -186,10 +187,14 @@ void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin,
 			setBlock(placePos.x, placePos.y, placePos.z, lastBlockUsed_);
 		}
 	}
+	// destroy op
 	else
 	{
 		if (hit.hit)
 		{
+			// DISALLOW water deletion by player
+			if (getBlock(hit.block.x, hit.block.y, hit.block.z) == BlockID::Water) return;
+
 			setBlock(hit.block.x, hit.block.y, hit.block.z, BlockID::Air);
 		}
 	}
