@@ -2,14 +2,32 @@
 
 void DrawStatsWindow(float dt)
 {
-	ImGui::Begin("Stats");
+	ImGuiViewport* vp = ImGui::GetMainViewport();
 
-	ImGuiIO& io = ImGui::GetIO();
-	float ms = dt * 1000.0f;
+	ImVec2 pos = vp->WorkPos;
+	pos.x += 10.0f;
+	pos.y += 36.0f;
 
-	ImGui::Text("FPS: %.1f", io.Framerate);
-	ImGui::Text("Frame time: %.3f ms", ms);
+	ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+	ImGui::SetNextWindowBgAlpha(0.35f);
 
+	ImGuiWindowFlags flags =
+		ImGuiWindowFlags_NoDocking |
+		ImGuiWindowFlags_NoDecoration |
+		ImGuiWindowFlags_AlwaysAutoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_NoFocusOnAppearing |
+		ImGuiWindowFlags_NoNav;
+
+	if (ImGui::Begin("##FPSOverlay", nullptr, flags))
+	{
+		float ms = dt * 1000.0f;
+		float fps = (dt > 0.0f) ? (1.0f / dt) : 0.0f;
+
+		ImGui::Text("FPS: %.1f", fps);
+		ImGui::Text("Frame: %.3f ms", ms);
+	}
 	ImGui::End();
 } // end of DrawStatsWindow()
 

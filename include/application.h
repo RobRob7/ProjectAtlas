@@ -2,6 +2,7 @@
 #define APPLICATION_H
 
 #include "scene.h"
+#include "texture.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -21,8 +22,10 @@ public:
 
 private:
 	InputState buildInputState();
-
 private:
+	// window top bar logo
+	uint32_t logoTex_;
+
 	// place/delete block limit
 	bool leftMouseDown_  = false;
 	bool rightMouseDown_ = false;
@@ -48,4 +51,5 @@ private:
 	std::unique_ptr<Scene> scene_;
 };
 
+void DrawTopBar(GLFWwindow* window, ImTextureID logoTex);
 #endif

@@ -1,4 +1,4 @@
-#include "application.h"
+﻿#include "application.h"
 
 //--- PUBLIC ---//
 Application::Application(int width, int height, const char* windowTitle)
@@ -17,8 +17,13 @@ Application::Application(int width, int height, const char* windowTitle)
 	// specify OpenGL core-profile
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+	// disable top bar
+	glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+	// allow resizing
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
 	// WINDOW CREATION + CHECK
-	window_ = glfwCreateWindow(width_, height_, windowTitle_, nullptr, nullptr);
+	window_ = glfwCreateWindow(width_, height_, "", nullptr, nullptr);
 	if (!window_)
 	{
 		glfwTerminate();
@@ -77,6 +82,9 @@ Application::Application(int width, int height, const char* windowTitle)
 	// enable depth test
 	glEnable(GL_DEPTH_TEST);
 
+	// window top nav bar logo
+	logoTex_ = (ImTextureID)(intptr_t)Texture("blocks.png").m_ID;
+
 	// imgui init
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -98,6 +106,11 @@ Application::Application(int width, int height, const char* windowTitle)
 
 Application::~Application()
 {
+	// imgui shutdown
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
 	// destroy window if still active
 	if (window_) glfwDestroyWindow(window_);
 	glfwTerminate();
@@ -155,7 +168,8 @@ void Application::run()
 		// render scene
 		scene_->render(glfwGetTime());
 
-		// draw inspector (on top)
+		// draw top nav bar + inspector (on top)
+		DrawTopBar(window_, logoTex_);
 		scene_->drawImGui(deltaTime_);
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -214,3 +228,77 @@ InputState Application::buildInputState()
 
 	return in;
 } // end of buildInputState()
+
+
+//--- HELPER ---//
+void DrawTopBar(GLFWwindow* window, ImTextureID logoTex)
+{
+	ImGuiViewport* vp = ImGui::GetMainViewport();
+
+	const float barHeight = 36.0f;
+	const float padding = 8.0f;
+	const float btnSize = 18.0f;
+
+	ImGui::SetNextWindowPos(vp->Pos);
+	ImGui::SetNextWindowSize(ImVec2(vp->Size.x, barHeight));
+
+	ImGuiWindowFlags flags =
+		ImGuiWindowFlags_NoDocking |
+		ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoScrollbar |
+		ImGuiWindowFlags_NoSavedSettings;
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(padding, 6));
+	ImGui::Begin("##TopBar", nullptr, flags);
+	ImGui::PopStyleVar();
+
+	// ----- logo -----
+	ImGui::Image(logoTex, ImVec2(20, 20));
+	ImGui::SameLine();
+
+	// ----- title -----
+	ImGui::TextUnformatted("Project Atlas");
+	ImGui::SameLine();
+
+	// right-aligned window buttons
+	float right = ImGui::GetWindowContentRegionMax().x;
+
+	ImGui::SetCursorPosX(right - (btnSize * 3 + padding * 2));
+
+	// minimize
+	if (ImGui::Button("_", ImVec2(btnSize, btnSize)))
+		glfwIconifyWindow(window);
+
+	ImGui::SameLine();
+
+	// maximize/restore
+	if (ImGui::Button("|-|", ImVec2(btnSize, btnSize)))
+	{
+		if (glfwGetWindowAttrib(window, GLFW_MAXIMIZED))
+			glfwRestoreWindow(window);
+		else
+			glfwMaximizeWindow(window);
+	}
+
+	ImGui::SameLine();
+
+	// close
+	if (ImGui::Button("X", ImVec2(btnSize, btnSize)))
+		glfwSetWindowShouldClose(window, true);
+
+	// ----- window dragging -----
+	if (ImGui::IsWindowHovered() &&
+		ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+	{
+		double dx = ImGui::GetIO().MouseDelta.x;
+		double dy = ImGui::GetIO().MouseDelta.y;
+
+		int wx, wy;
+		glfwGetWindowPos(window, &wx, &wy);
+		glfwSetWindowPos(window, wx + (int)dx, wy + (int)dy);
+	}
+
+	ImGui::End();
+} // end of drawTopBar()
