@@ -7,9 +7,12 @@
 #include "chunkmanager.h"
 #include "light.h"
 
+#include "light_inspector.h"
+
 #include "renderer.h"
 
 #include <optional>
+#include <imgui.h>
 
 struct InputState
 {
@@ -57,6 +60,9 @@ public:
 
 	// saving feature
 	void requestSave();
+
+	// inspector
+	void drawImGui();
 
 private:
 	// width of window

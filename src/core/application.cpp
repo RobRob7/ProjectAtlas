@@ -76,6 +76,12 @@ Application::Application(int width, int height, const char* windowTitle)
 
 	// enable depth test
 	glEnable(GL_DEPTH_TEST);
+
+	// imgui init
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui_ImplGlfw_InitForOpenGL(window_, true);
+	ImGui_ImplOpenGL3_Init("#version 460 core");
 	
 	// setup scene
 	scene_ = std::make_unique<Scene>(width_, height_);
@@ -112,6 +118,11 @@ void Application::run()
 		// poll user input events
 		glfwPollEvents();
 
+		// imgui start
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
 		// process user input
 		InputState input = buildInputState();
 		scene_->update(deltaTime_, input);
@@ -135,6 +146,11 @@ void Application::run()
 
 		// render scene
 		scene_->render(glfwGetTime());
+
+		// draw inspector (on top)
+		scene_->drawImGui();
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		// swap buffers
 		glfwSwapBuffers(window_);

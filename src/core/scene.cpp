@@ -134,3 +134,17 @@ void Scene::requestSave()
 		world_->saveWorld();
 	}
 } // end of requestSave()
+
+void Scene::drawImGui()
+{
+	if (!light_) return;
+
+	ImGui::Begin("Inspector");
+
+	if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		DrawLightInspector(*light_);
+	}
+
+	ImGui::End();
+} // end of drawImGui
