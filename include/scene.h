@@ -62,7 +62,7 @@ public:
 	void requestSave();
 
 	// inspector
-	void drawImGui();
+	void drawImGui(float dt);
 
 private:
 	// width of window

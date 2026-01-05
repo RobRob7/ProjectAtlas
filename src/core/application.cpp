@@ -148,7 +148,7 @@ void Application::run()
 		scene_->render(glfwGetTime());
 
 		// draw inspector (on top)
-		scene_->drawImGui();
+		scene_->drawImGui(deltaTime_);
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

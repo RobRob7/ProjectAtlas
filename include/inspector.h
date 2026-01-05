@@ -9,6 +9,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+void DrawStatsWindow(float dt);
+
 void DrawLightInspector(Light& light);
 
 void DrawWorldInspector(ChunkManager& world);

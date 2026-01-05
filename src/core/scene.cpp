@@ -135,8 +135,11 @@ void Scene::requestSave()
 	}
 } // end of requestSave()
 
-void Scene::drawImGui()
+void Scene::drawImGui(float dt)
 {
+	// draw stats
+	DrawStatsWindow(dt);
+
 	if (!light_ || !world_) return;
 
 	ImGui::Begin("Inspector");

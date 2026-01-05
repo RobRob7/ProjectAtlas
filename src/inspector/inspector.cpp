@@ -1,5 +1,18 @@
 #include "inspector.h"
 
+void DrawStatsWindow(float dt)
+{
+	ImGui::Begin("Stats");
+
+	ImGuiIO& io = ImGui::GetIO();
+	float ms = dt * 1000.0f;
+
+	ImGui::Text("FPS: %.1f", io.Framerate);
+	ImGui::Text("Frame time: %.3f ms", ms);
+
+	ImGui::End();
+} // end of DrawStatsWindow()
+
 void DrawLightInspector(Light& light)
 {
 	glm::vec3 pos = light.getPosition();
