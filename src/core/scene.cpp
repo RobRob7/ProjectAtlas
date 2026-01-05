@@ -137,13 +137,18 @@ void Scene::requestSave()
 
 void Scene::drawImGui()
 {
-	if (!light_) return;
+	if (!light_ || !world_) return;
 
 	ImGui::Begin("Inspector");
 
 	if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		DrawLightInspector(*light_);
+	}
+
+	if (ImGui::CollapsingHeader("Ambient", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		DrawWorldInspector(*world_);
 	}
 
 	ImGui::End();

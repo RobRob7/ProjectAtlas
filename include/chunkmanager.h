@@ -39,10 +39,14 @@ public:
 	const std::optional<Shader>& getShader() const;
 	const glm::vec3& getLastCameraPos() const;
 
+	float getAmbientStrength() const;
+	void setAmbientStrength(float strength);
+
 	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
 
 	void saveWorld();
 private:
+	float ambientStrength_ = 0.5f;
 	Save saveWorld_;
 	std::optional<Shader> shader_;
 	std::optional<Texture> texture_;

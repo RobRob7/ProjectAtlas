@@ -8,6 +8,7 @@ uniform sampler2D u_atlas;
 uniform vec3 u_viewPos;
 uniform vec3 u_lightPos;
 uniform vec3 u_lightColor;
+uniform float u_ambientStrength;
 
 uniform vec2 u_screenSize;
 uniform bool u_useSSAO;
@@ -35,8 +36,7 @@ void main()
     float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
 
     // ambient
-    float ambientStrength = 0.5;
-    vec3 ambient = ambientStrength * texColor.rgb * ao;
+    vec3 ambient = u_ambientStrength * texColor.rgb * ao;
 
     // diffuse
     vec3 lightDir = normalize(u_lightPos - FragPos);

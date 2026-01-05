@@ -232,6 +232,16 @@ const glm::vec3& ChunkManager::getLastCameraPos() const
 	return lastCameraPos_;
 } // end of getLastCameraPos()
 
+float ChunkManager::getAmbientStrength() const
+{
+	return ambientStrength_;
+} // end of getAmbientStrength()
+
+void ChunkManager::setAmbientStrength(float strength)
+{
+	ambientStrength_ = strength;
+} // end of setAmbientStrength()
+
 
 //--- PRIVATE ---//
 BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float step) const

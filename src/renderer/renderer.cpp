@@ -63,6 +63,7 @@ void Renderer::renderFrame(const RenderInputs& in)
     // update uniforms of world shader
     auto& worldShader = in.world->getShader();
     worldShader->use();
+    worldShader->setFloat("u_ambientStrength", in.world->getAmbientStrength());
     worldShader->setVec3("u_viewPos", in.camera->getCameraPosition());
     worldShader->setVec3("u_lightPos", in.light->getPosition());
     worldShader->setVec3("u_lightColor", in.light->getColor());

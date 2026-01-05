@@ -7,7 +7,7 @@
 #include "chunkmanager.h"
 #include "light.h"
 
-#include "light_inspector.h"
+#include "inspector.h"
 
 #include "renderer.h"
 
