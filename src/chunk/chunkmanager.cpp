@@ -1,5 +1,88 @@
 #include "chunkmanager.h"
 
+//--- HELPER ---//
+struct Plane
+{
+	glm::vec3 n; // normal
+	float d;     // plane: dot(n, x) + d >= 0 is inside
+};
+
+struct Frustum
+{
+	Plane p[6]; // L, R, B, T, N, F
+};
+
+static Plane NormalizePlane(const Plane& pl)
+{
+	float len = glm::length(pl.n);
+	if (len <= 1e-8f) return pl;
+	return { pl.n / len, pl.d / len };
+} // end of NormalizePlane()
+
+static Frustum ExtractFrustumPlanes(const glm::mat4& VP)
+{
+	// GLM is column-major; to get row r: (VP[0][r], VP[1][r], VP[2][r], VP[3][r])
+	auto row = [&](int r) {
+		return glm::vec4(VP[0][r], VP[1][r], VP[2][r], VP[3][r]);
+		};
+
+	glm::vec4 r0 = row(0);
+	glm::vec4 r1 = row(1);
+	glm::vec4 r2 = row(2);
+	glm::vec4 r3 = row(3);
+
+	auto makePlane = [&](const glm::vec4& v) {
+		return NormalizePlane(Plane{ glm::vec3(v), v.w });
+		};
+
+	Frustum f;
+	f.p[0] = makePlane(r3 + r0); // Left
+	f.p[1] = makePlane(r3 - r0); // Right
+	f.p[2] = makePlane(r3 + r1); // Bottom
+	f.p[3] = makePlane(r3 - r1); // Top
+	f.p[4] = makePlane(r3 + r2); // Near
+	f.p[5] = makePlane(r3 - r2); // Far
+	return f;
+} // end of ExtractFrustumPlanes()
+
+struct AABB
+{
+	glm::vec3 min;
+	glm::vec3 max;
+};
+
+static glm::vec3 PositiveVertex(const AABB& b, const glm::vec3& n)
+{
+	return glm::vec3(
+		(n.x >= 0.0f) ? b.max.x : b.min.x,
+		(n.y >= 0.0f) ? b.max.y : b.min.y,
+		(n.z >= 0.0f) ? b.max.z : b.min.z
+	);
+} // end of PositiveVertex()
+
+static bool IntersectsFrustum(const AABB& box, const Frustum& f)
+{
+	for (int i = 0; i < 6; ++i)
+	{
+		const Plane& p = f.p[i];
+		glm::vec3 v = PositiveVertex(box, p.n);
+
+		// if the “most inside” corner is still outside, whole AABB is outside
+		if (glm::dot(p.n, v) + p.d < 0.0f)
+			return false;
+	} // end for
+	return true;
+} // end of IntersectsFrustum()
+
+static AABB ChunkWorldAABB(int chunkX, int chunkZ)
+{
+	glm::vec3 base = glm::vec3(chunkX * CHUNK_SIZE, 0.0f, chunkZ * CHUNK_SIZE);
+	glm::vec3 size = glm::vec3(CHUNK_SIZE, CHUNK_SIZE_Y, CHUNK_SIZE);
+
+	return { base, base + size };
+} // end of ChunkWorldAABB()
+
+
 //--- PUBLIC ---//
 ChunkManager::ChunkManager(int viewRadiusInChunks)
 	: viewRadius_(viewRadiusInChunks), lastBlockUsed_(BlockID::Dirt)
@@ -98,8 +181,18 @@ void ChunkManager::render(const glm::mat4& view, const glm::mat4& proj)
 	shader_->setMat4("u_view", view);
 	shader_->setMat4("u_proj", proj);
 
+	//
+	Frustum fr = ExtractFrustumPlanes(proj * view);
+
 	for (auto& [coord, chunk] : chunks_)
 	{
+		//
+		AABB box = ChunkWorldAABB(chunk->getChunk().m_chunkX, chunk->getChunk().m_chunkZ);
+		if (!IntersectsFrustum(box, fr))
+		{
+			continue;
+		}
+
 		chunk->renderChunk();
 	} // end for
 } // end of render()
@@ -110,8 +203,18 @@ void ChunkManager::render(Shader& shader, const glm::mat4& view, const glm::mat4
 	shader.setMat4("u_view", view);
 	shader.setMat4("u_proj", proj);
 
+	//
+	Frustum fr = ExtractFrustumPlanes(proj * view);
+
 	for (auto& [coord, chunk] : chunks_)
 	{
+		//
+		AABB box = ChunkWorldAABB(chunk->getChunk().m_chunkX, chunk->getChunk().m_chunkZ);
+		if (!IntersectsFrustum(box, fr))
+		{
+			continue;
+		}
+
 		chunk->renderChunk(shader);
 	} // end for
 } // end of render()
