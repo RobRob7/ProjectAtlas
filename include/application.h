@@ -22,7 +22,9 @@ public:
 
 private:
 	InputState buildInputState();
+	void drawUI();
 	void drawTopBar(GLFWwindow* window, ImTextureID logoTex);
+	void drawInspector();
 private:
 	// window top bar logo
 	uint32_t logoTex_;

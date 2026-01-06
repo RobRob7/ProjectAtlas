@@ -85,7 +85,7 @@ Application::Application(int width, int height, const char* windowTitle)
 	// window top nav bar logo
 	logoTex_ = (ImTextureID)(intptr_t)Texture("blocks.png").m_ID;
 
-	// imgui init
+	// ------ imgui init ------ //
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 
@@ -168,19 +168,8 @@ void Application::run()
 		// render scene
 		scene_->render(glfwGetTime());
 
-		// draw top nav bar + inspector (on top)
-		drawTopBar(window_, logoTex_);
-		scene_->drawImGui(deltaTime_);
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		{
-			GLFWwindow* backup = glfwGetCurrentContext();
-			ImGui::UpdatePlatformWindows();
-			ImGui::RenderPlatformWindowsDefault();
-			glfwMakeContextCurrent(backup);
-		}
+		// draw UI
+		drawUI();
 
 		// swap buffers
 		glfwSwapBuffers(window_);
@@ -228,6 +217,24 @@ InputState Application::buildInputState()
 
 	return in;
 } // end of buildInputState()
+
+void Application::drawUI()
+{
+	drawTopBar(window_, logoTex_);
+
+	drawInspector();
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		GLFWwindow* backup = glfwGetCurrentContext();
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+		glfwMakeContextCurrent(backup);
+	}
+} // end of drawUI()
 
 void Application::drawTopBar(GLFWwindow* window, ImTextureID logoTex)
 {
@@ -300,3 +307,8 @@ void Application::drawTopBar(GLFWwindow* window, ImTextureID logoTex)
 
 	ImGui::End();
 } // end of drawTopBar()
+
+void Application::drawInspector()
+{
+	scene_->drawImGui(deltaTime_);
+} // end of drawInspector()
