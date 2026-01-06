@@ -17,9 +17,7 @@ Features:
 Preview
 </h2>
 
-<p align="center">
-  <video src="milestones/demo/demo1.mp4" controls width="100%"></video>
-</p>
+![Alt Text 1](milestones/demo/demo1.gif)
 
 <h2>
 Milestones
