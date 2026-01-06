@@ -189,9 +189,9 @@ void ChunkManager::render(const glm::mat4& view, const glm::mat4& proj)
 	{
 		//
 		AABB box = ChunkWorldAABB(chunk->getChunk().m_chunkX, chunk->getChunk().m_chunkZ);
-		if (!IntersectsFrustum(box, fr))
+		if (enableFrustrumCulling_ && !IntersectsFrustum(box, fr))
 		{
-			if (enableFrustrumCulling_) continue;
+			continue;
 		}
 
 		// update count
@@ -216,9 +216,9 @@ void ChunkManager::render(Shader& shader, const glm::mat4& view, const glm::mat4
 	{
 		//
 		AABB box = ChunkWorldAABB(chunk->getChunk().m_chunkX, chunk->getChunk().m_chunkZ);
-		if (!IntersectsFrustum(box, fr))
+		if (enableFrustrumCulling_ && !IntersectsFrustum(box, fr))
 		{
-			if (enableFrustrumCulling_) continue;
+			continue;
 		}
 
 		// update count
@@ -292,6 +292,11 @@ int ChunkManager::getViewRadius() const
 {
 	return viewRadius_;
 } // end of getViewRadius()
+
+void ChunkManager::setViewRadius(int r)
+{
+	viewRadius_ = r;
+} // end of setViewRadius()
 
 const std::optional<Shader>& ChunkManager::getShader() const
 {

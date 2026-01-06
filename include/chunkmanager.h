@@ -37,6 +37,7 @@ public:
 	void setBlock(int wx, int wy, int wz, BlockID id);
 	void setLastBlockUsed(BlockID block);
 	int getViewRadius() const;
+	void setViewRadius(int r);
 	const std::optional<Shader>& getShader() const;
 	const glm::vec3& getLastCameraPos() const;
 

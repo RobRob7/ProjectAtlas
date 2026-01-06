@@ -197,6 +197,11 @@ float Camera::getFarPlane() const
 	return farPlane_;
 } // end of getFarPlane()
 
+void Camera::setFarPlane(float fp)
+{
+	farPlane_ = fp;
+} // end of setFarPlane()
+
 float Camera::getMovementSpeed() const
 {
 	return movementSpeed_;

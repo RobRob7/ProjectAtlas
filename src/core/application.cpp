@@ -1,5 +1,19 @@
 ﻿#include "application.h"
 
+//--- HELPER ---//
+size_t GetProcessMemoryMB()
+{
+	PROCESS_MEMORY_COUNTERS_EX pmc{};
+	GetProcessMemoryInfo(
+		GetCurrentProcess(),
+		(PROCESS_MEMORY_COUNTERS*)&pmc,
+		sizeof(pmc)
+	);
+
+	// Working Set = physical RAM currently used
+	return pmc.WorkingSetSize / (1024 * 1024);
+}
+
 //--- PUBLIC ---//
 Application::Application(int width, int height, const char* windowTitle)
 	: width_(width), height_(height), windowTitle_(windowTitle)
@@ -347,13 +361,16 @@ void Application::drawStatsFPS()
 		ImGuiWindowFlags_NoFocusOnAppearing |
 		ImGuiWindowFlags_NoNav;
 
-	if (ImGui::Begin("##FPSOverlay", nullptr, flags))
+	if (ImGui::Begin("##StatsOverlay", nullptr, flags))
 	{
 		float ms = deltaTime_ * 1000.0f;
 		float fps = (deltaTime_ > 0.0f) ? (1.0f / deltaTime_) : 0.0f;
 
 		ImGui::Text("FPS: %.1f", fps);
 		ImGui::Text("Frametime: %.3f ms", ms);
+
+		ImGui::Separator();
+		ImGui::Text("RAM (Working Set): %zu MB", GetProcessMemoryMB());
 	}
 	ImGui::End();
 } // end of drawStatsFPS()
@@ -417,6 +434,7 @@ void Application::drawInspector()
 		Camera& camera = scene_->getCamera();
 		float movementSpeed = camera.getMovementSpeed();
 		glm::vec3 pos = camera.getCameraPosition();
+		float fp = camera.getFarPlane();
 
 		bool changed = false;
 
@@ -432,10 +450,18 @@ void Application::drawInspector()
 			pos = glm::vec3(0.0f, 100.0f, 3.0f);
 			camera.setCameraPosition(pos);
 		}
+		changed |= ImGui::DragFloat("Far Plane##cam", &fp, 5.0f, 200.0f, 4000.0f);
+		if (ImGui::Button("Reset##cam_fp"))
+		{
+			fp = 200.0f;
+			camera.setFarPlane(fp);
+		}
 
 		if (changed)
 		{
+			camera.setMovementSpeed(movementSpeed);
 			camera.setCameraPosition(pos);
+			camera.setFarPlane(fp);
 		}
 	}
 
@@ -481,10 +507,18 @@ void Application::drawInspector()
 			ambientStrength = 0.5f;
 			world.setAmbientStrength(ambientStrength);
 		}
+		int viewRadius = world.getViewRadius();
+		changed |= ImGui::DragInt("View Radius##world", &viewRadius, 1, 1, 40);
+		if (ImGui::Button("Reset##radius"))
+		{
+			viewRadius = 12;
+			world.setViewRadius(viewRadius);
+		}
 
 		if (changed)
 		{
 			world.setAmbientStrength(ambientStrength);
+			world.setViewRadius(viewRadius);
 		}
 
 		ImGui::Separator();

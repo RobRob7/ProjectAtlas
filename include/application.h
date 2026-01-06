@@ -13,6 +13,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <memory>
+#include <windows.h>
+#include <psapi.h>
 
 struct RenderSettings
 {
@@ -70,4 +72,6 @@ private:
 
 	std::unique_ptr<Scene> scene_;
 };
+
+size_t GetProcessMemoryMB();
 #endif

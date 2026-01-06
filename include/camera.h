@@ -71,6 +71,7 @@ public:
 
 	float getNearPlane() const;
 	float getFarPlane() const;
+	void setFarPlane(float fp);
 
 	float getMovementSpeed() const;
 	void setMovementSpeed(float speed);
