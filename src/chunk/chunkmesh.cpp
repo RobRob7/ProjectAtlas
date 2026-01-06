@@ -118,6 +118,12 @@ void ChunkMesh::rebuild()
 	uploadChunkMesh();
 } // end of rebuild()
 
+uint32_t ChunkMesh::getRenderedBlockCount() const
+{
+	return renderedBlockCount_;
+} // end of getRenderedBlockCount()
+
+
 //--- PRIVATE ---//
 void ChunkMesh::buildChunkMesh()
 {
@@ -125,6 +131,8 @@ void ChunkMesh::buildChunkMesh()
 	indices_.clear();
 	vertices_.reserve(CHUNK_SIZE * CHUNK_SIZE * 24);
 	indices_.reserve(CHUNK_SIZE * CHUNK_SIZE * 24);
+
+	renderedBlockCount_ = 0;
 
 	// indexing
 	auto addFace = [&](const std::array<Vertex, 4> faceVerts,
@@ -164,35 +172,50 @@ void ChunkMesh::buildChunkMesh()
 				// air, skip
 				if (id == BlockID::Air) continue;
 
+				// count bool
+				bool emittedAnyFace = false;
+
 				// +X
 				if (isTransparent(x + 1, y, z))
 				{
 					addFace(FACE_POS_X, FACE_INDICES, x, y, z, id, FaceDir::PosX);
+					emittedAnyFace = true;
 				}
 				// -X
 				if (isTransparent(x - 1, y, z))
 				{
 					addFace(FACE_NEG_X, FACE_INDICES, x, y, z, id, FaceDir::NegX);
+					emittedAnyFace = true;
 				}
 				// +Y
 				if (isTransparent(x, y + 1, z))
 				{
 					addFace(FACE_POS_Y, FACE_INDICES, x, y, z, id, FaceDir::PosY);
+					emittedAnyFace = true;
 				}
 				// -Y
 				if (isTransparent(x, y - 1, z))
 				{
 					addFace(FACE_NEG_Y, FACE_INDICES, x, y, z, id, FaceDir::NegY);
+					emittedAnyFace = true;
 				}
 				// +Z
 				if (isTransparent(x, y, z + 1))
 				{
 					addFace(FACE_POS_Z, FACE_INDICES, x, y, z, id, FaceDir::PosZ);
+					emittedAnyFace = true;
 				}
 				// -Z
 				if (isTransparent(x, y, z - 1))
 				{
 					addFace(FACE_NEG_Z, FACE_INDICES, x, y, z, id, FaceDir::NegZ);
+					emittedAnyFace = true;
+				}
+
+				// count update
+				if (emittedAnyFace)
+				{
+					++renderedBlockCount_;
 				}
 			} // end for
 		} // end for

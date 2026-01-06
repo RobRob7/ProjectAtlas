@@ -13,6 +13,7 @@
 #include <queue>
 #include <memory>
 #include <optional>
+#include <cstdint>
 
 struct BlockHit
 {
@@ -45,11 +46,25 @@ public:
 	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
 
 	void saveWorld();
+
+	uint32_t getFrameChunksRendered() const;
+	uint32_t getFrameBlocksRendered() const;
+
+	bool statusFrustrumCulling() const;
+	void enableFrustrumCulling(bool enable);
+
 private:
 	float ambientStrength_ = 0.5f;
 	Save saveWorld_;
 	std::optional<Shader> shader_;
 	std::optional<Texture> texture_;
+
+	// frustrum culling toggle
+	bool enableFrustrumCulling_ = true;
+
+	// count
+	uint32_t frameChunksRendered_ = 0;
+	uint32_t frameBlocksRendered_ = 0;
 
 	glm::vec3 lastCameraPos_{};
 

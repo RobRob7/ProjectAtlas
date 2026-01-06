@@ -183,15 +183,20 @@ void ChunkManager::render(const glm::mat4& view, const glm::mat4& proj)
 
 	//
 	Frustum fr = ExtractFrustumPlanes(proj * view);
-
+	frameBlocksRendered_ = 0;
+	frameChunksRendered_ = 0;
 	for (auto& [coord, chunk] : chunks_)
 	{
 		//
 		AABB box = ChunkWorldAABB(chunk->getChunk().m_chunkX, chunk->getChunk().m_chunkZ);
 		if (!IntersectsFrustum(box, fr))
 		{
-			continue;
+			if (enableFrustrumCulling_) continue;
 		}
+
+		// update count
+		++frameChunksRendered_;
+		frameBlocksRendered_ += chunk->getRenderedBlockCount();
 
 		chunk->renderChunk();
 	} // end for
@@ -205,15 +210,20 @@ void ChunkManager::render(Shader& shader, const glm::mat4& view, const glm::mat4
 
 	//
 	Frustum fr = ExtractFrustumPlanes(proj * view);
-
+	frameBlocksRendered_ = 0;
+	frameChunksRendered_ = 0;
 	for (auto& [coord, chunk] : chunks_)
 	{
 		//
 		AABB box = ChunkWorldAABB(chunk->getChunk().m_chunkX, chunk->getChunk().m_chunkZ);
 		if (!IntersectsFrustum(box, fr))
 		{
-			continue;
+			if (enableFrustrumCulling_) continue;
 		}
+
+		// update count
+		++frameChunksRendered_;
+		frameBlocksRendered_ += chunk->getRenderedBlockCount();
 
 		chunk->renderChunk(shader);
 	} // end for
@@ -278,6 +288,31 @@ void ChunkManager::setLastBlockUsed(BlockID block)
 	lastBlockUsed_ = block;
 } // end of setLastBlockUsed()
 
+int ChunkManager::getViewRadius() const
+{
+	return viewRadius_;
+} // end of getViewRadius()
+
+const std::optional<Shader>& ChunkManager::getShader() const
+{
+	return shader_;
+} // end of getShader()
+
+const glm::vec3& ChunkManager::getLastCameraPos() const
+{
+	return lastCameraPos_;
+} // end of getLastCameraPos()
+
+float ChunkManager::getAmbientStrength() const
+{
+	return ambientStrength_;
+} // end of getAmbientStrength()
+
+void ChunkManager::setAmbientStrength(float strength)
+{
+	ambientStrength_ = strength;
+} // end of setAmbientStrength()
+
 void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step)
 {
 	BlockHit hit = raycastBlocks(origin, dir, maxDistanceRay_);
@@ -320,30 +355,25 @@ void ChunkManager::saveWorld()
 	} // end for
 } // end of saveWorld()
 
-int ChunkManager::getViewRadius() const
+uint32_t ChunkManager::getFrameChunksRendered() const
 {
-	return viewRadius_;
-} // end of getViewRadius()
+	return frameChunksRendered_;
+} // end of getFrameChunksRendered()
 
-const std::optional<Shader>& ChunkManager::getShader() const
+uint32_t ChunkManager::getFrameBlocksRendered() const
 {
-	return shader_;
-} // end of getShader()
+	return frameBlocksRendered_;
+} // end of getFrameBlocksRendered()
 
-const glm::vec3& ChunkManager::getLastCameraPos() const
+bool ChunkManager::statusFrustrumCulling() const
 {
-	return lastCameraPos_;
-} // end of getLastCameraPos()
+	return enableFrustrumCulling_;
+} // end of statusFrustrumCulling()
 
-float ChunkManager::getAmbientStrength() const
+void ChunkManager::enableFrustrumCulling(bool enable)
 {
-	return ambientStrength_;
-} // end of getAmbientStrength()
-
-void ChunkManager::setAmbientStrength(float strength)
-{
-	ambientStrength_ = strength;
-} // end of setAmbientStrength()
+	enableFrustrumCulling_ = enable;
+} // end of enableFrustrumCulling()
 
 
 //--- PRIVATE ---//

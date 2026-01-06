@@ -113,6 +113,8 @@ public:
     ChunkData& getChunk();
     void rebuild();
 
+    uint32_t getRenderedBlockCount() const;
+
 private:
 	std::vector<Vertex> vertices_;
 	std::vector<uint32_t> indices_;
@@ -125,6 +127,8 @@ private:
     uint32_t vbo_{};
     uint32_t ebo_{};
     int32_t indexCount_{};
+    // count
+    uint32_t renderedBlockCount_ = 0;
 private:
 	void buildChunkMesh();
 	bool isTransparent(int x, int y, int z);

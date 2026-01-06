@@ -34,7 +34,7 @@ Application::Application(int width, int height, const char* windowTitle)
 	glfwMakeContextCurrent(window_);
 
 	// vsync
-	glfwSwapInterval(1);
+	glfwSwapInterval(renderSettings_.enableVsync);
 
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -353,7 +353,7 @@ void Application::drawStatsFPS()
 		float fps = (deltaTime_ > 0.0f) ? (1.0f / deltaTime_) : 0.0f;
 
 		ImGui::Text("FPS: %.1f", fps);
-		ImGui::Text("Frame: %.3f ms", ms);
+		ImGui::Text("Frametime: %.3f ms", ms);
 	}
 	ImGui::End();
 } // end of drawStatsFPS()
@@ -382,6 +382,28 @@ void Application::drawInspector()
 			break;
 		}
 		ImGui::Text("Render Mode:\n %s", mode.data());
+
+		ImGui::Separator();
+
+		// render count + status
+		ChunkManager& world = scene_->getWorld();
+		bool frustrumCulling = world.statusFrustrumCulling();
+		if (ImGui::Checkbox("Frustrum Culling##render", &frustrumCulling))
+		{
+			world.enableFrustrumCulling(frustrumCulling);
+		}
+		ImGui::Text("Chunks Rendered: %d", world.getFrameChunksRendered());
+		ImGui::Text("Blocks Rendered: %d", world.getFrameBlocksRendered());
+
+		ImGui::Separator();
+
+		// GRAPHICS OPTIONS
+		ImGui::Text("Graphics Options:");
+		// VSync toggle
+		if (ImGui::Checkbox("VSync##render", &renderSettings_.enableVsync))
+		{
+			glfwSwapInterval(renderSettings_.enableVsync);
+		}
 
 		// SSAO toggle
 		ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
@@ -449,9 +471,9 @@ void Application::drawInspector()
 	// ------- world -------
 	if (ImGui::CollapsingHeader("World", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		ChunkManager& world = scene_->getWorld();
 		bool changed = false;
 
+		ChunkManager& world = scene_->getWorld();
 		float ambientStrength = world.getAmbientStrength();
 		changed |= ImGui::DragFloat("Ambient Strength##world", &ambientStrength, 0.01f, 0.0f, 0.5f);
 		if (ImGui::Button("Reset##amb"))
