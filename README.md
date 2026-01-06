@@ -17,7 +17,9 @@ Features:
 Preview
 </h2>
 
-![Alt Text 1](milestones/demo/demo1.gif)
+<video width="600" autoplay loop muted playsinline>
+  <source src="milestones/demo/demo1.mp4" type="video/mp4">
+</video>
 
 <h2>
 Milestones
