@@ -196,15 +196,15 @@ InputState Application::buildInputState()
 
 
 	// debug
-	if (in.debugOffPressed = (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS))
+	if (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS)
 	{
 		renderSettings_.debugMode = DebugMode::None;
 	}
-	if (in.debugNormalPressed = (glfwGetKey(window_, GLFW_KEY_2) == GLFW_PRESS))
+	if (glfwGetKey(window_, GLFW_KEY_2) == GLFW_PRESS)
 	{
 		renderSettings_.debugMode = DebugMode::Normals;
 	}
-	if (in.debugDepthPressed = (glfwGetKey(window_, GLFW_KEY_3) == GLFW_PRESS))
+	if (glfwGetKey(window_, GLFW_KEY_3) == GLFW_PRESS)
 	{
 		renderSettings_.debugMode = DebugMode::Depth;
 	}
