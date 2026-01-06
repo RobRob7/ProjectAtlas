@@ -39,19 +39,12 @@ void Scene::render(RenderInputs& in)
 	in.skybox = &*skybox_;
 	in.crosshair = &*crosshair_;
 
-	in.debugMode = debugMode_;
-
 	renderer_.renderFrame(in);
 } // end of render()
 
 void Scene::update(float dt, const InputState& in)
 {
 	if (!camera_ || !world_) return;
-
-	// debug mode
-	if (in.debugNormalPressed)	debugMode_ = DebugMode::Normals;
-	if (in.debugDepthPressed)	debugMode_ = DebugMode::Depth;
-	if (in.debugOffPressed)		debugMode_ = DebugMode::None;
 
 	if (in.quitRequested)
 	{

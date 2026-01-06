@@ -168,6 +168,7 @@ void Application::run()
 		// render scene
 		in_.time = glfwGetTime();
 		in_.useSSAO = renderSettings_.useSSAO;
+		in_.debugMode = renderSettings_.debugMode;
 		scene_->render(in_);
 
 		// draw UI
@@ -195,9 +196,18 @@ InputState Application::buildInputState()
 
 
 	// debug
-	in.debugOffPressed = (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS);
-	in.debugNormalPressed = (glfwGetKey(window_, GLFW_KEY_2) == GLFW_PRESS);
-	in.debugDepthPressed = (glfwGetKey(window_, GLFW_KEY_3) == GLFW_PRESS);
+	if (in.debugOffPressed = (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS))
+	{
+		renderSettings_.debugMode = DebugMode::None;
+	}
+	if (in.debugNormalPressed = (glfwGetKey(window_, GLFW_KEY_2) == GLFW_PRESS))
+	{
+		renderSettings_.debugMode = DebugMode::Normals;
+	}
+	if (in.debugDepthPressed = (glfwGetKey(window_, GLFW_KEY_3) == GLFW_PRESS))
+	{
+		renderSettings_.debugMode = DebugMode::Depth;
+	}
 
 	// quit
 	in.quitRequested = (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS);
@@ -355,7 +365,28 @@ void Application::drawInspector()
 	// ------- renderer -------
 	if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen))
 	{
+		// render mode
+		std::string_view mode = "ERROR!";
+		switch (in_.debugMode)
+		{
+		case DebugMode::None:
+			mode = "Default";
+			break;
+		case DebugMode::Normals:
+			mode = "Normals";
+			break;
+		case DebugMode::Depth:
+			mode = "Depth";
+			break;
+		default:
+			break;
+		}
+		ImGui::Text("Render Mode:\n %s", mode.data());
+
+		// SSAO toggle
 		ImGui::Checkbox("SSAO", &renderSettings_.useSSAO);
+
+		ImGui::Separator();
 	}
 
 	// ------- light -------

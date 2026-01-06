@@ -16,6 +16,7 @@
 
 struct RenderSettings
 {
+	DebugMode debugMode = DebugMode::None;
 	bool useSSAO = false;
 };
 

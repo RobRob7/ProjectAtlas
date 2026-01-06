@@ -26,11 +26,6 @@ struct InputState
 	bool placeBlockPressed = false;
 	bool removeBlockPressed = false;
 	bool quitRequested = false;
-
-	// debug
-	bool debugOffPressed = false;		// '1' key
-	bool debugNormalPressed = false;	// '2' key
-	bool debugDepthPressed = false;		// '3' key
 };
 
 class Scene
@@ -70,7 +65,6 @@ private:
 
 	// render pipeline
 	Renderer renderer_;
-	DebugMode debugMode_ = DebugMode::None;
 
 	// objects
 	std::optional<Camera> camera_;
