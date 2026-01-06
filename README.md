@@ -6,11 +6,20 @@ Features:
 </h3>
 
 - SSAO
+- Frustrum Culling
 - Terrain generation using libnoise
 - Placement and deletion of blocks
 - World data persistence:
     - Auto-saving world state
     - Manual save system
+
+<h2>
+Preview
+</h2>
+
+<p align="center">
+  <video src="milestones/demo/demo1.mp4" controls width="100%"></video>
+</p>
 
 <h2>
 Milestones
@@ -38,8 +47,14 @@ Milestones
 
 | SSAO (Off) | SSAO (On) |
 |----------------------------|--------------------------------|
-| *Previous version of engine before implementation of SSAO.* | *SSAO significantly improves scene depth by enhancing contact shadows at the intersections where blocks meet. This helps remove the flat appearance of the geometry.* |
+| *Previous version of engine before implementation of SSAO.* | *SSAO significantly improves scene depth by enhancing contact shadows at the intersections where blocks meet. This helps improve the detail of the geometry.* |
 | ![](milestones/5a_SSAO_OFF.png) | ![](milestones/5b_SSAO_ON.png) |
+
+| Frustrum Culling (Off) | Frustrum Culling (On) |
+|----------------------------|--------------------------------|
+| *Previous version of engine without frustrum culling.* | *Frustrum culling is an optimization used to render ONLY the blocks found inside the camera view frustrum. This cuts down on the number of chunks/blocks being rendered considerably.* |
+| ![](milestones/6a2_FC_OFF.png) | ![](milestones/6b2_FC_ON.png) |
+|  | ![Alt Text 1](milestones/VisualCameraFrustum.png) | 
 
 <h2>
 Requirements
