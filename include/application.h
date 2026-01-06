@@ -9,8 +9,15 @@
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_glfw.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <memory>
+
+struct RenderSettings
+{
+	bool useSSAO = false;
+};
 
 class Application
 {
@@ -22,12 +29,20 @@ public:
 
 private:
 	InputState buildInputState();
-	void drawUI();
+
+	void drawFullUI();
+
 	void drawTopBar(GLFWwindow* window, ImTextureID logoTex);
+	void drawStatsFPS();
 	void drawInspector();
 private:
 	// window top bar logo
 	uint32_t logoTex_;
+
+	RenderInputs in_;
+
+	// graphics options
+	RenderSettings renderSettings_;
 
 	// place/delete block limit
 	bool leftMouseDown_  = false;

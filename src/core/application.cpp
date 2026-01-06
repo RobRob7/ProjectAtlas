@@ -166,10 +166,12 @@ void Application::run()
 		///////////////////////////////////
 
 		// render scene
-		scene_->render(glfwGetTime());
+		in_.time = glfwGetTime();
+		in_.useSSAO = renderSettings_.useSSAO;
+		scene_->render(in_);
 
 		// draw UI
-		drawUI();
+		drawFullUI();
 
 		// swap buffers
 		glfwSwapBuffers(window_);
@@ -180,12 +182,17 @@ void Application::run()
 InputState Application::buildInputState()
 {
 	InputState in{};
-
-	// graphics options
+	
+	// ------- graphics options -------
+	// SSAO
 	static bool spaceWasDown = false;
 	bool spaceDown = glfwGetKey(window_, GLFW_KEY_SPACE) == GLFW_PRESS;
-	in.enableSSAO = (spaceDown && !spaceWasDown);
+	if (spaceDown && !spaceWasDown)
+	{
+		renderSettings_.useSSAO = !renderSettings_.useSSAO;
+	}
 	spaceWasDown = spaceDown;
+
 
 	// debug
 	in.debugOffPressed = (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS);
@@ -218,9 +225,11 @@ InputState Application::buildInputState()
 	return in;
 } // end of buildInputState()
 
-void Application::drawUI()
+void Application::drawFullUI()
 {
 	drawTopBar(window_, logoTex_);
+
+	drawStatsFPS();
 
 	drawInspector();
 
@@ -308,7 +317,98 @@ void Application::drawTopBar(GLFWwindow* window, ImTextureID logoTex)
 	ImGui::End();
 } // end of drawTopBar()
 
+void Application::drawStatsFPS()
+{
+	ImGuiViewport* vp = ImGui::GetMainViewport();
+
+	ImVec2 pos = vp->WorkPos;
+	pos.x += 10.0f;
+	pos.y += 36.0f;
+
+	ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+	ImGui::SetNextWindowBgAlpha(0.35f);
+
+	ImGuiWindowFlags flags =
+		ImGuiWindowFlags_NoDocking |
+		ImGuiWindowFlags_NoDecoration |
+		ImGuiWindowFlags_AlwaysAutoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_NoFocusOnAppearing |
+		ImGuiWindowFlags_NoNav;
+
+	if (ImGui::Begin("##FPSOverlay", nullptr, flags))
+	{
+		float ms = deltaTime_ * 1000.0f;
+		float fps = (deltaTime_ > 0.0f) ? (1.0f / deltaTime_) : 0.0f;
+
+		ImGui::Text("FPS: %.1f", fps);
+		ImGui::Text("Frame: %.3f ms", ms);
+	}
+	ImGui::End();
+} // end of drawStatsFPS()
+
 void Application::drawInspector()
 {
-	scene_->drawImGui(deltaTime_);
+	ImGui::Begin("Inspector");
+
+	// ------- renderer -------
+	if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("SSAO", &renderSettings_.useSSAO);
+	}
+
+	// ------- light -------
+	if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		Light& light = scene_->getLight();
+		glm::vec3 pos = light.getPosition();
+		glm::vec3 color = light.getColor();
+
+		bool changed = false;
+
+		changed |= ImGui::DragFloat3("Position", glm::value_ptr(pos), 0.1f);
+		if (ImGui::Button("Reset##pos"))
+		{
+			light.setPosition(glm::vec3(0.0f, 100.0f, 3.0f));
+		}
+		changed |= ImGui::ColorEdit3("Color", glm::value_ptr(color));
+		if (ImGui::Button("Reset##Color"))
+		{
+			light.setColor(glm::vec3(1.0f));
+		}
+
+		if (changed)
+		{
+			light.setPosition(pos);
+			light.setColor(color);
+		}
+
+		ImGui::Separator();
+	}
+
+	// ------- world -------
+	if (ImGui::CollapsingHeader("World", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ChunkManager& world = scene_->getWorld();
+		bool changed = false;
+
+		float ambientStrength = world.getAmbientStrength();
+		changed |= ImGui::DragFloat("Ambient Strength", &ambientStrength, 0.01f, 0.0f, 0.5f);
+		if (ImGui::Button("Reset##amb"))
+		{
+			ambientStrength = 0.5f;
+			world.setAmbientStrength(ambientStrength);
+		}
+
+		if (changed)
+		{
+			world.setAmbientStrength(ambientStrength);
+		}
+
+		ImGui::Separator();
+	}
+
+	ImGui::End();
+
 } // end of drawInspector()

@@ -7,12 +7,9 @@
 #include "chunkmanager.h"
 #include "light.h"
 
-#include "inspector.h"
-
 #include "renderer.h"
 
 #include <optional>
-#include <imgui.h>
 
 struct InputState
 {
@@ -30,9 +27,6 @@ struct InputState
 	bool removeBlockPressed = false;
 	bool quitRequested = false;
 
-	// graphics options
-	bool enableSSAO = false;
-
 	// debug
 	bool debugOffPressed = false;		// '1' key
 	bool debugNormalPressed = false;	// '2' key
@@ -47,8 +41,8 @@ public:
 	// setup scene entities
 	void init();
 
-	// render scene entities
-	void render(float glfwTime);
+	// render scene
+	void render(RenderInputs& in);
 
 	// handle user inputs
 	void update(float dt, const InputState& in);
@@ -61,8 +55,12 @@ public:
 	// saving feature
 	void requestSave();
 
-	// inspector
-	void drawImGui(float dt);
+	// getters
+	Camera& getCamera();
+	CubeMap& getSkybox();
+	ChunkManager& getWorld();
+	Light& getLight();
+	Renderer& getRenderer();
 
 private:
 	// width of window
@@ -73,9 +71,6 @@ private:
 	// render pipeline
 	Renderer renderer_;
 	DebugMode debugMode_ = DebugMode::None;
-
-	// graphics options
-	bool useSSAO_ = false;
 
 	// objects
 	std::optional<Camera> camera_;

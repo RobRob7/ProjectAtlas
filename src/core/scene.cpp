@@ -27,23 +27,19 @@ void Scene::init()
 	light_->init();
 } // end of init
 
-void Scene::render(float glfwTime)
+void Scene::render(RenderInputs& in)
 {
 	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
 	renderer_.resize(width_, height_);
 
-	RenderInputs in;
 	in.world = &*world_;
 	in.camera = &*camera_;
 	in.light = &*light_;
 	in.skybox = &*skybox_;
 	in.crosshair = &*crosshair_;
 
-	in.time = glfwTime;
 	in.debugMode = debugMode_;
-
-	in.useSSAO = useSSAO_;
 
 	renderer_.renderFrame(in);
 } // end of render()
@@ -56,12 +52,6 @@ void Scene::update(float dt, const InputState& in)
 	if (in.debugNormalPressed)	debugMode_ = DebugMode::Normals;
 	if (in.debugDepthPressed)	debugMode_ = DebugMode::Depth;
 	if (in.debugOffPressed)		debugMode_ = DebugMode::None;
-
-	// graphics options
-	if (in.enableSSAO)
-	{
-		useSSAO_ = !useSSAO_;
-	}
 
 	if (in.quitRequested)
 	{
@@ -135,24 +125,27 @@ void Scene::requestSave()
 	}
 } // end of requestSave()
 
-void Scene::drawImGui(float dt)
+Camera& Scene::getCamera()
 {
-	// draw stats
-	DrawStatsWindow(dt);
+	return *camera_;
+} // end of getCamera()
 
-	if (!light_ || !world_) return;
+CubeMap& Scene::getSkybox()
+{
+	return *skybox_;
+} // end of getSkybox()
 
-	ImGui::Begin("Inspector");
+ChunkManager& Scene::getWorld()
+{
+	return *world_;
+} // end of getWorld()
 
-	if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		DrawLightInspector(*light_);
-	}
+Light& Scene::getLight()
+{
+	return *light_;
+} // end of getLight()
 
-	if (ImGui::CollapsingHeader("Ambient", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		DrawWorldInspector(*world_);
-	}
-
-	ImGui::End();
-} // end of drawImGui
+Renderer& Scene::getRenderer()
+{
+	return renderer_;
+} // end of getRenderer()
