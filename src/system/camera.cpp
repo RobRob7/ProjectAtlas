@@ -177,6 +177,11 @@ glm::vec3 Camera::getCameraPosition() const
 	return position_;
 } // end of getCameraPosition()
 
+void Camera::setCameraPosition(glm::vec3 pos)
+{
+	position_ = pos;
+} // end of setCameraPosition()
+
 glm::vec3 Camera::getCameraDirection() const
 {
 	return front_;
@@ -191,6 +196,16 @@ float Camera::getFarPlane() const
 {
 	return farPlane_;
 } // end of getFarPlane()
+
+float Camera::getMovementSpeed() const
+{
+	return movementSpeed_;
+} // end of getMovementSpeed()
+
+void Camera::setMovementSpeed(float speed)
+{
+	movementSpeed_ = speed;
+} // end of setMovementSpeed()
 
 
 //--- PRIVATE ---//

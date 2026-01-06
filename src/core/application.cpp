@@ -384,9 +384,37 @@ void Application::drawInspector()
 		ImGui::Text("Render Mode:\n %s", mode.data());
 
 		// SSAO toggle
-		ImGui::Checkbox("SSAO", &renderSettings_.useSSAO);
+		ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
 
 		ImGui::Separator();
+	}
+
+	// ------- camera -------
+	if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		Camera& camera = scene_->getCamera();
+		float movementSpeed = camera.getMovementSpeed();
+		glm::vec3 pos = camera.getCameraPosition();
+
+		bool changed = false;
+
+		changed |= ImGui::DragFloat("Movement Speed##cam", &movementSpeed, 0.1f, 2.5f, 7.5f);
+		if (ImGui::Button("Reset##cam_mov"))
+		{
+			movementSpeed = 2.5f;
+			camera.setMovementSpeed(movementSpeed);
+		}
+		changed |= ImGui::DragFloat3("Position##cam", glm::value_ptr(pos), 0.1f);
+		if (ImGui::Button("Reset##cam_pos"))
+		{
+			pos = glm::vec3(0.0f, 100.0f, 3.0f);
+			camera.setCameraPosition(pos);
+		}
+
+		if (changed)
+		{
+			camera.setCameraPosition(pos);
+		}
 	}
 
 	// ------- light -------
@@ -398,12 +426,12 @@ void Application::drawInspector()
 
 		bool changed = false;
 
-		changed |= ImGui::DragFloat3("Position", glm::value_ptr(pos), 0.1f);
+		changed |= ImGui::DragFloat3("Position##light", glm::value_ptr(pos), 0.1f);
 		if (ImGui::Button("Reset##pos"))
 		{
 			light.setPosition(glm::vec3(0.0f, 100.0f, 3.0f));
 		}
-		changed |= ImGui::ColorEdit3("Color", glm::value_ptr(color));
+		changed |= ImGui::ColorEdit3("Color##light", glm::value_ptr(color));
 		if (ImGui::Button("Reset##Color"))
 		{
 			light.setColor(glm::vec3(1.0f));
@@ -425,7 +453,7 @@ void Application::drawInspector()
 		bool changed = false;
 
 		float ambientStrength = world.getAmbientStrength();
-		changed |= ImGui::DragFloat("Ambient Strength", &ambientStrength, 0.01f, 0.0f, 0.5f);
+		changed |= ImGui::DragFloat("Ambient Strength##world", &ambientStrength, 0.01f, 0.0f, 0.5f);
 		if (ImGui::Button("Reset##amb"))
 		{
 			ambientStrength = 0.5f;

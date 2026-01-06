@@ -65,10 +65,15 @@ public:
 	glm::mat4 getProjectionMatrix(float aspectRatio, float nearPlane = 0.1f, float farPlane = 200.0f) const;
 
 	glm::vec3 getCameraPosition() const;
+	void setCameraPosition(glm::vec3 pos);
+
 	glm::vec3 getCameraDirection() const;
 
 	float getNearPlane() const;
 	float getFarPlane() const;
+
+	float getMovementSpeed() const;
+	void setMovementSpeed(float speed);
 
 private:
 	// width of window
