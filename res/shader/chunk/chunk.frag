@@ -50,11 +50,17 @@ void main()
     float spec = 0.0;
     // blinn-phong
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    float shininess = 16.0;
+    float shininess = 32.0;
     float specStrength = 0.08;
     spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
     vec3 specular = u_lightColor * spec * specStrength * texColor.rgb;
 
+    // allow AO to affect diffuse, specular lighting
+    vec3 direct = (diffuse + specular);
+    float aoStrength = pow(ao, 2.0);
+    // max darkening ~60%
+    direct *= mix(0.4, 1.0, aoStrength);
+
     // ambient receives no attenuation
-    FragColor = vec4(ambient + (diffuse + specular) * attenuation, 1.0);
+    FragColor = vec4(ambient + (direct) * attenuation, 1.0);
 }

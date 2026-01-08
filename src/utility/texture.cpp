@@ -66,8 +66,8 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 
 	glTextureParameteri(m_ID, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	glTextureParameteri(m_ID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// free image
 	stbi_image_free(data);
