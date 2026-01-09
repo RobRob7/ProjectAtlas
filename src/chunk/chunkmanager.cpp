@@ -339,6 +339,8 @@ void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin,
 			if (getBlock(hit.block.x, hit.block.y, hit.block.z) == BlockID::Water) return;
 
 			setBlock(hit.block.x, hit.block.y, hit.block.z, BlockID::Air);
+			// remove block from counter
+			--frameBlocksRendered_;
 		}
 	}
 } // end of placeOrRemoveBlock()
