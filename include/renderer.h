@@ -20,6 +20,18 @@ enum class DebugMode : int
 	Depth	= 2, // '3' key
 };
 
+//struct RenderSettings
+//{
+//	// debug view mode
+//	DebugMode debugMode = DebugMode::None;
+//
+//	// display options
+//	bool enableVsync = true;
+//
+//	// graphics options
+//	bool useSSAO = false;
+//};
+
 struct RenderInputs
 {
 	ChunkManager* world = nullptr;

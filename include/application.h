@@ -2,6 +2,7 @@
 #define APPLICATION_H
 
 #include "scene.h"
+#include "renderer.h"
 #include "texture.h"
 
 #include <glad/glad.h>
@@ -71,6 +72,7 @@ private:
 	float autoSaveTime_ = 5;
 
 	std::unique_ptr<Scene> scene_;
+	std::unique_ptr<Renderer> renderer_;
 };
 
 size_t GetProcessMemoryMB();

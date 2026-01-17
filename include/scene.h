@@ -33,11 +33,11 @@ class Scene
 public:
 	Scene(float w, float h);
 
-	// setup scene entities
-	void init();
+	// setup scene with renderer
+	void init(Renderer& renderer);
 
 	// render scene
-	void render(RenderInputs& in);
+	void render(Renderer& renderer, RenderInputs& in);
 
 	// handle user inputs
 	void update(float dt, const InputState& in);
@@ -55,16 +55,12 @@ public:
 	CubeMap& getSkybox();
 	ChunkManager& getWorld();
 	Light& getLight();
-	Renderer& getRenderer();
 
 private:
 	// width of window
 	float width_;
 	// height of window
 	float height_;
-
-	// render pipeline
-	Renderer renderer_;
 
 	// objects
 	std::optional<Camera> camera_;

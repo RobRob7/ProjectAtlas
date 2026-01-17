@@ -113,9 +113,10 @@ Application::Application(int width, int height, const char* windowTitle)
 	ImGui_ImplGlfw_InitForOpenGL(window_, true);
 	ImGui_ImplOpenGL3_Init("#version 460 core");
 	
-	// setup scene
+	// setup scene + renderer
 	scene_ = std::make_unique<Scene>(width_, height_);
-	scene_->init();
+	renderer_ = std::make_unique<Renderer>();
+	scene_->init(*renderer_);
 } // end of constructor
 
 Application::~Application()
@@ -183,7 +184,7 @@ void Application::run()
 		in_.time = glfwGetTime();
 		in_.useSSAO = renderSettings_.useSSAO;
 		in_.debugMode = renderSettings_.debugMode;
-		scene_->render(in_);
+		scene_->render(*renderer_, in_);
 
 		// draw UI
 		drawFullUI();
