@@ -12,6 +12,7 @@
 #include "ssaopass.h"
 
 #include <glm/glm.hpp>
+#include <glad/glad.h>
 
 enum class DebugMode : int
 {
@@ -20,17 +21,17 @@ enum class DebugMode : int
 	Depth	= 2, // '3' key
 };
 
-//struct RenderSettings
-//{
-//	// debug view mode
-//	DebugMode debugMode = DebugMode::None;
-//
-//	// display options
-//	bool enableVsync = true;
-//
-//	// graphics options
-//	bool useSSAO = false;
-//};
+struct RenderSettings
+{
+	// debug view mode
+	DebugMode debugMode = DebugMode::None;
+
+	// display options
+	bool enableVsync = true;
+
+	// graphics options
+	bool useSSAO = false;
+};
 
 struct RenderInputs
 {
@@ -41,10 +42,6 @@ struct RenderInputs
 	Crosshair* crosshair = nullptr;
 
 	float time = 0.0f;
-
-	DebugMode debugMode = DebugMode::None;
-
-	bool useSSAO = false;
 };
 
 class Renderer
@@ -54,6 +51,8 @@ public:
 	void resize(float w, float h);
 	void renderFrame(const RenderInputs& in);
 
+	RenderSettings& settings();
+
 private:
 	float width_{};
 	float height_{};
@@ -62,6 +61,8 @@ private:
 	GBufferPass gbuffer_;
 	DebugPass debugPass_;
 	SSAOPass ssaoPass_;
+
+	RenderSettings renderSettings_;
 };
 
 #endif

@@ -48,7 +48,7 @@ Application::Application(int width, int height, const char* windowTitle)
 	glfwMakeContextCurrent(window_);
 
 	// vsync
-	glfwSwapInterval(renderSettings_.enableVsync);
+	//glfwSwapInterval(renderSettings_.enableVsync);
 
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -182,8 +182,6 @@ void Application::run()
 
 		// render scene
 		in_.time = glfwGetTime();
-		in_.useSSAO = renderSettings_.useSSAO;
-		in_.debugMode = renderSettings_.debugMode;
 		scene_->render(*renderer_, in_);
 
 		// draw UI
@@ -197,6 +195,8 @@ void Application::run()
 //--- PRIVATE ---//
 InputState Application::buildInputState()
 {
+	RenderSettings& settings = renderer_->settings();
+
 	InputState in{};
 	
 	// ------- graphics options -------
@@ -205,7 +205,7 @@ InputState Application::buildInputState()
 	bool spaceDown = glfwGetKey(window_, GLFW_KEY_SPACE) == GLFW_PRESS;
 	if (spaceDown && !spaceWasDown)
 	{
-		renderSettings_.useSSAO = !renderSettings_.useSSAO;
+		settings.useSSAO = !settings.useSSAO;
 	}
 	spaceWasDown = spaceDown;
 
@@ -213,15 +213,15 @@ InputState Application::buildInputState()
 	// debug
 	if (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS)
 	{
-		renderSettings_.debugMode = DebugMode::None;
+		settings.debugMode = DebugMode::None;
 	}
 	if (glfwGetKey(window_, GLFW_KEY_2) == GLFW_PRESS)
 	{
-		renderSettings_.debugMode = DebugMode::Normals;
+		settings.debugMode = DebugMode::Normals;
 	}
 	if (glfwGetKey(window_, GLFW_KEY_3) == GLFW_PRESS)
 	{
-		renderSettings_.debugMode = DebugMode::Depth;
+		settings.debugMode = DebugMode::Depth;
 	}
 
 	// quit
@@ -378,6 +378,8 @@ void Application::drawStatsFPS()
 
 void Application::drawInspector()
 {
+	RenderSettings& settings = renderer_->settings();
+
 	ImGui::Begin("Inspector");
 
 	// ------- renderer -------
@@ -385,7 +387,8 @@ void Application::drawInspector()
 	{
 		// render mode
 		std::string_view mode = "ERROR!";
-		switch (in_.debugMode)
+		
+		switch (settings.debugMode)
 		{
 		case DebugMode::None:
 			mode = "Default";
@@ -418,13 +421,13 @@ void Application::drawInspector()
 		// GRAPHICS OPTIONS
 		ImGui::Text("Graphics Options:");
 		// VSync toggle
-		if (ImGui::Checkbox("VSync##render", &renderSettings_.enableVsync))
+		if (ImGui::Checkbox("VSync##render", &settings.enableVsync))
 		{
-			glfwSwapInterval(renderSettings_.enableVsync);
+			glfwSwapInterval(settings.enableVsync);
 		}
 
 		// SSAO toggle
-		ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
+		ImGui::Checkbox("SSAO##render", &settings.useSSAO);
 
 		ImGui::Separator();
 	}
