@@ -195,9 +195,11 @@ void Application::run()
 //--- PRIVATE ---//
 InputState Application::buildInputState()
 {
+	// TEMP: allows keyboard inputs to change state
+	// of view mode and SSAO
+	// Debug view is not a feature to be used for release
+	// SSAO toggle should be mainly controlled through IMGUI
 	RenderSettings& settings = renderer_->settings();
-
-	InputState in{};
 	
 	// ------- graphics options -------
 	// SSAO
@@ -208,7 +210,6 @@ InputState Application::buildInputState()
 		settings.useSSAO = !settings.useSSAO;
 	}
 	spaceWasDown = spaceDown;
-
 
 	// debug
 	if (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS)
@@ -223,6 +224,9 @@ InputState Application::buildInputState()
 	{
 		settings.debugMode = DebugMode::Depth;
 	}
+
+
+	InputState in{};
 
 	// quit
 	in.quitRequested = (glfwGetKey(window_, GLFW_KEY_ESCAPE) == GLFW_PRESS);
