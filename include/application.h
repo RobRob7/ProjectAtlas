@@ -17,13 +17,6 @@
 #include <windows.h>
 #include <psapi.h>
 
-struct RenderSettings
-{
-	bool enableVsync = true;
-	DebugMode debugMode = DebugMode::None;
-	bool useSSAO = false;
-};
-
 class Application
 {
 public:
@@ -45,9 +38,6 @@ private:
 	uint32_t logoTex_;
 
 	RenderInputs in_;
-
-	// graphics options
-	RenderSettings renderSettings_;
 
 	// place/delete block limit
 	bool leftMouseDown_  = false;

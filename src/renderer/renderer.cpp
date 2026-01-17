@@ -32,21 +32,21 @@ void Renderer::renderFrame(const RenderInputs& in)
     gbuffer_.render(*in.world, view, proj);
 
     // ssao pass
-    if (in.useSSAO)
+    if (renderSettings_.useSSAO)
     {
         glm::mat4 invProj = glm::inverse(proj);
         ssaoPass_.render(gbuffer_.getNormalTexture(), gbuffer_.getDepthTexture(), proj, invProj);
     }
 
     // debug pass
-    if (in.debugMode == DebugMode::Normals || in.debugMode == DebugMode::Depth)
+    if (renderSettings_.debugMode == DebugMode::Normals || renderSettings_.debugMode == DebugMode::Depth)
     {
         debugPass_.render(
             gbuffer_.getNormalTexture(),
             gbuffer_.getDepthTexture(),
             in.camera->getNearPlane(),
             in.camera->getFarPlane(),
-            (in.debugMode == DebugMode::Normals) ? 1 : 2);
+            (renderSettings_.debugMode == DebugMode::Normals) ? 1 : 2);
         return;
     }
 
@@ -69,9 +69,9 @@ void Renderer::renderFrame(const RenderInputs& in)
     worldShader->setVec3("u_lightColor", in.light->getColor());
     // ssao
     worldShader->setVec2("u_screenSize", glm::vec2(static_cast<int>(width_), static_cast<int>(height_)));
-    worldShader->setBool("u_useSSAO", in.useSSAO);
+    worldShader->setBool("u_useSSAO", renderSettings_.useSSAO);
     worldShader->setInt("u_ssao", 3);
-    if (in.useSSAO)
+    if (renderSettings_.useSSAO)
     {
         glBindTextureUnit(3, ssaoPass_.aoBlurTexture());
     }
@@ -86,3 +86,8 @@ void Renderer::renderFrame(const RenderInputs& in)
     in.skybox->render(view, proj, in.time);
     in.crosshair->render();
 } // end of renderFrame()
+
+RenderSettings& Renderer::settings()
+{
+    return renderSettings_;
+} // end of settings()
