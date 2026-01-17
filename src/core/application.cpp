@@ -182,6 +182,7 @@ void Application::run()
 		// render scene
 		in_.time = glfwGetTime();
 		in_.useSSAO = renderSettings_.useSSAO;
+		in_.useFXAA = renderSettings_.useFXAA;
 		in_.debugMode = renderSettings_.debugMode;
 		scene_->render(in_);
 
@@ -424,6 +425,9 @@ void Application::drawInspector()
 
 		// SSAO toggle
 		ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
+
+		// FXAA toggle
+		ImGui::Checkbox("FXAA##render", &renderSettings_.useFXAA);
 
 		ImGui::Separator();
 	}

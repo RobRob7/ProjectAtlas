@@ -21,6 +21,7 @@ struct RenderSettings
 	bool enableVsync = true;
 	DebugMode debugMode = DebugMode::None;
 	bool useSSAO = false;
+	bool useFXAA = false;
 };
 
 class Application

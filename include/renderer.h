@@ -10,8 +10,10 @@
 #include "gbufferpass.h"
 #include "debugpass.h"
 #include "ssaopass.h"
+#include "fxaapass.h"
 
 #include <glm/glm.hpp>
+#include <cstdint>
 
 enum class DebugMode : int
 {
@@ -33,6 +35,7 @@ struct RenderInputs
 	DebugMode debugMode = DebugMode::None;
 
 	bool useSSAO = false;
+	bool useFXAA = false;
 };
 
 class Renderer
@@ -50,6 +53,11 @@ private:
 	GBufferPass gbuffer_;
 	DebugPass debugPass_;
 	SSAOPass ssaoPass_;
+	FXAAPass fxaaPass_;
+
+	uint32_t forwardFBO_{};
+	uint32_t forwardColorTex_{};
+	uint32_t forwardDepthRBO_{};
 };
 
 #endif

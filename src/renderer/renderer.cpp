@@ -6,6 +6,12 @@ void Renderer::init()
 	gbuffer_.init();
 	debugPass_.init();
     ssaoPass_.init();
+
+    glCreateFramebuffers(1, &forwardFBO_);
+    glCreateTextures(GL_TEXTURE_2D, 1, &forwardColorTex_);
+    glCreateRenderbuffers(1, &forwardDepthRBO_);
+
+    fxaaPass_.init();
 } // end of init()
 
 void Renderer::resize(float w, float h)
@@ -18,6 +24,20 @@ void Renderer::resize(float w, float h)
 
     gbuffer_.resize(width_, height_);
     ssaoPass_.resize(width_, height_);
+
+    glTextureStorage2D(forwardColorTex_, 1, GL_RGBA8, (GLsizei)w, (GLsizei)h);
+    glTextureParameteri(forwardColorTex_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(forwardColorTex_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteri(forwardColorTex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(forwardColorTex_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glNamedRenderbufferStorage(forwardDepthRBO_, GL_DEPTH24_STENCIL8, (GLsizei)w, (GLsizei)h);
+
+    glNamedFramebufferTexture(forwardFBO_, GL_COLOR_ATTACHMENT0, forwardColorTex_, 0);
+    glNamedFramebufferRenderbuffer(forwardFBO_, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, forwardDepthRBO_);
+
+    GLenum drawBuf = GL_COLOR_ATTACHMENT0;
+    glNamedFramebufferDrawBuffers(forwardFBO_, 1, &drawBuf);
 } // end of resize()
 
 void Renderer::renderFrame(const RenderInputs& in)
@@ -53,8 +73,8 @@ void Renderer::renderFrame(const RenderInputs& in)
     // forward render
     in.world->update(in.camera->getCameraPosition());
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, width_, height_);
+    glBindFramebuffer(GL_FRAMEBUFFER, forwardFBO_);
+    glViewport(0, 0, static_cast<int>(width_), static_cast<int>(height_));
     glEnable(GL_DEPTH_TEST);
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -85,4 +105,22 @@ void Renderer::renderFrame(const RenderInputs& in)
     in.light->render(view, proj);
     in.skybox->render(view, proj, in.time);
     in.crosshair->render();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, static_cast<int>(width_), static_cast<int>(height_));
+    glDisable(GL_DEPTH_TEST);
+
+    // FXAA
+    if (in.useFXAA)
+    {
+        fxaaPass_.render(forwardColorTex_, static_cast<int>(width_), static_cast<int>(height_));
+    }
+    else
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, forwardFBO_);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, (int)width_, (int)height_,
+            0, 0, (int)width_, (int)height_,
+            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
 } // end of renderFrame()
