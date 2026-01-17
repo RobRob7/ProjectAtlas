@@ -6,11 +6,11 @@ Scene::Scene(float w, float h)
 {
 } // end of constuctor
 
-void Scene::init()
+void Scene::init(Renderer& renderer)
 {
 	// init renderer
-	renderer_.init();
-	renderer_.resize(width_, height_);
+	renderer.init();
+	renderer.resize(width_, height_);
 
 	camera_.emplace(width_, height_, glm::vec3(0.0f, 100.0f, 3.0f));
 
@@ -27,11 +27,11 @@ void Scene::init()
 	light_->init();
 } // end of init
 
-void Scene::render(RenderInputs& in)
+void Scene::render(Renderer& renderer, RenderInputs& in)
 {
 	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
-	renderer_.resize(width_, height_);
+	renderer.resize(width_, height_);
 
 	in.world = &*world_;
 	in.camera = &*camera_;
@@ -39,7 +39,7 @@ void Scene::render(RenderInputs& in)
 	in.skybox = &*skybox_;
 	in.crosshair = &*crosshair_;
 
-	renderer_.renderFrame(in);
+	renderer.renderFrame(in);
 } // end of render()
 
 void Scene::update(float dt, const InputState& in)
@@ -137,8 +137,3 @@ Light& Scene::getLight()
 {
 	return *light_;
 } // end of getLight()
-
-Renderer& Scene::getRenderer()
-{
-	return renderer_;
-} // end of getRenderer()
