@@ -1,12 +1,13 @@
 # Project Atlas
-- A voxel engine using OpenGL 4.6 Core, C++17. For use with Windows.
+- A voxel engine created with OpenGL 4.6 Core, C++17. For use with Windows.
 
 <h3>
 Features:
 </h3>
 
-- SSAO
-- Frustrum Culling
+- Screen-Space Ambient Occlusion (SSAO)
+- Fast Approximate Anti-Aliasing (FXAA)
+- Camera View Frustum Culling
 - Terrain generation using libnoise
 - Placement and deletion of blocks
 - World data persistence:
@@ -17,17 +18,95 @@ Features:
 Preview
 </h2>
 
-<video width="600" autoplay loop muted playsinline>
-  <source src="milestones/demo/demo1.mp4" type="video/mp4">
-</video>
+![Project Demo](./milestones/demo/demo.gif)
 
+<!--  -->
+<!--  -->
+<h2>
+Rendering & Engine Techniques
+</h2>
+
+This project focuses on implementing real-time rendering techniques that are commonly used in modern game engines. Each technique was implemented from scratch and integrated into a multi-pass rendering pipeline.
+
+<!--  -->
+---
+<h4>
+Screen-Space Ambient Occlusion (SSAO)
+</h4>
+
+- Utilizes a G-Buffer that stores view space normals and depth.
+- Generates a random sample kernel in view space and projects samples into screen space.
+- Calculates occlusion by comparing sampled depth values against the current fragment depth.
+- A blur pass is applied to reduce high frequency noise while preserving edge detail.
+
+**Why it matters:**  
+SSAO adds depth perception and contact shadows without the cost of full global illumination, significantly improving visual realism in dense voxel environments.
+
+<!--  -->
+---
+<h4>
+Fast Approximate Anti-Aliasing (FXAA)
+</h4>
+
+- Implements FXAA 3.11 by Timothy Lottes [https://gist.github.com/kosua20/0c506b81b3812ac900048059d2383126].
+- A post-processing pass that operates on the final scene color buffer.
+- Identifies and smooths jagged edges.
+
+**Why it matters:**  
+FXAA is a cost-efficient method for anti-aliasing with minimal cost that is ideal for voxel engines.
+
+<!--  -->
+---
+<h4>
+View Frustum Culling
+</h4>
+
+![Frustum](milestones/VisualCameraFrustum.png)
+
+- Each chunk is tested against the camera's view frustum using Axis-Aligned Bounding Box (AABB) vs frustum plane checks. 
+- Only the chunks visible from inside the frustum are rendered.
+- Integrated directly into the chunk manager (CPU side) to avoid extra GPU load through draw calls.
+- Noticeable performance increase from 279 FPS to 452 FPS (~62% improvement) measured on an RTX 5090 at the same camera position.
+
+**Why it matters:**  
+Frustum culling drastically reduces GPU workload by efficiently rendering only the chunks visible in camera view, reducing overhead and increasing performance as the world grows in size.
+
+<!--  -->
+---
+<h4>
+Procedural Terrain Generation
+</h4>
+
+- Utilizes libnoise library to generate terrain heightmap.
+- This allows for varied terrain features such as hills, oceans, and trees.
+
+**Why it matters:**  
+Procedural generation allows for large and varied worlds without having to worry about doing so by hand, while also maintaining a deterministic state.
+
+<!--  -->
+---
+<h4>
+World State Persistence System
+</h4>
+
+- Chunk data is serialized to disk using a custom save format.
+- Supports both manual and automatic saving.
+- As the player modifies (place/destroy blocks) the world, these changes persist through application shutdown and restart.
+
+**Why it matters:**  
+Persistent world state demonstrates data-oriented design beyond real-time rendering.
+
+
+---
+<!--  -->
+<!--  -->
 <h2>
 Milestones
 </h2>
 
 | Terrain Generation + Skybox |
 |---------|
-| *Inital terrain generation using a simple heightmap.* |
+| *Initial terrain generation using a simple heightmap.* |
 | ![Alt Text 1](milestones/1_terraingen_cubemap.png)|
 
 | Terrain Generation w/libnoise |
@@ -50,11 +129,17 @@ Milestones
 | *Previous version of engine before implementation of SSAO.* | *SSAO significantly improves scene depth by enhancing contact shadows at the intersections where blocks meet. This helps improve the detail of the geometry.* |
 | ![](milestones/5a_SSAO_OFF.png) | ![](milestones/5b_SSAO_ON.png) |
 
-| Frustrum Culling (Off) | Frustrum Culling (On) |
+| Frustum Culling (Off) | Frustum Culling (On) |
 |----------------------------|--------------------------------|
-| *Previous version of engine without frustrum culling.* | *Frustrum culling is an optimization used to render ONLY the blocks found inside the camera view frustrum. This cuts down on the number of chunks/blocks being rendered considerably.* |
-| ![](milestones/6a2_FC_OFF.png) | ![](milestones/6b2_FC_ON.png) |
-|  | ![Alt Text 1](milestones/VisualCameraFrustum.png) | 
+| *FPS: 279* | *FPS: 452* = ~62% Increase in performance|
+| ![](milestones/6a1_FC_OFF.png) | ![](milestones/6b1_FC_ON.png) | 
+| ![](milestones/6a2_FC_OFF.png) | ![](milestones/6b2_FC_ON.png) | 
+
+| FXAA (Off) | FXAA (On) |
+|----------------------------|--------------------------------|
+| *FXAA is turned off. The edges of the white cube are jagged.* | *FXAA helps to smooth out the jagged edges of objects in view. The white cube displays edges that have been noticeably smoothed.* |
+| ![](milestones/7a_FXAA_OFF.png) | ![](milestones/7a_FXAA_ON.png) | 
+![](milestones/7a_FXAA_OFF_Enh.png) | ![](milestones/7a_FXAA_ON_Enh.png) |
 
 <h2>
 Requirements
@@ -134,6 +219,7 @@ Project layout:
         - gbufferpass.cpp → gBuffer pass
         - renderer.cpp → render pipeline
         - ssaopass.cpp → SSAO pass
+        - fxaapass.cpp → FXAA pass
     - **save/**
         - save.cpp → world state saving
     - **system/**
