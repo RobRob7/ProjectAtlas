@@ -31,8 +31,6 @@ void Scene::render(Renderer& renderer, RenderInputs& in)
 {
 	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
-	renderer.resize(width_, height_);
-
 	in.world = &*world_;
 	in.camera = &*camera_;
 	in.light = &*light_;
@@ -88,7 +86,7 @@ void Scene::update(float dt, const InputState& in)
 	}
 } // end of update()
 
-void Scene::onResize(float w, float h)
+void Scene::onResize(int w, int h)
 {
 	width_ = w;
 	height_ = h;

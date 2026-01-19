@@ -6,9 +6,15 @@ void Renderer::init()
 	gbuffer_.init();
 	debugPass_.init();
     ssaoPass_.init();
+
+    glCreateFramebuffers(1, &forwardFBO_);
+    glCreateTextures(GL_TEXTURE_2D, 1, &forwardColorTex_);
+    glCreateRenderbuffers(1, &forwardDepthRBO_);
+
+    fxaaPass_.init();
 } // end of init()
 
-void Renderer::resize(float w, float h)
+void Renderer::resize(int w, int h)
 {
     if (w <= 0 || h <= 0) return;
     if (w == width_ && h == height_) return;
@@ -18,14 +24,19 @@ void Renderer::resize(float w, float h)
 
     gbuffer_.resize(width_, height_);
     ssaoPass_.resize(width_, height_);
+
+    fxaaResize();
 } // end of resize()
 
 void Renderer::renderFrame(const RenderInputs& in)
 {
     if (!in.world || !in.camera || !in.light || !in.skybox || !in.crosshair) return;
 
+    /*printf("Render Res: %d, %d\n", width_, height_);*/
     const glm::mat4 view = in.camera->getViewMatrix();
-    const float aspect = (height_ > 0) ? (width_ / height_) : 1.0f;
+    const float aspect = (height_ > 0)
+        ? (static_cast<float>(width_) / static_cast<float>(height_))
+        : 1.0f;
     const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
 
     // gbuffer pass
@@ -53,7 +64,7 @@ void Renderer::renderFrame(const RenderInputs& in)
     // forward render
     in.world->update(in.camera->getCameraPosition());
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, forwardFBO_);
     glViewport(0, 0, width_, height_);
     glEnable(GL_DEPTH_TEST);
 
@@ -80,10 +91,29 @@ void Renderer::renderFrame(const RenderInputs& in)
         glBindTextureUnit(3, 0);
     }
 
-    // render objects
+    // render objects (non-UI)
     in.world->render(view, proj);
     in.light->render(view, proj);
     in.skybox->render(view, proj, in.time);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, width_, height_);
+    glDisable(GL_DEPTH_TEST);
+
+    // FXAA
+    if (renderSettings_.useFXAA)
+    {
+        fxaaPass_.render(forwardColorTex_, width_, height_);
+    }
+    else
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, forwardFBO_);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, width_, height_,
+            0, 0, width_, height_,
+            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
+
     in.crosshair->render();
 } // end of renderFrame()
 
@@ -91,3 +121,30 @@ RenderSettings& Renderer::settings()
 {
     return renderSettings_;
 } // end of settings()
+
+
+//--- PRIVATE ---//
+void Renderer::fxaaResize()
+{
+    // recreate forwardColorTex_
+    if (forwardColorTex_)
+    {
+        glDeleteTextures(1, &forwardColorTex_);
+        forwardColorTex_ = 0;
+    }
+    glCreateTextures(GL_TEXTURE_2D, 1, &forwardColorTex_);
+
+    glTextureStorage2D(forwardColorTex_, 1, GL_RGBA8, width_, height_);
+    glTextureParameteri(forwardColorTex_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(forwardColorTex_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteri(forwardColorTex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(forwardColorTex_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glNamedRenderbufferStorage(forwardDepthRBO_, GL_DEPTH24_STENCIL8, width_, height_);
+
+    glNamedFramebufferTexture(forwardFBO_, GL_COLOR_ATTACHMENT0, forwardColorTex_, 0);
+    glNamedFramebufferRenderbuffer(forwardFBO_, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, forwardDepthRBO_);
+
+    GLenum drawBuf = GL_COLOR_ATTACHMENT0;
+    glNamedFramebufferDrawBuffers(forwardFBO_, 1, &drawBuf);
+} // end of fxaaResize()

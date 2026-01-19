@@ -63,17 +63,26 @@ Application::Application(int width, int height, const char* windowTitle)
 	glfwSetWindowUserPointer(window_, this);
 	glfwSetFramebufferSizeCallback(window_, [](GLFWwindow* window, int width, int height)
 		{
+			// resize check
+			#ifdef _DEBUG
+			printf("[RESIZE] fb = %d x %d\n", width, height);
+			#endif
+
 			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
 			if (!self) return;
 
 			self->width_ = width;
 			self->height_ = height;
 
-			glViewport(0, 0, width, height);
+			glViewport(0, 0, self->width_, self->height_);
 
 			if (self->scene_)
 			{
 				self->scene_->onResize(self->width_, self->height_);
+			}
+			if (self->renderer_)
+			{
+				self->renderer_->resize(self->width_, self->height_);
 			}
 		});
 	glfwSetCursorPosCallback(window_, [](GLFWwindow* window, double xposIn, double yposIn)
@@ -432,6 +441,9 @@ void Application::drawInspector()
 
 		// SSAO toggle
 		ImGui::Checkbox("SSAO##render", &settings.useSSAO);
+
+		// FXAA toggle
+		ImGui::Checkbox("FXAA##render", &settings.useFXAA);
 
 		ImGui::Separator();
 	}
