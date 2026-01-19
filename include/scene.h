@@ -43,7 +43,7 @@ public:
 	void update(float dt, const InputState& in);
 
 	// window events
-	void onResize(float w, float h);
+	void onResize(int w, int h);
 	void onMouseMove(float x, float y);
 	void onScroll(float yoffset);
 
@@ -58,9 +58,9 @@ public:
 
 private:
 	// width of window
-	float width_;
+	int width_;
 	// height of window
-	float height_;
+	int height_;
 
 	// objects
 	std::optional<Camera> camera_;

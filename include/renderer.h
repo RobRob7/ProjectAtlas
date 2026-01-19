@@ -10,9 +10,12 @@
 #include "gbufferpass.h"
 #include "debugpass.h"
 #include "ssaopass.h"
+#include "fxaapass.h"
 
 #include <glm/glm.hpp>
 #include <glad/glad.h>
+
+#include <cstdint>
 
 enum class DebugMode : int
 {
@@ -31,6 +34,7 @@ struct RenderSettings
 
 	// graphics options
 	bool useSSAO = false;
+	bool useFXAA = false;
 };
 
 struct RenderInputs
@@ -48,21 +52,28 @@ class Renderer
 {
 public:
 	void init();
-	void resize(float w, float h);
+	void resize(int w, int h);
 	void renderFrame(const RenderInputs& in);
 
 	RenderSettings& settings();
 
 private:
-	float width_{};
-	float height_{};
+	void fxaaResize();
+private:
+	int width_{};
+	int height_{};
+
+	RenderSettings renderSettings_;
 
 	// passes
 	GBufferPass gbuffer_;
 	DebugPass debugPass_;
 	SSAOPass ssaoPass_;
+	FXAAPass fxaaPass_;
 
-	RenderSettings renderSettings_;
+	uint32_t forwardFBO_{};
+	uint32_t forwardColorTex_{};
+	uint32_t forwardDepthRBO_{};
 };
 
 #endif
