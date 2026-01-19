@@ -431,14 +431,16 @@ void Application::drawInspector()
 
 		ImGui::Separator();
 
-		// GRAPHICS OPTIONS
-		ImGui::Text("Graphics Options:");
+		// DISPLAY OPTIONS
+		ImGui::Text("Display Options:");
 		// VSync toggle
 		if (ImGui::Checkbox("VSync##render", &settings.enableVsync))
 		{
 			glfwSwapInterval(settings.enableVsync);
 		}
 
+		// GRAPHICS OPTIONS
+		ImGui::Text("Graphics Options:");
 		// SSAO toggle
 		ImGui::Checkbox("SSAO##render", &settings.useSSAO);
 
