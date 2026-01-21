@@ -79,7 +79,7 @@ void Renderer::renderFrame(const RenderInputs& in)
     worldShader->setVec3("u_lightPos", in.light->getPosition());
     worldShader->setVec3("u_lightColor", in.light->getColor());
     // ssao
-    worldShader->setVec2("u_screenSize", glm::vec2(static_cast<int>(width_), static_cast<int>(height_)));
+    worldShader->setVec2("u_screenSize", glm::vec2(width_, height_));
     worldShader->setBool("u_useSSAO", renderSettings_.useSSAO);
     worldShader->setInt("u_ssao", 3);
     if (renderSettings_.useSSAO)

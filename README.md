@@ -66,7 +66,7 @@ View Frustum Culling
 - Each chunk is tested against the camera's view frustum using Axis-Aligned Bounding Box (AABB) vs frustum plane checks. 
 - Only the chunks visible from inside the frustum are rendered.
 - Integrated directly into the chunk manager (CPU side) to avoid extra GPU load through draw calls.
-- Noticeable performance increase from 279 FPS to 452 FPS (~62% improvement) measured on an RTX 5090 at the same camera position.
+- Noticeable performance increase from 679 FPS to 1057 FPS (~56% improvement) measured on an RTX 5090 at the same camera position.
 
 **Why it matters:**  
 Frustum culling drastically reduces GPU workload by efficiently rendering only the chunks visible in camera view, reducing overhead and increasing performance as the world grows in size.
@@ -131,7 +131,7 @@ Milestones
 
 | Frustum Culling (Off) | Frustum Culling (On) |
 |----------------------------|--------------------------------|
-| *FPS: 279* | *FPS: 452* = ~62% Increase in performance|
+| *FPS: 679* | *FPS: 1057* = ~56% Increase in performance|
 | ![](milestones/6a1_FC_OFF.png) | ![](milestones/6b1_FC_ON.png) | 
 | ![](milestones/6a2_FC_OFF.png) | ![](milestones/6b2_FC_ON.png) | 
 

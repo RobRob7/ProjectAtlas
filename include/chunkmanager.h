@@ -51,8 +51,8 @@ public:
 	uint32_t getFrameChunksRendered() const;
 	uint32_t getFrameBlocksRendered() const;
 
-	bool statusFrustrumCulling() const;
-	void enableFrustrumCulling(bool enable);
+	bool statusFrustumCulling() const;
+	void enableFrustumCulling(bool enable);
 
 private:
 	float ambientStrength_ = 0.5f;
@@ -60,8 +60,8 @@ private:
 	std::optional<Shader> shader_;
 	std::optional<Texture> texture_;
 
-	// frustrum culling toggle
-	bool enableFrustrumCulling_ = true;
+	// frustum culling toggle
+	bool enableFrustumCulling_ = true;
 
 	// count
 	uint32_t frameChunksRendered_ = 0;
