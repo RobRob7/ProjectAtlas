@@ -421,10 +421,10 @@ void Application::drawInspector()
 
 		// render count + status
 		ChunkManager& world = scene_->getWorld();
-		bool frustrumCulling = world.statusFrustrumCulling();
-		if (ImGui::Checkbox("Frustrum Culling##render", &frustrumCulling))
+		bool frustumCulling = world.statusFrustumCulling();
+		if (ImGui::Checkbox("Frustum Culling##render", &frustumCulling))
 		{
-			world.enableFrustrumCulling(frustrumCulling);
+			world.enableFrustumCulling(frustumCulling);
 		}
 		ImGui::Text("Chunks Rendered: %d", world.getFrameChunksRendered());
 		ImGui::Text("Blocks Rendered: %d", world.getFrameBlocksRendered());

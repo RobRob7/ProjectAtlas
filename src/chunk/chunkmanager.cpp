@@ -189,7 +189,7 @@ void ChunkManager::render(const glm::mat4& view, const glm::mat4& proj)
 	{
 		//
 		AABB box = ChunkWorldAABB(chunk->getChunk().m_chunkX, chunk->getChunk().m_chunkZ);
-		if (enableFrustrumCulling_ && !IntersectsFrustum(box, fr))
+		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
 		{
 			continue;
 		}
@@ -216,7 +216,7 @@ void ChunkManager::render(Shader& shader, const glm::mat4& view, const glm::mat4
 	{
 		//
 		AABB box = ChunkWorldAABB(chunk->getChunk().m_chunkX, chunk->getChunk().m_chunkZ);
-		if (enableFrustrumCulling_ && !IntersectsFrustum(box, fr))
+		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
 		{
 			continue;
 		}
@@ -372,15 +372,15 @@ uint32_t ChunkManager::getFrameBlocksRendered() const
 	return frameBlocksRendered_;
 } // end of getFrameBlocksRendered()
 
-bool ChunkManager::statusFrustrumCulling() const
+bool ChunkManager::statusFrustumCulling() const
 {
-	return enableFrustrumCulling_;
-} // end of statusFrustrumCulling()
+	return enableFrustumCulling_;
+} // end of statusFrustumCulling()
 
-void ChunkManager::enableFrustrumCulling(bool enable)
+void ChunkManager::enableFrustumCulling(bool enable)
 {
-	enableFrustrumCulling_ = enable;
-} // end of enableFrustrumCulling()
+	enableFrustumCulling_ = enable;
+} // end of enableFrustumCulling()
 
 
 //--- PRIVATE ---//
