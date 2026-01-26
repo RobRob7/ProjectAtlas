@@ -59,7 +59,7 @@ void GBufferPass::render(ChunkManager& world, const glm::mat4& view, const glm::
 	gBufferShader_->setMat4("u_view", view);
 	gBufferShader_->setMat4("u_proj", proj);
 
-	world.render(*gBufferShader_, view, proj);
+	world.renderOpaque(*gBufferShader_, view, proj);
 } // end of render()
 
 uint32_t GBufferPass::getNormalTexture() const

@@ -30,15 +30,17 @@ public:
 	void init();
 
 	void update(const glm::vec3& cameraPos);
-	void render(const glm::mat4& view, const glm::mat4& proj);
-	void render(Shader& shader, const glm::mat4& view, const glm::mat4& proj);
+	void renderOpaque(const glm::mat4& view, const glm::mat4& proj);
+	void renderOpaque(Shader& shader, const glm::mat4& view, const glm::mat4& proj);
+	void renderWater(const glm::mat4& view, const glm::mat4& proj);
 
 	BlockID getBlock(int wx, int wy, int wz) const;
 	void setBlock(int wx, int wy, int wz, BlockID id);
 	void setLastBlockUsed(BlockID block);
 	int getViewRadius() const;
 	void setViewRadius(int r);
-	const std::optional<Shader>& getShader() const;
+	const std::optional<Shader>& getOpaqueShader() const;
+	const std::optional<Shader>& getWaterShader() const;
 	const glm::vec3& getLastCameraPos() const;
 
 	float getAmbientStrength() const;
@@ -57,7 +59,8 @@ public:
 private:
 	float ambientStrength_ = 0.5f;
 	Save saveWorld_;
-	std::optional<Shader> shader_;
+	std::optional<Shader> opaqueShader_;
+	std::optional<Shader> waterShader_;
 	std::optional<Texture> texture_;
 
 	// frustum culling toggle

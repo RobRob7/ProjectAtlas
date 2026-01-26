@@ -71,8 +71,16 @@ void Renderer::renderFrame(const RenderInputs& in)
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // update uniforms of water shader
+    auto& waterShader = in.world->getWaterShader();
+    waterShader->use();
+    waterShader->setFloat("u_ambientStrength", in.world->getAmbientStrength());
+    waterShader->setVec3("u_viewPos", in.camera->getCameraPosition());
+    waterShader->setVec3("u_lightPos", in.light->getPosition());
+    waterShader->setVec3("u_lightColor", in.light->getColor());
+
     // update uniforms of world shader
-    auto& worldShader = in.world->getShader();
+    auto& worldShader = in.world->getOpaqueShader();
     worldShader->use();
     worldShader->setFloat("u_ambientStrength", in.world->getAmbientStrength());
     worldShader->setVec3("u_viewPos", in.camera->getCameraPosition());
@@ -92,7 +100,8 @@ void Renderer::renderFrame(const RenderInputs& in)
     }
 
     // render objects (non-UI)
-    in.world->render(view, proj);
+    in.world->renderOpaque(view, proj);
+    in.world->renderWater(view, proj);
     in.light->render(view, proj);
     in.skybox->render(view, proj, in.time);
 
