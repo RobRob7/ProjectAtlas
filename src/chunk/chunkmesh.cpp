@@ -1,32 +1,59 @@
 #include "chunkmesh.h"
 
 //--- PUBLIC ---//
-ChunkMesh::ChunkMesh(int chunkX, int chunkY, Shader& shader, Texture& texture)
-	: chunkData_(chunkX, chunkY), shader_(shader), texture_(texture)
+ChunkMesh::ChunkMesh(int chunkX, int chunkY, Shader& opaqueShader, Texture& texture, Shader& waterShader)
+	: chunkData_(chunkX, chunkY), opaqueShader_(opaqueShader), texture_(texture), waterShader_(waterShader)
 {
+	// OPAQUE
 	// create VAO + buffers
-	glCreateVertexArrays(1, &vao_);
-	glCreateBuffers(1, &vbo_);
-	glCreateBuffers(1, &ebo_);
+	glCreateVertexArrays(1, &opaqueVao_);
+	glCreateBuffers(1, &opaqueVbo_);
+	glCreateBuffers(1, &opaqueEbo_);
 
 	// attach buffers to vao
-	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, sizeof(Vertex));
-	glVertexArrayElementBuffer(vao_, ebo_);
+	glVertexArrayVertexBuffer(opaqueVao_, 0, opaqueVbo_, 0, sizeof(Vertex));
+	glVertexArrayElementBuffer(opaqueVao_, opaqueEbo_);
 
 	// position
-	glEnableVertexArrayAttrib(vao_, 0);
-	glVertexArrayAttribFormat(vao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
-	glVertexArrayAttribBinding(vao_, 0, 0);
+	glEnableVertexArrayAttrib(opaqueVao_, 0);
+	glVertexArrayAttribFormat(opaqueVao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+	glVertexArrayAttribBinding(opaqueVao_, 0, 0);
 
 	// normal
-	glEnableVertexArrayAttrib(vao_, 1);
-	glVertexArrayAttribFormat(vao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-	glVertexArrayAttribBinding(vao_, 1, 0);
+	glEnableVertexArrayAttrib(opaqueVao_, 1);
+	glVertexArrayAttribFormat(opaqueVao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+	glVertexArrayAttribBinding(opaqueVao_, 1, 0);
 
 	// uv
-	glEnableVertexArrayAttrib(vao_, 2);
-	glVertexArrayAttribFormat(vao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
-	glVertexArrayAttribBinding(vao_, 2, 0);
+	glEnableVertexArrayAttrib(opaqueVao_, 2);
+	glVertexArrayAttribFormat(opaqueVao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+	glVertexArrayAttribBinding(opaqueVao_, 2, 0);
+
+
+	// WATER
+	// create VAO + buffers
+	glCreateVertexArrays(1, &waterVao_);
+	glCreateBuffers(1, &waterVbo_);
+	glCreateBuffers(1, &waterEbo_);
+
+	// attach buffers to vao
+	glVertexArrayVertexBuffer(waterVao_, 0, waterVbo_, 0, sizeof(Vertex));
+	glVertexArrayElementBuffer(waterVao_, waterEbo_);
+
+	// position
+	glEnableVertexArrayAttrib(waterVao_, 0);
+	glVertexArrayAttribFormat(waterVao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+	glVertexArrayAttribBinding(waterVao_, 0, 0);
+
+	// normal
+	glEnableVertexArrayAttrib(waterVao_, 1);
+	glVertexArrayAttribFormat(waterVao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+	glVertexArrayAttribBinding(waterVao_, 1, 0);
+
+	// uv
+	glEnableVertexArrayAttrib(waterVao_, 2);
+	glVertexArrayAttribFormat(waterVao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+	glVertexArrayAttribBinding(waterVao_, 2, 0);
 
 	buildChunkMesh();
 	uploadChunkMesh();
@@ -34,68 +61,121 @@ ChunkMesh::ChunkMesh(int chunkX, int chunkY, Shader& shader, Texture& texture)
 
 ChunkMesh::~ChunkMesh()
 {
-	if (vao_)
+	if (opaqueVao_)
 	{
-		glDeleteVertexArrays(1, &vao_);
-		vao_ = 0;
+		glDeleteVertexArrays(1, &opaqueVao_);
+		opaqueVao_ = 0;
 	}
-	if (vbo_)
+	if (opaqueVbo_)
 	{
-		glDeleteBuffers(1, &vbo_);
-		vbo_ = 0;
+		glDeleteBuffers(1, &opaqueVbo_);
+		opaqueVbo_ = 0;
 	}
-	if (ebo_)
+	if (opaqueEbo_)
 	{
-		glDeleteBuffers(1, &ebo_);
-		ebo_ = 0;
+		glDeleteBuffers(1, &opaqueEbo_);
+		opaqueEbo_ = 0;
+	}
+
+	if (waterVao_)
+	{
+		glDeleteVertexArrays(1, &waterVao_);
+		waterVao_ = 0;
+	}
+	if (waterVbo_)
+	{
+		glDeleteBuffers(1, &waterVbo_);
+		waterVbo_ = 0;
+	}
+	if (waterEbo_)
+	{
+		glDeleteBuffers(1, &waterEbo_);
+		waterEbo_ = 0;
 	}
 } // end of destructor
 
 void ChunkMesh::uploadChunkMesh()
 {
-	shader_.use();
-	shader_.setInt("u_atlas", 0);
+	opaqueShader_.use();
+	opaqueShader_.setInt("u_atlas", 0);
 
-	// reupload into vbo
+	waterShader_.use();
+	waterShader_.setInt("u_atlas", 0);
+
+	// OPAQUE reupload into vbo
 	glNamedBufferData(
-		vbo_,
-		vertices_.size() * sizeof(Vertex),
-		vertices_.empty() ? nullptr : vertices_.data(),
+		opaqueVbo_,
+		opaqueVertices_.size() * sizeof(Vertex),
+		opaqueVertices_.empty() ? nullptr : opaqueVertices_.data(),
 		GL_STATIC_DRAW
 	);
 
 	// reupload into ebo
 	glNamedBufferData(
-		ebo_,
-		indices_.size() * sizeof(uint32_t),
-		indices_.empty() ? nullptr : indices_.data(),
+		opaqueEbo_,
+		opaqueIndices_.size() * sizeof(uint32_t),
+		opaqueIndices_.empty() ? nullptr : opaqueIndices_.data(),
 		GL_STATIC_DRAW
 	);
 
-	indexCount_ = static_cast<int32_t>(indices_.size());
+	opaqueIndexCount_ = static_cast<int32_t>(opaqueIndices_.size());
+
+
+	// WATER reupload into vbo
+	glNamedBufferData(
+		waterVbo_,
+		waterVertices_.size() * sizeof(Vertex),
+		waterVertices_.empty() ? nullptr : waterVertices_.data(),
+		GL_STATIC_DRAW
+	);
+
+	// reupload into ebo
+	glNamedBufferData(
+		waterEbo_,
+		waterIndices_.size() * sizeof(uint32_t),
+		waterIndices_.empty() ? nullptr : waterIndices_.data(),
+		GL_STATIC_DRAW
+	);
+
+	waterIndexCount_ = static_cast<int32_t>(waterIndices_.size());
 } // end of uploadChunkMesh()
 
-void ChunkMesh::renderChunk()
+void ChunkMesh::renderChunkOpaque()
 {
 	glm::mat4 model = glm::translate(glm::mat4(1.0f), 
 		glm::vec3(chunkData_.m_chunkX * CHUNK_SIZE, 0.0f, chunkData_.m_chunkZ * CHUNK_SIZE));
 
-	shader_.setMat4("u_model", model);
+	opaqueShader_.setMat4("u_model", model);
 
-	glBindVertexArray(vao_);
-	glDrawElements(GL_TRIANGLES, indexCount_, GL_UNSIGNED_INT, nullptr);
+	glBindVertexArray(opaqueVao_);
+	glDrawElements(GL_TRIANGLES, opaqueIndexCount_, GL_UNSIGNED_INT, nullptr);
 } // end of render()
 
-void ChunkMesh::renderChunk(Shader& shader)
+void ChunkMesh::renderChunkOpaque(Shader& shader)
 {
 	glm::mat4 model = glm::translate(glm::mat4(1.0f),
 		glm::vec3(chunkData_.m_chunkX * CHUNK_SIZE, 0.0f, chunkData_.m_chunkZ * CHUNK_SIZE));
 
 	shader.setMat4("u_model", model);
 
-	glBindVertexArray(vao_);
-	glDrawElements(GL_TRIANGLES, indexCount_, GL_UNSIGNED_INT, nullptr);
+	glBindVertexArray(opaqueVao_);
+	glDrawElements(GL_TRIANGLES, opaqueIndexCount_, GL_UNSIGNED_INT, nullptr);
 } // end of render()
+
+void ChunkMesh::renderChunkWater(Shader& waterShader)
+{
+	if (waterIndexCount_ <= 0) return;
+
+	glm::mat4 model = glm::translate(
+		glm::mat4(1.0f),
+		glm::vec3(chunkData_.m_chunkX * CHUNK_SIZE, 0.0f, chunkData_.m_chunkZ * CHUNK_SIZE)
+	);
+
+	waterShader.setMat4("u_model", model);
+
+	glBindVertexArray(waterVao_);
+	glDrawElements(GL_TRIANGLES, waterIndexCount_, GL_UNSIGNED_INT, nullptr);
+} // end of renderWater()
 
 void ChunkMesh::setBlock(int x, int y, int z, BlockID id)
 {
@@ -127,10 +207,10 @@ uint32_t ChunkMesh::getRenderedBlockCount() const
 //--- PRIVATE ---//
 void ChunkMesh::buildChunkMesh()
 {
-	vertices_.clear();
-	indices_.clear();
-	vertices_.reserve(CHUNK_SIZE * CHUNK_SIZE * 24);
-	indices_.reserve(CHUNK_SIZE * CHUNK_SIZE * 24);
+	opaqueVertices_.clear();
+	opaqueIndices_.clear();
+	opaqueVertices_.reserve(CHUNK_SIZE * CHUNK_SIZE * 24);
+	opaqueIndices_.reserve(CHUNK_SIZE * CHUNK_SIZE * 24);
 
 	renderedBlockCount_ = 0;
 
@@ -141,7 +221,7 @@ void ChunkMesh::buildChunkMesh()
 						BlockID id,
 						FaceDir faceDir)
 		{
-			uint32_t startIndex = static_cast<uint32_t>(vertices_.size());
+			uint32_t startIndex = static_cast<uint32_t>(opaqueVertices_.size());
 
 			int tileX;
 			int tileY;
@@ -153,14 +233,15 @@ void ChunkMesh::buildChunkMesh()
 				Vertex v = faceVerts[i];
 				v.pos += glm::vec3(bx, by, bz);
 				v.uv = atlasUV(v.uv, tileX, tileY);
-				vertices_.push_back(v);
+				opaqueVertices_.push_back(v);
 			}
 			for (int i = 0; i < 6; ++i)
 			{
-				indices_.push_back(startIndex + faceIndices[i]);
+				opaqueIndices_.push_back(startIndex + faceIndices[i]);
 			}
 		};
 
+	// opaque
 	for (int x = 0; x < CHUNK_SIZE; ++x)
 	{
 		for (int y = 0; y < CHUNK_SIZE_Y; ++y)
@@ -171,6 +252,12 @@ void ChunkMesh::buildChunkMesh()
 
 				// air, skip
 				if (id == BlockID::Air) continue;
+
+				// water, skip
+				if (id == BlockID::Water)
+				{
+					continue;
+				}
 
 				// count bool
 				bool emittedAnyFace = false;
@@ -217,6 +304,117 @@ void ChunkMesh::buildChunkMesh()
 				{
 					++renderedBlockCount_;
 				}
+			} // end for
+		} // end for
+	} // end for
+
+	// water
+	waterVertices_.clear();
+	waterIndices_.clear();
+
+	auto addWaterQuad = [&](int x0, int y, int z0, int w, int h)
+		{
+			// water surface height
+			float yPos = static_cast<float>(y) + 0.90f;
+
+			// pos, in chunk local space
+			glm::vec3 p0{ x0, yPos, z0 };
+			glm::vec3 p1{ x0 + w,yPos, z0 };
+			glm::vec3 p2{ x0 + w, yPos, z0 + h };
+			glm::vec3 p3{ x0, yPos, z0 + h };
+
+			// texture coord
+			int tileX = 2;
+			int tileY = tileYFromTop(0);
+
+			uint32_t start = static_cast<uint32_t>(waterVertices_.size());
+
+			Vertex v0; v0.pos = p0; v0.normal = { 0,1,0 }; v0.uv = atlasUV({ 0,0 }, tileX, tileY);
+			Vertex v1; v1.pos = p1; v1.normal = { 0,1,0 }; v1.uv = atlasUV({ 1,0 }, tileX, tileY);
+			Vertex v2; v2.pos = p2; v2.normal = { 0,1,0 }; v2.uv = atlasUV({ 1,1 }, tileX, tileY);
+			Vertex v3; v3.pos = p3; v3.normal = { 0,1,0 }; v3.uv = atlasUV({ 0,1 }, tileX, tileY);
+
+			waterVertices_.push_back(v0);
+			waterVertices_.push_back(v1);
+			waterVertices_.push_back(v2);
+			waterVertices_.push_back(v3);
+
+			// two triangles
+			waterIndices_.push_back(start + 0);
+			waterIndices_.push_back(start + 1);
+			waterIndices_.push_back(start + 2);
+			waterIndices_.push_back(start + 0);
+			waterIndices_.push_back(start + 2);
+			waterIndices_.push_back(start + 3);
+		};
+
+	for (int y = 0; y < CHUNK_SIZE_Y; ++y)
+	{
+		bool mask[CHUNK_SIZE][CHUNK_SIZE] = {};
+
+		for (int x = 0; x < CHUNK_SIZE; ++x)
+		{
+			for (int z = 0; z < CHUNK_SIZE; ++z)
+			{
+				BlockID block = chunkData_.getBlockID(x, y, z);
+
+				// skip opaque blocks
+				if (block != BlockID::Water) continue;
+
+				BlockID above = (y + 1) > CHUNK_SIZE_Y ?
+					BlockID::Air :
+					chunkData_.getBlockID(x, y + 1, z);
+
+				if (above != BlockID::Water)
+				{
+					mask[x][z] = true;
+				}
+			} // end for
+		} // end for
+
+		for (int z = 0; z < CHUNK_SIZE; ++z)
+		{
+			for (int x = 0; x < CHUNK_SIZE; ++x)
+			{
+				if (!mask[x][z])
+				{
+					continue;
+				}
+
+				int w = 1;
+				while (x + w < CHUNK_SIZE && mask[x + w][z])
+				{
+					w++;
+				} // end while
+
+				int h = 1;
+				bool stop = false;
+				while (z + h < CHUNK_SIZE && !stop)
+				{
+					for (int i = 0; i < w; ++i)
+					{
+						if (!mask[x + i][z + h])
+						{
+							stop = true;
+							break;
+						}
+					} // end for
+
+					if (!stop)
+					{
+						h++;
+					}
+				} // end while
+
+				addWaterQuad(x, y, z, w, h);
+
+				for (int dz = 0; dz < h; ++dz)
+				{
+					for (int dx = 0; dx < w; ++dx)
+					{
+						mask[x + dx][z + dz] = false;
+					} // end for
+				} // end for
 			} // end for
 		} // end for
 	} // end for

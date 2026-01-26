@@ -101,12 +101,14 @@ struct ChunkCoordHash
 class ChunkMesh
 {
 public:
-    ChunkMesh(int chunkX, int chunkY, Shader& shader, Texture& texture);
+    ChunkMesh(int chunkX, int chunkY, Shader& opaqueShader, Texture& texture, Shader& waterShader);
     ~ChunkMesh();
 
     void uploadChunkMesh();
-    void renderChunk();
-    void renderChunk(Shader& shader);
+
+    void renderChunkOpaque();
+    void renderChunkOpaque(Shader& shader);
+    void renderChunkWater(Shader& waterShader);
 
     void setBlock(int x, int y, int z, BlockID id);
     BlockID getBlock(int x, int y, int z) const;
@@ -116,18 +118,29 @@ public:
     uint32_t getRenderedBlockCount() const;
 
 private:
-	std::vector<Vertex> vertices_;
-	std::vector<uint32_t> indices_;
-	ChunkData chunkData_;
-    // shader + texture
-    Shader& shader_;
+    // water
+    std::vector<Vertex> waterVertices_;
+    std::vector<uint32_t> waterIndices_;
+    uint32_t waterVao_{};
+    uint32_t waterVbo_{};
+    uint32_t waterEbo_{};
+    int32_t waterIndexCount_{};
+
+    // opaque
+	std::vector<Vertex> opaqueVertices_;
+	std::vector<uint32_t> opaqueIndices_;
+    uint32_t opaqueVao_{};
+    uint32_t opaqueVbo_{};
+    uint32_t opaqueEbo_{};
+    int32_t opaqueIndexCount_{};
+
+    // shaders + texture
+    Shader& waterShader_;
+    Shader& opaqueShader_;
     Texture& texture_;
-    // render
-    uint32_t vao_{};
-    uint32_t vbo_{};
-    uint32_t ebo_{};
-    int32_t indexCount_{};
-    // count
+
+    ChunkData chunkData_;
+
     uint32_t renderedBlockCount_ = 0;
 private:
 	void buildChunkMesh();
