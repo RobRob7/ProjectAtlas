@@ -365,6 +365,8 @@ void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin,
 		{
 			glm::ivec3 placePos = hit.block + hit.normal;
 			setBlock(placePos.x, placePos.y, placePos.z, lastBlockUsed_);
+			// add block to counter
+			++frameBlocksRendered_;
 		}
 	}
 	// destroy op
