@@ -14,6 +14,7 @@
 #include <array>
 #include <cstdint>
 #include <cstddef>
+#include <optional>
 
 // +X (right) face
 inline constexpr std::array<Vertex, 4> FACE_POS_X = { {
@@ -148,7 +149,7 @@ private:
 
     // atlas
     glm::vec2 atlasUV(const glm::vec2& localUV, int tileX, int tileY);
-    void getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY);
+    void getBlockTile(BlockID id, int& tileX, int& tileY, std::optional<FaceDir> face);
 };
 
 #endif
