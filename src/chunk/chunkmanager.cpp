@@ -374,8 +374,14 @@ void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin,
 	{
 		if (hit.hit)
 		{
-			// DISALLOW water deletion by player
-			if (getBlock(hit.block.x, hit.block.y, hit.block.z) == BlockID::Water) return;
+			// DISALLOW water deletion by player (direct water block or blocks next to water)
+			if (getBlock(hit.block.x, hit.block.y, hit.block.z) == BlockID::Water
+				|| getBlock(hit.block.x - 1, hit.block.y, hit.block.z) == BlockID::Water
+				|| getBlock(hit.block.x + 1, hit.block.y, hit.block.z) == BlockID::Water
+				|| getBlock(hit.block.x, hit.block.y, hit.block.z - 1) == BlockID::Water
+				|| getBlock(hit.block.x, hit.block.y, hit.block.z + 1) == BlockID::Water
+				|| getBlock(hit.block.x, hit.block.y - 1, hit.block.z) == BlockID::Water
+				|| getBlock(hit.block.x, hit.block.y + 1, hit.block.z) == BlockID::Water) return;
 
 			setBlock(hit.block.x, hit.block.y, hit.block.z, BlockID::Air);
 			// remove block from counter
