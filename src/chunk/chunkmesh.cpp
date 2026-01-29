@@ -225,7 +225,7 @@ void ChunkMesh::buildChunkMesh()
 
 			int tileX;
 			int tileY;
-			getBlockTile(id, faceDir, tileX, tileY);
+			getBlockTile(id, tileX, tileY, faceDir);
 
 			// offset block local face positions by block position in world
 			for (int i = 0; i < 4; ++i)
@@ -324,8 +324,9 @@ void ChunkMesh::buildChunkMesh()
 			glm::vec3 p3{ x0, yPos, z0 + h };
 
 			// texture coord
-			int tileX = 2;
-			int tileY = tileYFromTop(0);
+			int tileX;
+			int tileY;
+			getBlockTile(BlockID::Water, tileX, tileY, std::nullopt);
 
 			uint32_t start = static_cast<uint32_t>(waterVertices_.size());
 
@@ -451,7 +452,7 @@ glm::vec2 ChunkMesh::atlasUV(const glm::vec2& localUV, int tileX, int tileY)
 	);
 } // end of atlasUV()
 
-void ChunkMesh::getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY)
+void ChunkMesh::getBlockTile(BlockID id, int& tileX, int& tileY, std::optional<FaceDir> face)
 {
 	switch (id)
 	{
@@ -459,7 +460,7 @@ void ChunkMesh::getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY)
 		tileX = 5; tileY = tileYFromTop(7);
 		break;
 	case BlockID::Grass:
-		switch (face)
+		switch (*face)
 		{
 		case FaceDir::PosY: // top
 			tileX = 14; tileY = tileYFromTop(5); // grass
@@ -479,7 +480,7 @@ void ChunkMesh::getBlockTile(BlockID id, FaceDir face, int& tileX, int& tileY)
 		tileX = 8; tileY = tileYFromTop(10);
 		break;
 	case BlockID::Tree_Trunk:
-		switch (face)
+		switch (*face)
 		{
 		case FaceDir::PosY: // top
 		case FaceDir::NegY: // bottom
