@@ -12,7 +12,7 @@ size_t GetProcessMemoryMB()
 
 	// Working Set = physical RAM currently used
 	return pmc.WorkingSetSize / (1024 * 1024);
-}
+} // end of GetProcessMemoryMB()
 
 //--- PUBLIC ---//
 Application::Application(int width, int height, const char* windowTitle)
@@ -390,6 +390,10 @@ void Application::drawStatsFPS()
 
 		ImGui::Separator();
 		ImGui::Text("RAM (Working Set): %zu MB", GetProcessMemoryMB());
+
+		ImGui::Separator();
+		ImGui::Text("Vendor: %s", glGetString(GL_VENDOR));
+		ImGui::Text("Device: %s", glGetString(GL_RENDERER));
 	}
 	ImGui::End();
 } // end of drawStatsFPS()
