@@ -15,6 +15,7 @@ public:
     ~FXAAPass();
 
     void init();
+    void resize(int w, int h);
     void destroyGL();
     void render(uint32_t sceneColorTex, int w, int h);
 
@@ -25,6 +26,8 @@ public:
     void setEdgeThresholdMax(float v);
     void setEdgeThresholdMin(float v);
 
+    uint32_t getOutputTex() const;
+
 private:
     bool enabled_{ true };
 
@@ -33,6 +36,9 @@ private:
     float edgeThresholdMin_{ 0.0625f };
 
     uint32_t fsVao_{};
+    uint32_t fxaaFBO_{};
+    uint32_t fxaaColorTex_{};
+
     std::optional<Shader> shader_;
 };
 

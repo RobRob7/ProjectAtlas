@@ -97,7 +97,7 @@ private:
 	glm::vec3 worldUp_{};
 
 	float nearPlane_{0.1f};
-	float farPlane_{200.0f};
+	float farPlane_{2000.0f};
 
 	// euler angles
 	float yaw_{};

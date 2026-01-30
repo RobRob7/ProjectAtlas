@@ -9,7 +9,8 @@ void Renderer::init()
 
     glCreateFramebuffers(1, &forwardFBO_);
     glCreateTextures(GL_TEXTURE_2D, 1, &forwardColorTex_);
-    glCreateRenderbuffers(1, &forwardDepthRBO_);
+    //glCreateRenderbuffers(1, &forwardDepthRBO_);
+    glCreateTextures(GL_TEXTURE_2D, 1, &forwardDepthTex_);
 
 
     // WATER reflection FBO, colorTex, depthRBO
@@ -22,6 +23,8 @@ void Renderer::init()
     glCreateTextures(GL_TEXTURE_2D, 1, &refrDepthTex_);
 
     fxaaPass_.init();
+    fogPass_.init();
+    presentPass_.init();
 } // end of init()
 
 void Renderer::resize(int w, int h)
@@ -34,6 +37,7 @@ void Renderer::resize(int w, int h)
 
     gbuffer_.resize(width_, height_);
     ssaoPass_.resize(width_, height_);
+    fxaaPass_.resize(width_, height_);
 
     // water resize
     waterResize();
@@ -132,24 +136,36 @@ void Renderer::renderFrame(const RenderInputs& in)
     in.light->render(view, proj);
     in.skybox->render(view, proj, in.time);
 
+
+    // --- POST-PROCESSING --- //
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, width_, height_);
     glDisable(GL_DEPTH_TEST);
 
     // FXAA
+    uint32_t finalColorTex = forwardColorTex_;
     if (renderSettings_.useFXAA)
     {
         fxaaPass_.render(forwardColorTex_, width_, height_);
+        finalColorTex = fxaaPass_.getOutputTex();
+    }
+
+    // FOG
+    fogPass_.setFogColor(renderSettings_.fogSettings.color);
+    fogPass_.setFogStart(renderSettings_.fogSettings.start);
+    fogPass_.setFogEnd(renderSettings_.fogSettings.end);
+    if (renderSettings_.useFog)
+    {
+        fogPass_.render(finalColorTex, forwardDepthTex_, width_, height_,
+            in.camera->getNearPlane(), in.camera->getFarPlane(), in.world->getAmbientStrength());
     }
     else
     {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, forwardFBO_);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBlitFramebuffer(0, 0, width_, height_,
-            0, 0, width_, height_,
-            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        presentPass_.render(finalColorTex, width_, height_);
     }
 
+
+    // --- UI ELEMENTS --- //
     in.crosshair->render();
 } // end of renderFrame()
 
@@ -162,11 +178,16 @@ RenderSettings& Renderer::settings()
 //--- PRIVATE ---//
 void Renderer::fxaaResize()
 {
-    // recreate forwardColorTex_
+    // recreate textures
     if (forwardColorTex_)
     {
         glDeleteTextures(1, &forwardColorTex_);
         forwardColorTex_ = 0;
+    }
+    if (forwardDepthTex_)
+    {
+        glDeleteTextures(1, &forwardDepthTex_);
+        forwardDepthTex_ = 0;
     }
     glCreateTextures(GL_TEXTURE_2D, 1, &forwardColorTex_);
 
@@ -176,10 +197,16 @@ void Renderer::fxaaResize()
     glTextureParameteri(forwardColorTex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTextureParameteri(forwardColorTex_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glNamedRenderbufferStorage(forwardDepthRBO_, GL_DEPTH24_STENCIL8, width_, height_);
+    glCreateTextures(GL_TEXTURE_2D, 1, &forwardDepthTex_);
+
+    glTextureStorage2D(forwardDepthTex_, 1, GL_DEPTH_COMPONENT24, width_, height_);
+    glTextureParameteri(forwardDepthTex_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTextureParameteri(forwardDepthTex_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameteri(forwardDepthTex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(forwardDepthTex_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glNamedFramebufferTexture(forwardFBO_, GL_COLOR_ATTACHMENT0, forwardColorTex_, 0);
-    glNamedFramebufferRenderbuffer(forwardFBO_, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, forwardDepthRBO_);
+    glNamedFramebufferTexture(forwardFBO_, GL_DEPTH_ATTACHMENT, forwardDepthTex_, 0);
 
     GLenum drawBuf = GL_COLOR_ATTACHMENT0;
     glNamedFramebufferDrawBuffers(forwardFBO_, 1, &drawBuf);

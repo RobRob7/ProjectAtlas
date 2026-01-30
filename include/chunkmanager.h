@@ -26,7 +26,7 @@ struct BlockHit
 class ChunkManager
 {
 public:
-	ChunkManager(int viewRadiusInChunks = 2);
+	ChunkManager(int viewRadiusInChunks = 20);
 
 	void init();
 

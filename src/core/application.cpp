@@ -447,7 +447,47 @@ void Application::drawInspector()
 		// FXAA toggle
 		ImGui::Checkbox("FXAA##render", &settings.useFXAA);
 
+		// Fog toggle
+		ImGui::Checkbox("Fog##render", &settings.useFog);
+
 		ImGui::Separator();
+	}
+
+	// ------- fog -------
+	if (ImGui::CollapsingHeader("Fog", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		bool changed = false;
+
+		changed |= ImGui::DragFloat3("Color##fog", glm::value_ptr(settings.fogSettings.color), 0.1f, 0.0f, 1.0f);
+		if (ImGui::Button("Reset##fog_color"))
+		{
+			settings.fogSettings.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+		}
+		changed |= ImGui::DragFloat("Start Pos##fog", &settings.fogSettings.start, 0.1f, 0.0f, settings.fogSettings.end);
+		if (ImGui::Button("Reset##fog_start"))
+		{
+			settings.fogSettings.start = 50.0f;
+		}
+		changed |= ImGui::DragFloat("End Pos##fog", &settings.fogSettings.end, 0.1f, settings.fogSettings.start, 2000.0f);
+		if (ImGui::Button("Reset##fog_end"))
+		{
+			settings.fogSettings.end = 400.0f;
+		}
+
+		// ensure start + kMinGap <= end ALWAYS
+		if (changed)
+		{
+			const float kMinGap = 100.0f;
+			const float minFogStart = 50.0f;
+			if (settings.fogSettings.start < minFogStart)
+				settings.fogSettings.start = 0.0f;
+
+			if (settings.fogSettings.start > settings.fogSettings.end - kMinGap)
+			{
+				settings.fogSettings.start = std::max(minFogStart, settings.fogSettings.end - kMinGap);
+				settings.fogSettings.end = settings.fogSettings.start + kMinGap;
+			}
+		}
 	}
 
 	// ------- camera -------
@@ -475,7 +515,7 @@ void Application::drawInspector()
 		changed |= ImGui::DragFloat("Far Plane##cam", &fp, 5.0f, 200.0f, 4000.0f);
 		if (ImGui::Button("Reset##cam_fp"))
 		{
-			fp = 200.0f;
+			fp = 2000.0f;
 			camera.setFarPlane(fp);
 		}
 
@@ -539,6 +579,11 @@ void Application::drawInspector()
 
 		if (changed)
 		{
+			const float minAmbStr = 0.05;
+			if (ambientStrength < minAmbStr)
+			{
+				ambientStrength = minAmbStr;
+			}
 			world.setAmbientStrength(ambientStrength);
 			world.setViewRadius(viewRadius);
 		}
