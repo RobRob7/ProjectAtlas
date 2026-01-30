@@ -31,8 +31,8 @@ public:
 	void setKernelSize(int k);
 
 private:
-	float width_{};
-	float height_{};
+	int width_{};
+	int height_{};
 
 	uint32_t fboRaw_{};
 	uint32_t fboBlur_{};
@@ -40,7 +40,7 @@ private:
 	uint32_t aoBlur_{};
 
 	uint32_t noiseTexture_{};
-	static constexpr int kNoiseSize = 4;
+	static constexpr int kNoiseSize_ = 4;
 
 	uint32_t fsVao_{};
 	std::optional<Shader> ssaoShader_;

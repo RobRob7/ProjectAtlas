@@ -15,48 +15,32 @@ void FXAAPass::init()
 
 void FXAAPass::resize(int w, int h)
 {
-	if (fxaaFBO_)
-	{
-		glDeleteFramebuffers(1, &fxaaFBO_);
-		fxaaFBO_ = 0;
-	}
-	if (fxaaColorTex_)
-	{
-		glDeleteTextures(1, &fxaaColorTex_);
-		fxaaColorTex_ = 0;
-	}
+	if (w <= 0 || h <= 0) return;
+	if (w == width_ && h == height_) return;
 
-	glCreateFramebuffers(1, &fxaaFBO_);
-	glCreateTextures(GL_TEXTURE_2D, 1, &fxaaColorTex_);
-
-	glTextureStorage2D(fxaaColorTex_, 1, GL_RGBA8, w, h);
-	glTextureParameteri(fxaaColorTex_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTextureParameteri(fxaaColorTex_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTextureParameteri(fxaaColorTex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(fxaaColorTex_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	glNamedFramebufferTexture(fxaaFBO_, GL_COLOR_ATTACHMENT0, fxaaColorTex_, 0);
-	GLenum buf = GL_COLOR_ATTACHMENT0;
-	glNamedFramebufferDrawBuffers(fxaaFBO_, 1, &buf);
-
-	if (glCheckNamedFramebufferStatus(fxaaFBO_, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		std::cerr << "FXAA FBO incomplete\n";
-	}
+	destroyTargets();
+	width_ = w;
+	height_ = h;
+	createTargets();
 } // end of resize()
 
 void FXAAPass::destroyGL()
 {
+	destroyTargets();
+
 	if (fsVao_)
 	{
 		glDeleteVertexArrays(1, &fsVao_);
 		fsVao_ = 0;
 	}
+
+	width_ = 0;
+	height_ = 0;
 } // end of destroyGL()
 
 void FXAAPass::render(uint32_t sceneColorTex, int w, int h)
 {
-	if (!enabled_ || !shader_ || !sceneColorTex || w <= 0 || h <= 0)
+	if (!shader_ || !sceneColorTex || w <= 0 || h <= 0)
 		return;
 
 	glDisable(GL_DEPTH_TEST);
@@ -83,16 +67,6 @@ void FXAAPass::render(uint32_t sceneColorTex, int w, int h)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 } // end of render()
 
-void FXAAPass::setEnabled(bool e) 
-{ 
-	enabled_ = e; 
-} // end of setEnabled()
-
-bool FXAAPass::enabled() const 
-{ 
-	return enabled_; 
-} // end of enabled()
-
 void FXAAPass::setSharpnessQuality(float v)
 { 
 	edgeSharpnessQuality_ = v;
@@ -112,3 +86,40 @@ uint32_t FXAAPass::getOutputTex() const
 {
 	return fxaaColorTex_;
 } // end of getOutputTex()
+
+
+//--- PRIVATE ---//
+void FXAAPass::createTargets()
+{
+	glCreateFramebuffers(1, &fxaaFBO_);
+	glCreateTextures(GL_TEXTURE_2D, 1, &fxaaColorTex_);
+
+	glTextureStorage2D(fxaaColorTex_, 1, GL_RGBA8, width_, height_);
+	glTextureParameteri(fxaaColorTex_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(fxaaColorTex_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(fxaaColorTex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(fxaaColorTex_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glNamedFramebufferTexture(fxaaFBO_, GL_COLOR_ATTACHMENT0, fxaaColorTex_, 0);
+	GLenum buf = GL_COLOR_ATTACHMENT0;
+	glNamedFramebufferDrawBuffers(fxaaFBO_, 1, &buf);
+
+	if (glCheckNamedFramebufferStatus(fxaaFBO_, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		throw std::runtime_error("FXAA FBO incomplete!");
+	}
+} // end of createTargets()
+
+void FXAAPass::destroyTargets()
+{
+	if (fxaaFBO_)
+	{
+		glDeleteFramebuffers(1, &fxaaFBO_);
+		fxaaFBO_ = 0;
+	}
+	if (fxaaColorTex_)
+	{
+		glDeleteTextures(1, &fxaaColorTex_);
+		fxaaColorTex_ = 0;
+	}
+} // end of destroyTargets()

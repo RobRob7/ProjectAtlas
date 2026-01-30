@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
 
 class FXAAPass
 {
@@ -19,9 +20,6 @@ public:
     void destroyGL();
     void render(uint32_t sceneColorTex, int w, int h);
 
-    void setEnabled(bool e);
-    bool enabled() const;
-
     void setSharpnessQuality(float v);
     void setEdgeThresholdMax(float v);
     void setEdgeThresholdMin(float v);
@@ -29,7 +27,8 @@ public:
     uint32_t getOutputTex() const;
 
 private:
-    bool enabled_{ true };
+    int width_{};
+    int height_{};
 
     float edgeSharpnessQuality_{ 8.0f };
     float edgeThresholdMax_{ 0.125f };
@@ -40,6 +39,9 @@ private:
     uint32_t fxaaColorTex_{};
 
     std::optional<Shader> shader_;
+private:
+    void createTargets();
+    void destroyTargets();
 };
 
 #endif
