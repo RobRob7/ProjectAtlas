@@ -396,9 +396,25 @@ void Application::drawStatsFPS()
 
 void Application::drawInspector()
 {
-	RenderSettings& settings = renderer_->settings();
+	ImGuiViewport* vp = ImGui::GetMainViewport();
 
-	ImGui::Begin("Inspector");
+	ImVec2 pos = ImVec2(vp->Pos.x, vp->Pos.y + TOP_BAR_HEIGHT);
+	ImVec2 size = ImVec2(INSPECTOR_WIDTH, vp->Size.y - TOP_BAR_HEIGHT);
+
+	ImGui::SetNextWindowViewport(vp->ID);
+	ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+	ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+
+	ImGuiWindowFlags flags =
+		ImGuiWindowFlags_NoDocking |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoCollapse |
+		ImGuiWindowFlags_NoSavedSettings;
+
+	ImGui::Begin("Inspector", nullptr, flags);
+
+	RenderSettings& settings = renderer_->settings();
 
 	// ------- renderer -------
 	if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen))
