@@ -12,6 +12,7 @@
 #include <vector>
 #include <stdexcept>
 #include <random>
+#include <algorithm>
 
 class SSAOPass
 {

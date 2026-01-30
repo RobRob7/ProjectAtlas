@@ -93,8 +93,6 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 
 	glBindVertexArray(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	glEnable(GL_DEPTH_TEST);
 } // end of render()
 
 uint32_t SSAOPass::aoRawTexture() const
@@ -119,7 +117,7 @@ void SSAOPass::setBias(float b)
 
 void SSAOPass::setKernelSize(int k)
 {
-	kernelSize_ = k;
+	kernelSize_ = std::clamp(k, 1, 64);
 } // end of setKernelSize()
 
 
