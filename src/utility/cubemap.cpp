@@ -56,6 +56,8 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 	}
 
 	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_FALSE);
+
 	shader_->use();
 	shader_->setMat4("u_view", viewStrippedTranslation);
 	shader_->setMat4("u_projection", projection);
@@ -66,5 +68,6 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 
+	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
 } // end of render()

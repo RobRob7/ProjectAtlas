@@ -93,7 +93,7 @@ void ChunkManager::init()
 {
 	opaqueShader_.emplace("chunk/chunk.vert", "chunk/chunk.frag");
 	waterShader_.emplace("water/water.vert", "water/water.frag");
-	texture_.emplace("blocks.png", true);
+	atlas_.emplace("blocks.png", true);
 } // end of initShaderTexture()
 
 void ChunkManager::update(const glm::vec3& cameraPos)
@@ -161,7 +161,7 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 		}
 
 		// create chunk and upload
-		std::unique_ptr<ChunkMesh> chunk = std::make_unique<ChunkMesh>(coord.x, coord.z, *opaqueShader_, *texture_, *waterShader_);
+		std::unique_ptr<ChunkMesh> chunk = std::make_unique<ChunkMesh>(coord.x, coord.z);
 		std::unique_ptr<ChunkData> loaded = saveWorld_.loadChunkFromFile(coord.x, coord.z, "HelloWorld");
 		if (loaded)
 		{
@@ -178,7 +178,7 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
 {
 	opaqueShader_->use();
-	glBindTextureUnit(0, texture_->m_ID);
+	glBindTextureUnit(0, atlas_->m_ID);
 	opaqueShader_->setMat4("u_view", view);
 	opaqueShader_->setMat4("u_proj", proj);
 
@@ -199,6 +199,11 @@ void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
 		++frameChunksRendered_;
 		frameBlocksRendered_ += chunk->getRenderedBlockCount();
 
+		glm::mat4 model = glm::translate(
+			glm::mat4(1.0f),
+			glm::vec3(chunk->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->getChunk().m_chunkZ * CHUNK_SIZE));
+		opaqueShader_->setMat4("u_model", model);
+
 		chunk->renderChunkOpaque();
 	} // end for
 } // end of render()
@@ -206,6 +211,7 @@ void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
 void ChunkManager::renderOpaque(Shader& shader, const glm::mat4& view, const glm::mat4& proj)
 {
 	shader.use();
+	glBindTextureUnit(0, atlas_->m_ID);
 	shader.setMat4("u_view", view);
 	shader.setMat4("u_proj", proj);
 
@@ -226,7 +232,12 @@ void ChunkManager::renderOpaque(Shader& shader, const glm::mat4& view, const glm
 		++frameChunksRendered_;
 		frameBlocksRendered_ += chunk->getRenderedBlockCount();
 
-		chunk->renderChunkOpaque(shader);
+		glm::mat4 model = glm::translate(
+			glm::mat4(1.0f),
+			glm::vec3(chunk->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->getChunk().m_chunkZ * CHUNK_SIZE));
+		shader.setMat4("u_model", model);
+
+		chunk->renderChunkOpaque();
 	} // end for
 } // end of render()
 
@@ -237,7 +248,7 @@ void ChunkManager::renderWater(const glm::mat4& view, const glm::mat4& proj)
 	waterShader_->setMat4("u_proj", proj);
 
 	// atlas texture
-	glBindTextureUnit(0, texture_->m_ID);
+	glBindTextureUnit(0, atlas_->m_ID);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -255,7 +266,12 @@ void ChunkManager::renderWater(const glm::mat4& view, const glm::mat4& proj)
 			continue;
 		}
 
-		chunk->renderChunkWater(*waterShader_);
+		glm::mat4 model = glm::translate(
+			glm::mat4(1.0f),
+			glm::vec3(chunk->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->getChunk().m_chunkZ * CHUNK_SIZE));
+		waterShader_->setMat4("u_model", model);
+
+		chunk->renderChunkWater();
 	} // end for
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
@@ -330,12 +346,12 @@ void ChunkManager::setViewRadius(int r)
 	viewRadius_ = r;
 } // end of setViewRadius()
 
-const std::optional<Shader>& ChunkManager::getOpaqueShader() const
+std::optional<Shader>& ChunkManager::getOpaqueShader()
 {
 	return opaqueShader_;
-} // end of getShader()
+} // end of getOpaqueShader()
 
-const std::optional<Shader>& ChunkManager::getWaterShader() const
+std::optional<Shader>& ChunkManager::getWaterShader()
 {
 	return waterShader_;
 } // end of getWaterShader()

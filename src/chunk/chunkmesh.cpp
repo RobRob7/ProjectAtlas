@@ -1,8 +1,8 @@
 #include "chunkmesh.h"
 
 //--- PUBLIC ---//
-ChunkMesh::ChunkMesh(int chunkX, int chunkY, Shader& opaqueShader, Texture& texture, Shader& waterShader)
-	: chunkData_(chunkX, chunkY), opaqueShader_(opaqueShader), texture_(texture), waterShader_(waterShader)
+ChunkMesh::ChunkMesh(int chunkX, int chunkY)
+	: chunkData_(chunkX, chunkY)
 {
 	// OPAQUE
 	// create VAO + buffers
@@ -96,12 +96,6 @@ ChunkMesh::~ChunkMesh()
 
 void ChunkMesh::uploadChunkMesh()
 {
-	opaqueShader_.use();
-	opaqueShader_.setInt("u_atlas", 0);
-
-	waterShader_.use();
-	waterShader_.setInt("u_atlas", 0);
-
 	// OPAQUE reupload into vbo
 	glNamedBufferData(
 		opaqueVbo_,
@@ -142,36 +136,13 @@ void ChunkMesh::uploadChunkMesh()
 
 void ChunkMesh::renderChunkOpaque()
 {
-	glm::mat4 model = glm::translate(glm::mat4(1.0f), 
-		glm::vec3(chunkData_.m_chunkX * CHUNK_SIZE, 0.0f, chunkData_.m_chunkZ * CHUNK_SIZE));
-
-	opaqueShader_.setMat4("u_model", model);
-
 	glBindVertexArray(opaqueVao_);
 	glDrawElements(GL_TRIANGLES, opaqueIndexCount_, GL_UNSIGNED_INT, nullptr);
 } // end of render()
 
-void ChunkMesh::renderChunkOpaque(Shader& shader)
-{
-	glm::mat4 model = glm::translate(glm::mat4(1.0f),
-		glm::vec3(chunkData_.m_chunkX * CHUNK_SIZE, 0.0f, chunkData_.m_chunkZ * CHUNK_SIZE));
-
-	shader.setMat4("u_model", model);
-
-	glBindVertexArray(opaqueVao_);
-	glDrawElements(GL_TRIANGLES, opaqueIndexCount_, GL_UNSIGNED_INT, nullptr);
-} // end of render()
-
-void ChunkMesh::renderChunkWater(Shader& waterShader)
+void ChunkMesh::renderChunkWater()
 {
 	if (waterIndexCount_ <= 0) return;
-
-	glm::mat4 model = glm::translate(
-		glm::mat4(1.0f),
-		glm::vec3(chunkData_.m_chunkX * CHUNK_SIZE, 0.0f, chunkData_.m_chunkZ * CHUNK_SIZE)
-	);
-
-	waterShader.setMat4("u_model", model);
 
 	glBindVertexArray(waterVao_);
 	glDrawElements(GL_TRIANGLES, waterIndexCount_, GL_UNSIGNED_INT, nullptr);

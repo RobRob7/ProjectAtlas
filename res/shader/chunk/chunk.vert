@@ -7,10 +7,12 @@ layout (location = 2) in vec2 aUV;
 uniform mat4 u_model;
 uniform mat4 u_view;
 uniform mat4 u_proj;
+uniform vec4 u_clipPlane;
 
 out vec2 UV;
 out vec3 FragPos;
 out vec3 Normal;
+out float ClipDistance;
 
 void main()
 {
@@ -20,7 +22,9 @@ void main()
     FragPos = worldPos.xyz;
 
     Normal = aNormal;
-    gl_Position = u_proj * u_view * u_model * vec4(aPos, 1.0);
+    
+    ClipDistance = dot(worldPos, u_clipPlane);
+    gl_Position = u_proj * u_view * worldPos;
 }
 
 

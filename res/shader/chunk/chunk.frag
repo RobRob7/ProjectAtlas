@@ -3,12 +3,14 @@
 in vec2 UV;
 in vec3 FragPos;
 in vec3 Normal;
+in float ClipDistance;
 
 uniform sampler2D u_atlas;
 uniform vec3 u_viewPos;
 uniform vec3 u_lightPos;
 uniform vec3 u_lightColor;
 uniform float u_ambientStrength;
+uniform bool u_useClipPlane;
 
 uniform vec2 u_screenSize;
 uniform bool u_useSSAO;
@@ -20,6 +22,11 @@ void main()
 {
     vec4 texColor = texture(u_atlas, UV);
     if (texColor.a < 0.1)
+    {
+        discard;
+    }
+
+    if (u_useClipPlane && ClipDistance < 0.0)
     {
         discard;
     }
@@ -45,8 +52,7 @@ void main()
     vec3 diffuse = u_lightColor * diff * texColor.rgb;
 
     // specular
-    vec3 viewDir = normalize(u_viewPos-FragPos);
-    vec3 reflectDir = reflect(-lightDir, normal);
+    vec3 viewDir = normalize(u_viewPos - FragPos);
     float spec = 0.0;
     // blinn-phong
     vec3 halfwayDir = normalize(lightDir + viewDir);

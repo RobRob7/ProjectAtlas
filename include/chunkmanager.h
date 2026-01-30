@@ -7,6 +7,7 @@
 #include "save.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -18,8 +19,8 @@
 struct BlockHit
 {
 	bool hit = false;
-	glm::ivec3 block;
-	glm::ivec3 normal;
+	glm::ivec3 block{};
+	glm::ivec3 normal{};
 };
 
 class ChunkManager
@@ -39,8 +40,10 @@ public:
 	void setLastBlockUsed(BlockID block);
 	int getViewRadius() const;
 	void setViewRadius(int r);
-	const std::optional<Shader>& getOpaqueShader() const;
-	const std::optional<Shader>& getWaterShader() const;
+
+	std::optional<Shader>& getOpaqueShader();
+	std::optional<Shader>& getWaterShader();
+
 	const glm::vec3& getLastCameraPos() const;
 
 	float getAmbientStrength() const;
@@ -59,9 +62,13 @@ public:
 private:
 	float ambientStrength_ = 0.5f;
 	Save saveWorld_;
+
+	// opaque + water shader
 	std::optional<Shader> opaqueShader_;
 	std::optional<Shader> waterShader_;
-	std::optional<Texture> texture_;
+
+	// texture atlas
+	std::optional<Texture> atlas_;
 
 	// frustum culling toggle
 	bool enableFrustumCulling_ = true;
