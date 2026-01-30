@@ -24,12 +24,10 @@ public:
 	uint32_t getNormalTexture() const;
 	uint32_t getDepthTexture() const;
 	uint32_t getFBO() const;
-	float getWidth() const;
-	float getHeight() const;
 
 private:
-	float width_{};
-	float height_{};
+	int width_{};
+	int height_{};
 
 	std::optional<Shader> gBufferShader_;
 
@@ -37,7 +35,8 @@ private:
 	uint32_t gNormalTexture_{};
 	uint32_t gDepthTexture_{};
 private:
-	void createAttachments();
+	void createTargets();
+	void destroyTargets();
 };
 
 #endif
