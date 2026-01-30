@@ -16,36 +16,19 @@ void GBufferPass::resize(float w, float h)
 	if (w <= 0 || h <= 0) return;
 	if (w == width_ && h == height_) return;
 
-	width_ = w;
-	height_ = h;
-
-	// recreate attachments + FBO
 	destroyGL();
-
 	width_	= w;
 	height_ = h;
-
-	createAttachments();
+	createTargets();
 } // end of resize()
 
 void GBufferPass::destroyGL()
 {
-	if (fbo_)
-	{
-		glDeleteFramebuffers(1, &fbo_);
-		fbo_ = 0;
-	}
-	if (gNormalTexture_)
-	{
-		glDeleteTextures(1, &gNormalTexture_);
-		gNormalTexture_ = 0;
-	}
-	if (gDepthTexture_)
-	{
-		glDeleteTextures(1, &gDepthTexture_);
-		gDepthTexture_ = 0;
-	}
-} // end of destroy()
+	destroyTargets();
+
+	width_ = 0;
+	height_ = 0;
+} // end of destroyGL()
 
 void GBufferPass::render(ChunkManager& world, const glm::mat4& view, const glm::mat4& proj)
 {
@@ -77,18 +60,9 @@ uint32_t GBufferPass::getFBO() const
 	return fbo_;
 } // end of getFBO()
 
-float GBufferPass::getWidth() const
-{
-	return width_;
-} // end of getWidth()
-
-float GBufferPass::getHeight() const
-{
-	return height_;
-} // end of getHeight()
 
 //--- PRIVATE ---//
-void GBufferPass::createAttachments()
+void GBufferPass::createTargets()
 {
 	glCreateFramebuffers(1, &fbo_);
 
@@ -120,4 +94,23 @@ void GBufferPass::createAttachments()
 	{
 		throw std::runtime_error("GBuffer FBO incomplete!");
 	}
-} // end of createAttachments()
+} // end of createTargets()
+
+void GBufferPass::destroyTargets()
+{
+	if (fbo_)
+	{
+		glDeleteFramebuffers(1, &fbo_);
+		fbo_ = 0;
+	}
+	if (gNormalTexture_)
+	{
+		glDeleteTextures(1, &gNormalTexture_);
+		gNormalTexture_ = 0;
+	}
+	if (gDepthTexture_)
+	{
+		glDeleteTextures(1, &gDepthTexture_);
+		gDepthTexture_ = 0;
+	}
+} // end of destroyTargets()
