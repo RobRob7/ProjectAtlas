@@ -19,6 +19,9 @@
 #include <windows.h>
 #include <psapi.h>
 
+inline constexpr float TOP_BAR_HEIGHT = 36.0f;
+inline constexpr float INSPECTOR_WIDTH = 400.0f;
+
 class Application
 {
 public:
