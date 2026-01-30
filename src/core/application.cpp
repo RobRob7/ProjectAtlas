@@ -359,11 +359,16 @@ void Application::drawStatsFPS()
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 
-	ImVec2 pos = vp->WorkPos;
-	pos.x += 10.0f;
-	pos.y += 36.0f;
+	const float padding = 10.0f;
 
-	ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+	const float renderLeft = vp->Pos.x + INSPECTOR_WIDTH;
+	const float renderTop = vp->Pos.y + TOP_BAR_HEIGHT;
+	const float renderRight = vp->Pos.x + vp->Size.x;
+
+	ImVec2 anchor = ImVec2(renderRight - padding, renderTop + padding);
+
+	ImGui::SetNextWindowViewport(vp->ID);
+	ImGui::SetNextWindowPos(anchor, ImGuiCond_Always, ImVec2(1.0f, 0.0f));
 	ImGui::SetNextWindowBgAlpha(0.35f);
 
 	ImGuiWindowFlags flags =
@@ -480,7 +485,7 @@ void Application::drawInspector()
 			const float kMinGap = 100.0f;
 			const float minFogStart = 50.0f;
 			if (settings.fogSettings.start < minFogStart)
-				settings.fogSettings.start = 0.0f;
+				settings.fogSettings.start = minFogStart;
 
 			if (settings.fogSettings.start > settings.fogSettings.end - kMinGap)
 			{
