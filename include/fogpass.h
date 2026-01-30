@@ -19,16 +19,11 @@ public:
     void render(uint32_t sceneColorTex, uint32_t sceneDepthTex, int w, int h,
         float nearPlane, float farPlane, float ambStr);
 
-    void setEnabled(bool e);
-    bool enabled() const;
-
     void setFogColor(glm::vec3 v);
     void setFogStart(float v);
     void setFogEnd(float v);
 
 private:
-    bool enabled_{ true };
-
     glm::vec3 fogColor_{ 1.0f, 1.0f, 1.0f };
     float fogStart_{ 50.0f };
     float fogEnd_{ 400.0f };

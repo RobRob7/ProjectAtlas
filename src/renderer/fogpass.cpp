@@ -25,7 +25,7 @@ void FogPass::destroyGL()
 void FogPass::render(uint32_t sceneColorTex, uint32_t sceneDepthTex, int w, int h, 
 	float nearPlane, float farPlane, float ambStr)
 {
-	if (!enabled_ || !shader_ || !sceneColorTex || !sceneDepthTex || w <= 0 || h <= 0)
+	if (!shader_ || !sceneColorTex || !sceneDepthTex || w <= 0 || h <= 0)
 		return;
 
 	glDisable(GL_DEPTH_TEST);
@@ -51,16 +51,6 @@ void FogPass::render(uint32_t sceneColorTex, uint32_t sceneDepthTex, int w, int 
 
 	glBindVertexArray(0);
 } // end of render()
-
-void FogPass::setEnabled(bool e) 
-{ 
-	enabled_ = e; 
-} // end of setEnabled()
-
-bool FogPass::enabled() const 
-{ 
-	return enabled_; 
-} // end of enabled()
 
 void FogPass::setFogColor(glm::vec3 v)
 {
