@@ -17,7 +17,7 @@ void Scene::init(Renderer& renderer)
 	skybox_.emplace();
 	skybox_->init();
 
-	world_.emplace(12);
+	world_.emplace();
 	world_->init();
 
 	crosshair_.emplace();

@@ -39,8 +39,8 @@ void main()
     }
 
     // add attenuation
-    float distance = length(u_lightPos - FragPos);
-    float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
+    float dist = length(u_lightPos - FragPos);
+    float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
 
     // ambient
     vec3 ambient = u_ambientStrength * texColor.rgb * ao;
@@ -67,6 +67,16 @@ void main()
     // max darkening ~60%
     direct *= mix(0.4, 1.0, aoStrength);
 
-    // ambient receives no attenuation
-    FragColor = vec4(ambient + (direct) * attenuation, 1.0);
+    // DISTANCE FOG
+    // float d = distance(u_viewPos, FragPos);
+
+    // vec3 fogColor = vec3(1.0, 1.0,1.0);
+    // float fogStart = 175.0;
+    // float fogEnd = 400.0;
+    // float fogFactor = clamp((fogEnd - d) / (fogEnd - fogStart), 0.0, 1.0);
+
+    // final color
+    vec3 color = ambient + (direct) * attenuation;
+    // color = mix(fogColor, color, fogFactor);
+    FragColor = vec4(color, 1.0);
 }

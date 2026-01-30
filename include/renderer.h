@@ -11,6 +11,9 @@
 #include "debugpass.h"
 #include "ssaopass.h"
 #include "fxaapass.h"
+#include "presentpass.h"
+
+#include "fogpass.h"
 
 #include <glm/glm.hpp>
 #include <glad/glad.h>
@@ -25,6 +28,14 @@ enum class DebugMode : int
 	Depth	= 2, // '3' key
 };
 
+struct FogSettings
+{
+	glm::vec3 color{ 1.0f, 1.0f, 1.0f };
+
+	float start = 75.0f;
+	float end = 400.0f;
+};
+
 struct RenderSettings
 {
 	// debug view mode
@@ -36,6 +47,10 @@ struct RenderSettings
 	// graphics options
 	bool useSSAO = false;
 	bool useFXAA = false;
+	bool useFog = false;
+
+	// fog controls
+	FogSettings fogSettings;
 };
 
 struct RenderInputs
@@ -76,10 +91,12 @@ private:
 	DebugPass debugPass_;
 	SSAOPass ssaoPass_;
 	FXAAPass fxaaPass_;
+	FogPass fogPass_;
+	PresentPass presentPass_;
 
 	uint32_t forwardFBO_{};
 	uint32_t forwardColorTex_{};
-	uint32_t forwardDepthRBO_{};
+	uint32_t forwardDepthTex_{};
 
 	uint32_t reflFBO_{};
 	uint32_t reflColorTex_{};
@@ -88,6 +105,8 @@ private:
 	uint32_t refrFBO_{};
 	uint32_t refrColorTex_{};
 	uint32_t refrDepthTex_{};
+
+	std::optional<Shader> fogShader_;
 };
 
 #endif

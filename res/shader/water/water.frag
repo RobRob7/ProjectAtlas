@@ -98,10 +98,14 @@ void main()
     specular *= attenuation;
     specular *= fresnel;
 
+    // world ambient strength tune
+    float env = clamp(u_ambientStrength, 0.0, 1.0);
+    base *= mix(0.05, 1.0, env);
+
+    float specEnv = mix(0.2, 1.0, env);
+    spec *= specEnv;
+
     // final color
     vec3 color = base + (ambient + diffuse + specular);
-    // world ambient strength tune
-    float env = clamp(u_ambientStrength, 0.15, 1.0);
-    color *= env;
     FragColor = vec4(color, alpha);
 }
