@@ -209,7 +209,8 @@ InputState Application::buildInputState()
 	// Debug view is not a feature to be used for release
 	// SSAO toggle should be mainly controlled through IMGUI
 	RenderSettings& settings = renderer_->settings();
-	
+
+#ifdef _DEBUG
 	// ------- graphics options -------
 	// SSAO
 	static bool spaceWasDown = false;
@@ -233,7 +234,7 @@ InputState Application::buildInputState()
 	{
 		settings.debugMode = DebugMode::Depth;
 	}
-
+#endif
 
 	InputState in{};
 
