@@ -41,6 +41,9 @@ void main()
     vec2 uv = ndc * 0.5 + 0.5;
     uv = clamp(uv, 0.001, 0.999);
 
+    vec3 N = normalize(fs_in.normal);
+    vec3 V = normalize(u_viewPos - fs_in.worldPos);
+
     // --- DUDV --- //
     vec2 baseUV = fs_in.worldPos.xz * 0.02;
     float t = u_time;
@@ -53,13 +56,26 @@ void main()
 
     // blend them (not 50/50 if you want variety)
     vec2 dudv = normalize(d1 + d2 * 0.7);
+    float waveNormalStrength = 0.35;
+
+    // dudv is in [-1,1], treat it as XZ slope
+    vec3 waveN = normalize(vec3(-dudv.x * waveNormalStrength,
+                                1.0,
+                                -dudv.y * waveNormalStrength));
+
+    // blend with mesh normal
+    N = normalize(mix(N, waveN, 0.75));
 
     // scale distortion in screen space
-    vec2 distortion = dudv * u_distortStrength;
+    float ndv = clamp(dot(N, V), 0.0, 1.0);
+    float waveBoost = mix(1.5, 0.6, ndv); // more at grazing angles
+    vec2 distortion = dudv * (u_distortStrength * waveBoost);
 
     // distorted UVs for refraction/reflection
-    vec2 refrUV = uv + distortion;
-    vec2 reflUV = uv + distortion;
+    float refrDist = 1.0;
+    float reflDist = 0.35;
+    vec2 refrUV = uv + distortion * refrDist;
+    vec2 reflUV = uv + distortion * reflDist;
 
     // clamp after distortion
     refrUV = clamp(refrUV, 0.001, 0.999);
@@ -69,10 +85,6 @@ void main()
     vec3 refraction = texture(u_refractionTex, refrUV).rgb;
     vec3 reflection = texture(u_reflectionTex, reflUV).rgb;
 
-    vec3 N = normalize(fs_in.normal);
-    vec3 V = normalize(u_viewPos - fs_in.worldPos);
-
-    float ndv = clamp(dot(N, V), 0.0, 1.0);
     float fresnel = pow(1.0 - ndv, 5.0);
     fresnel = mix(0.02, 0.98, fresnel);
 
