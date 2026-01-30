@@ -24,7 +24,8 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 	// creation failure check
 	if (!data)
 	{
-		std::cerr << "Failed to load texture!\n";
+		std::cerr << "Failed to load texture: " << pathToTexture
+			<< " reason: " << stbi_failure_reason() << "\n";
 		return;
 	}
 
@@ -162,3 +163,9 @@ Texture& Texture::operator=(Texture&& other) noexcept
 	}
 	return *this;
 } // end of move assignment
+
+void Texture::setWrapRepeat()
+{
+	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(m_ID, GL_TEXTURE_WRAP_T, GL_REPEAT);
+} // end of setWrapRepeat()

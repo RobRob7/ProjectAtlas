@@ -116,11 +116,14 @@ void Renderer::renderFrame(const RenderInputs& in)
     waterShader->setInt("u_reflectionTex", 4);
     waterShader->setInt("u_refractionTex", 5);
     waterShader->setInt("u_refractionDepthTex", 6);
+    waterShader->setInt("u_dudvTex", 7);
+    waterShader->setFloat("u_time", in.time);
 
     // bind textures
     glBindTextureUnit(4, waterPass_.getReflColorTex());
     glBindTextureUnit(5, waterPass_.getRefrColorTex());
     glBindTextureUnit(6, waterPass_.getRefrDepthTex());
+    glBindTextureUnit(7, waterPass_.getDuDVTex());
 
     // render objects (non-UI)
     in.world->renderOpaque(view, proj);

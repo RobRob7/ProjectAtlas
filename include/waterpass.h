@@ -7,11 +7,14 @@
 #include "light.h"
 #include "cubemap.h"
 
+#include "texture.h"
+
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
 #include <cstdint>
 #include <stdexcept>
+#include <optional>
 
 class WaterPass
 {
@@ -27,6 +30,8 @@ public:
 	const uint32_t& getRefrColorTex() const;
 	const uint32_t& getRefrDepthTex() const;
 
+	const uint32_t& getDuDVTex() const;
+
 private:
 	int width_{};
 	int height_{};
@@ -38,6 +43,8 @@ private:
 	uint32_t refrFBO_{};
 	uint32_t refrColorTex_{};
 	uint32_t refrDepthTex_{};
+
+	std::optional<Texture> dudvTex_;
 private:
 	void createTargets();
 	void destroyTargets();
