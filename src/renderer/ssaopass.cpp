@@ -64,7 +64,7 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 	ssaoShader_->setFloat("u_radius", radius_);
 	ssaoShader_->setFloat("u_bias", bias_);
 	ssaoShader_->setInt("u_kernelSize", kernelSize_);
-	ssaoShader_->setVec2("u_noiseScale", glm::vec2(width_ / kNoiseSize, height_ / kNoiseSize));
+	ssaoShader_->setVec2("u_noiseScale", glm::vec2(width_ / kNoiseSize_, height_ / kNoiseSize_));
 
 	// upload kernel
 	for (int i = 0; i < 64; ++i)
@@ -192,17 +192,17 @@ void SSAOPass::createNoise()
 	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
 	std::vector<glm::vec3> noise;
-	noise.reserve(kNoiseSize * kNoiseSize);
+	noise.reserve(kNoiseSize_ * kNoiseSize_);
 
-	for (int i = 0; i < kNoiseSize * kNoiseSize; ++i)
+	for (int i = 0; i < kNoiseSize_ * kNoiseSize_; ++i)
 	{
 		// rotate around z (tangent plane)
 		noise.emplace_back(dist(rng), dist(rng), 0.0f);
 	} // end for
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &noiseTexture_);
-	glTextureStorage2D(noiseTexture_, 1, GL_RGB16F, kNoiseSize, kNoiseSize);
-	glTextureSubImage2D(noiseTexture_, 0, 0, 0, kNoiseSize, kNoiseSize, GL_RGB, GL_FLOAT, noise.data());
+	glTextureStorage2D(noiseTexture_, 1, GL_RGB16F, kNoiseSize_, kNoiseSize_);
+	glTextureSubImage2D(noiseTexture_, 0, 0, 0, kNoiseSize_, kNoiseSize_, GL_RGB, GL_FLOAT, noise.data());
 
 	glTextureParameteri(noiseTexture_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTextureParameteri(noiseTexture_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
