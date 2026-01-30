@@ -10,7 +10,9 @@ class DebugPass
 {
 public:
 	~DebugPass();
+
 	void init();
+	void destroyGL();
 	void render(uint32_t normalTex, uint32_t depthTex, float nearPlane, float farPlane, int mode);
 
 private:
