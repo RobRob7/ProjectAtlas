@@ -22,56 +22,16 @@ void SSAOPass::resize(float w, float h)
 	if (w <= 0 || h <= 0) return;
 	if (w == width_ && h == height_) return;
 
-	//destroyGL();
-	if (fboRaw_)
-	{
-		glDeleteFramebuffers(1, &fboRaw_);
-		fboRaw_ = 0;
-	}
-	if (fboBlur_)
-	{
-		glDeleteFramebuffers(1, &fboBlur_);
-		fboBlur_ = 0;
-	}
-	if (aoRaw_)
-	{
-		glDeleteTextures(1, &aoRaw_);
-		aoRaw_ = 0;
-	}
-	if (aoBlur_)
-	{
-		glDeleteTextures(1, &aoBlur_);
-		aoBlur_ = 0;
-	}
-
+	destroyTargets();
 	width_ = w;
 	height_ = h;
-
 	createTargets();
 } // end of resize()
 
 void SSAOPass::destroyGL()
 {
-	if (fboRaw_)
-	{
-		glDeleteFramebuffers(1, &fboRaw_);
-		fboRaw_ = 0;
-	}
-	if (fboBlur_)
-	{
-		glDeleteFramebuffers(1, &fboBlur_);
-		fboBlur_ = 0;
-	}
-	if (aoRaw_)
-	{
-		glDeleteTextures(1, &aoRaw_);
-		aoRaw_ = 0;
-	}
-	if (aoBlur_)
-	{
-		glDeleteTextures(1, &aoBlur_);
-		aoBlur_ = 0;
-	}
+	destroyTargets();
+
 	if (noiseTexture_)
 	{
 		glDeleteTextures(1, &noiseTexture_);
@@ -201,6 +161,30 @@ void SSAOPass::createTargets()
 		throw std::runtime_error("SSAO blur FBO incomplete!");
 	}
 } // end of createTargets()
+
+void SSAOPass::destroyTargets()
+{
+	if (fboRaw_)
+	{
+		glDeleteFramebuffers(1, &fboRaw_);
+		fboRaw_ = 0;
+	}
+	if (fboBlur_)
+	{
+		glDeleteFramebuffers(1, &fboBlur_);
+		fboBlur_ = 0;
+	}
+	if (aoRaw_)
+	{
+		glDeleteTextures(1, &aoRaw_);
+		aoRaw_ = 0;
+	}
+	if (aoBlur_)
+	{
+		glDeleteTextures(1, &aoBlur_);
+		aoBlur_ = 0;
+	}
+} // end of destroyTargets()
 
 void SSAOPass::createNoise()
 {

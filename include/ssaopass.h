@@ -53,6 +53,7 @@ private:
 	int kernelSize_ = 64;
 private:
 	void createTargets();
+	void destroyTargets();
 	void createNoise();
 	void createKernel();
 };
