@@ -3,11 +3,7 @@
 //--- PUBLIC ---//
 DebugPass::~DebugPass()
 {
-	if (vao_)
-	{
-		glDeleteVertexArrays(1, &vao_);
-		vao_ = 0;
-	}
+	destroyGL();
 } // end of destructor
 
 void DebugPass::init()
@@ -15,7 +11,16 @@ void DebugPass::init()
 	debugShader_.emplace("debugpass/debugpass.vert", "debugpass/debugpass.frag");
 
 	glCreateVertexArrays(1, &vao_);
-} // end of init
+} // end of init()
+
+void DebugPass::destroyGL()
+{
+	if (vao_)
+	{
+		glDeleteVertexArrays(1, &vao_);
+		vao_ = 0;
+	}
+} // end of destroyGL()
 
 void DebugPass::render(uint32_t normalTex, uint32_t depthTex, float nearPlane, float farPlane, int mode)
 {
