@@ -2,12 +2,9 @@
 #define CHUNKMESH_H
 
 #include "chunkdata.h"
-#include "shader.h"
-#include "texture.h"
 #include "data.h"
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>
 
 #include <vector>
@@ -102,14 +99,13 @@ struct ChunkCoordHash
 class ChunkMesh
 {
 public:
-    ChunkMesh(int chunkX, int chunkY, Shader& opaqueShader, Texture& texture, Shader& waterShader);
+    ChunkMesh(int chunkX, int chunkY);
     ~ChunkMesh();
 
     void uploadChunkMesh();
 
     void renderChunkOpaque();
-    void renderChunkOpaque(Shader& shader);
-    void renderChunkWater(Shader& waterShader);
+    void renderChunkWater();
 
     void setBlock(int x, int y, int z, BlockID id);
     BlockID getBlock(int x, int y, int z) const;
@@ -134,11 +130,6 @@ private:
     uint32_t opaqueVbo_{};
     uint32_t opaqueEbo_{};
     int32_t opaqueIndexCount_{};
-
-    // shaders + texture
-    Shader& waterShader_;
-    Shader& opaqueShader_;
-    Texture& texture_;
 
     ChunkData chunkData_;
 

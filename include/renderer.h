@@ -16,6 +16,7 @@
 #include <glad/glad.h>
 
 #include <cstdint>
+#include <iostream>
 
 enum class DebugMode : int
 {
@@ -59,6 +60,11 @@ public:
 
 private:
 	void fxaaResize();
+
+	void waterResize();
+	void waterPass(const RenderInputs& in);
+	void waterReflectionPass(const RenderInputs& in);
+	void waterRefractionPass(const RenderInputs& in);
 private:
 	int width_{};
 	int height_{};
@@ -74,6 +80,14 @@ private:
 	uint32_t forwardFBO_{};
 	uint32_t forwardColorTex_{};
 	uint32_t forwardDepthRBO_{};
+
+	uint32_t reflFBO_{};
+	uint32_t reflColorTex_{};
+	uint32_t reflDepthRBO_{};
+
+	uint32_t refrFBO_{};
+	uint32_t refrColorTex_{};
+	uint32_t refrDepthTex_{};
 };
 
 #endif
