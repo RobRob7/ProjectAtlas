@@ -146,7 +146,7 @@ void Application::run()
 	{
 		///////// BEFORE RENDER ///////////
 		// per-frame time logic
-		float currentFrame = glfwGetTime();
+		float currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime_ = currentFrame - lastFrame_;
 		lastFrame_ = currentFrame;
 
@@ -190,7 +190,7 @@ void Application::run()
 		///////////////////////////////////
 
 		// render scene
-		in_.time = glfwGetTime();
+		in_.time = static_cast<float>(glfwGetTime());
 		scene_->render(*renderer_, in_);
 
 		// draw UI
@@ -605,7 +605,7 @@ void Application::drawInspector()
 
 		if (changed)
 		{
-			const float minAmbStr = 0.05;
+			const float minAmbStr = 0.05f;
 			if (ambientStrength < minAmbStr)
 			{
 				ambientStrength = minAmbStr;

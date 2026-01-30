@@ -16,8 +16,8 @@ public:
 	void render(uint32_t normalTex, uint32_t depthTex, float nearPlane, float farPlane, int mode);
 
 private:
+	uint32_t vao_{};
 	std::optional<Shader> debugShader_;
-	uint32_t vao_;
 };
 
 #endif

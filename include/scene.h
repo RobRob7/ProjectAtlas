@@ -31,7 +31,7 @@ struct InputState
 class Scene
 {
 public:
-	Scene(float w, float h);
+	Scene(int w, int h);
 
 	// setup scene with renderer
 	void init(Renderer& renderer);

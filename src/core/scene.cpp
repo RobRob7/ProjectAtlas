@@ -1,7 +1,7 @@
 #include "scene.h"
 
 //--- PUBLIC ---//
-Scene::Scene(float w, float h)
+Scene::Scene(int w, int h)
 	: width_(w), height_(h)
 {
 } // end of constuctor
