@@ -10,6 +10,11 @@ in VS_OUT {
 uniform sampler2D u_reflectionTex;
 uniform sampler2D u_refractionTex;
 uniform sampler2D u_refractionDepthTex;
+uniform sampler2D u_dudvTex;
+
+uniform float u_time;
+uniform float u_distortStrength = 0.02;
+uniform float u_waveSpeed = 0.03;
 
 uniform float u_near;
 uniform float u_far;
@@ -30,15 +35,39 @@ float linearizeDepth(float z01)
 
 void main()
 {
-    // REFRACTION + REFLECTION
     // NDC [-1, 1]
     vec2 ndc = fs_in.clipPos.xy / fs_in.clipPos.w;
     // uv [0, 1]
     vec2 uv = ndc * 0.5 + 0.5;
     uv = clamp(uv, 0.001, 0.999);
 
-    vec3 refraction = texture(u_refractionTex, uv).rgb;
-    vec3 reflection = texture(u_reflectionTex, uv).rgb;
+    // --- DUDV --- //
+    vec2 baseUV = fs_in.worldPos.xz * 0.02;
+    float t = u_time;
+
+    vec2 uv1 = fract(baseUV + vec2( t * u_waveSpeed,  t * u_waveSpeed * 0.5));
+    vec2 uv2 = fract(baseUV * 1.73 + vec2(-t * u_waveSpeed * 0.6, t * u_waveSpeed * 0.9));
+
+    vec2 d1 = texture(u_dudvTex, uv1).rg * 2.0 - 1.0;
+    vec2 d2 = texture(u_dudvTex, uv2).rg * 2.0 - 1.0;
+
+    // blend them (not 50/50 if you want variety)
+    vec2 dudv = normalize(d1 + d2 * 0.7);
+
+    // scale distortion in screen space
+    vec2 distortion = dudv * u_distortStrength;
+
+    // distorted UVs for refraction/reflection
+    vec2 refrUV = uv + distortion;
+    vec2 reflUV = uv + distortion;
+
+    // clamp after distortion
+    refrUV = clamp(refrUV, 0.001, 0.999);
+    reflUV = clamp(reflUV, 0.001, 0.999);
+
+    // REFRACTION + REFLECTION
+    vec3 refraction = texture(u_refractionTex, refrUV).rgb;
+    vec3 reflection = texture(u_reflectionTex, reflUV).rgb;
 
     vec3 N = normalize(fs_in.normal);
     vec3 V = normalize(u_viewPos - fs_in.worldPos);

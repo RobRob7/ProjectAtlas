@@ -8,7 +8,8 @@ WaterPass::~WaterPass()
 
 void WaterPass::init()
 {
-    // NOTHING FOR NOW
+    dudvTex_.emplace("dudv.png");
+    dudvTex_->setWrapRepeat();
 } // end of init()
 
 void WaterPass::resize(int w, int h)
@@ -49,6 +50,11 @@ const uint32_t& WaterPass::getRefrDepthTex() const
 {
     return refrDepthTex_;
 } // end of getRefrDepthTex()
+
+const uint32_t& WaterPass::getDuDVTex() const
+{
+    return dudvTex_->m_ID;
+} // end of getDuDVTex()
 
 
 //--- PRIVATE ---//

@@ -28,6 +28,8 @@ public:
 	// move assignment operator
 	Texture& operator=(Texture&& other) noexcept;
 
+	void setWrapRepeat();
+
 private:
 	std::string filePath_;
 	// texture width
