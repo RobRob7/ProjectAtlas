@@ -11,7 +11,10 @@
 class PresentPass
 {
 public:
+	~PresentPass();
+
 	void init();
+	void destroyGL();
 	void render(uint32_t sceneColorTex, int w, int h);
 
 private:
