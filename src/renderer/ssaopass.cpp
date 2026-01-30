@@ -17,7 +17,7 @@ void SSAOPass::init()
 	createNoise();
 } // end of init()
 
-void SSAOPass::resize(float w, float h)
+void SSAOPass::resize(int w, int h)
 {
 	if (w <= 0 || h <= 0) return;
 	if (w == width_ && h == height_) return;
@@ -64,13 +64,9 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 	ssaoShader_->setFloat("u_radius", radius_);
 	ssaoShader_->setFloat("u_bias", bias_);
 	ssaoShader_->setInt("u_kernelSize", kernelSize_);
-	ssaoShader_->setVec2("u_noiseScale", glm::vec2(width_ / kNoiseSize_, height_ / kNoiseSize_));
-
-	// upload kernel
-	for (int i = 0; i < 64; ++i)
-	{
-		ssaoShader_->setVec3(("u_samples[" + std::to_string(i) + "]").c_str(), samples_[i]);
-	} // end for
+	ssaoShader_->setVec2("u_noiseScale", glm::vec2(
+		static_cast<float>(width_) / static_cast<float>(kNoiseSize_),
+		static_cast<float>(height_) / static_cast<float>(kNoiseSize_)));
 
 	glBindTextureUnit(0, normalTex);
 	glBindTextureUnit(1, depthTex);
@@ -97,6 +93,8 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 
 	glBindVertexArray(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glEnable(GL_DEPTH_TEST);
 } // end of render()
 
 uint32_t SSAOPass::aoRawTexture() const
@@ -232,5 +230,12 @@ void SSAOPass::createKernel()
 		s *= scale;
 
 		samples_[i] = s;
+	} // end for
+
+	// upload kernel
+	ssaoShader_->use();
+	for (int i = 0; i < 64; ++i)
+	{
+		ssaoShader_->setVec3(("u_samples[" + std::to_string(i) + "]").c_str(), samples_[i]);
 	} // end for
 } // end of createKernel()

@@ -14,6 +14,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <memory>
+#include <stdexcept>
 #include <algorithm>
 #define NOMINMAX
 #include <windows.h>

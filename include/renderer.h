@@ -1,6 +1,8 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include "renderinputs.h"
+
 #include "chunkmanager.h"
 #include "camera.h"
 #include "light.h"
@@ -12,6 +14,7 @@
 #include "ssaopass.h"
 #include "fxaapass.h"
 #include "presentpass.h"
+#include "waterpass.h"
 
 #include "fogpass.h"
 
@@ -20,6 +23,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <stdexcept>
 
 enum class DebugMode : int
 {
@@ -53,17 +57,6 @@ struct RenderSettings
 	FogSettings fogSettings;
 };
 
-struct RenderInputs
-{
-	ChunkManager* world = nullptr;
-	Camera* camera = nullptr;
-	Light* light = nullptr;
-	CubeMap* skybox = nullptr;
-	Crosshair* crosshair = nullptr;
-
-	float time = 0.0f;
-};
-
 class Renderer
 {
 public:
@@ -75,11 +68,6 @@ public:
 
 private:
 	void fxaaResize();
-
-	void waterResize();
-	void waterPass(const RenderInputs& in);
-	void waterReflectionPass(const RenderInputs& in);
-	void waterRefractionPass(const RenderInputs& in);
 private:
 	int width_{};
 	int height_{};
@@ -93,20 +81,11 @@ private:
 	FXAAPass fxaaPass_;
 	FogPass fogPass_;
 	PresentPass presentPass_;
+	WaterPass waterPass_;
 
 	uint32_t forwardFBO_{};
 	uint32_t forwardColorTex_{};
 	uint32_t forwardDepthTex_{};
-
-	uint32_t reflFBO_{};
-	uint32_t reflColorTex_{};
-	uint32_t reflDepthRBO_{};
-
-	uint32_t refrFBO_{};
-	uint32_t refrColorTex_{};
-	uint32_t refrDepthTex_{};
-
-	std::optional<Shader> fogShader_;
 };
 
 #endif
