@@ -48,18 +48,15 @@ private:
 	// place/delete block limit
 	bool leftMouseDown_  = false;
 	bool rightMouseDown_ = false;
-	// width of window
-	float width_;
-	// height of window
-	float height_;
-	// window title name
+
+	int width_;
+	int height_;
 	const char* windowTitle_;
-	// GLFWwindow instance
+
 	GLFWwindow* window_ = nullptr;
 
 	// time between current frame and last frame
 	float deltaTime_ = 0.0f;
-	// time of last frame
 	float lastFrame_ = 0.0f;
 
 	// save timer

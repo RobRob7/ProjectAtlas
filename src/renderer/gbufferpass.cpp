@@ -11,7 +11,7 @@ void GBufferPass::init()
 	gBufferShader_.emplace("gbuffer/gbuffer.vert", "gbuffer/gbuffer.frag");
 } // end of init()
 
-void GBufferPass::resize(float w, float h)
+void GBufferPass::resize(int w, int h)
 {
 	if (w <= 0 || h <= 0) return;
 	if (w == width_ && h == height_) return;

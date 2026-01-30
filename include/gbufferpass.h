@@ -16,7 +16,7 @@ class GBufferPass
 public:
 	~GBufferPass();
 	void init();
-	void resize(float w, float h);
+	void resize(int w, int h);
 	void destroyGL();
 
 	void render(ChunkManager& world, const glm::mat4& view, const glm::mat4& proj);
