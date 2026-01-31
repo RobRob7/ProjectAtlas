@@ -1,10 +1,12 @@
 # Project Atlas
-- A voxel engine created with OpenGL 4.6 Core, C++17. For use with Windows.
+A voxel-based rendering engine built with OpenGL 4.6 Core and C++17 for Windows.
 
 <h3>
 Features:
 </h3>
 
+- Physically-inspired Water Rendering
+- Post-Processing Fog
 - Screen-Space Ambient Occlusion (SSAO)
 - Fast Approximate Anti-Aliasing (FXAA)
 - Camera View Frustum Culling
@@ -14,19 +16,70 @@ Features:
     - Auto-saving world state
     - Manual save system
 
+## Controls
+- WASD – Move
+- Mouse – Look (camera mode)
+- Left Click – Break block
+- Right Click – Place block
+
+#### Input Modes
+> **Note:** The application starts in camera control mode by default.
+- **`=`** — Enable camera control mode
+  - Allows free-look camera movement (mouse + keyboard).
+- **`-`** — Enable cursor mode
+  - Releases the mouse cursor for interacting with the ImGui control panel.
+- **`Left Arrow`** — Hide ImGui panels
+- **`Right Arrow`** — Show ImGui panels
+
 <h2>
 Preview
 </h2>
 
-![Project Demo](./milestones/demo/demo.gif)
+![Project Demo](./milestones/demo/demo2.gif)
 
-<!--  -->
 <!--  -->
 <h2>
 Rendering & Engine Techniques
 </h2>
 
 This project focuses on implementing real-time rendering techniques that are commonly used in modern game engines. Each technique was implemented from scratch and integrated into a multi-pass rendering pipeline.
+
+### Rendering Pipeline Overview
+
+1. G-Buffer pass (normals + depth)
+2. SSAO pass + blur
+3. Water reflection & refraction passes
+4. Forward render (scene objects)
+5. Post-Processing Fog
+6. FXAA
+7. UI Elements
+
+<!--  -->
+---
+<h4>
+Physically-inspired Water Rendering
+</h4>
+
+- Water is rendered using a dedicated pass that captures the scene above and below the water plane into reflection and refraction textures.
+- Utilizes Fresnel-based reflection/refraction blending.
+- DuDv mapping for wave distortion effects coupled with time-based animation.
+- Refraction depth texture used to make shallow water appear lighter in color.
+
+**Why it matters:**  
+Previous versions of this engine showcased flat and boring water blocks. Water is now more visually appealing and takes into account other objects in the scene.
+
+<!--  -->
+---
+<h4>
+Post-Processing Fog
+</h4>
+
+- Screen-space, depth-based fog applied as a post-processing pass.
+- Configurable fog color, and start/end distances.
+- Integrates seamlessly with SSAO, FXAA, and lighting passes.
+
+**Why it matters:**  
+Demonstrates the ability to implement additional post-processing effects that integrate cleanly into an existing post-processing pipeline.
 
 <!--  -->
 ---
@@ -48,7 +101,8 @@ SSAO adds depth perception and contact shadows without the cost of full global i
 Fast Approximate Anti-Aliasing (FXAA)
 </h4>
 
-- Implements FXAA 3.11 by Timothy Lottes [https://gist.github.com/kosua20/0c506b81b3812ac900048059d2383126].
+- Implements FXAA 3.11 by Timothy Lottes  
+  (based on https://gist.github.com/kosua20/0c506b81b3812ac900048059d2383126)
 - A post-processing pass that operates on the final scene color buffer.
 - Identifies and smooths jagged edges.
 
@@ -141,6 +195,16 @@ Milestones
 | ![](milestones/7a_FXAA_OFF.png) | ![](milestones/7a_FXAA_ON.png) | 
 ![](milestones/7a_FXAA_OFF_Enh.png) | ![](milestones/7a_FXAA_ON_Enh.png) |
 
+| Flat Water | Beautiful Water |
+|----------------------------|--------------------------------|
+| *Previous version of engine using static water textures.* | *Enhanced water using reflection/refraction textures, and DuDv distortion.* |
+| ![](milestones/8b_RTXWATER_OFF.png) | ![](milestones/8a_RTXWATER_ON.png) |
+
+| Fog (Off) | Fog (On) |
+|----------------------------|--------------------------------|
+| *World rendered without fog enabled.* | *Post-processing fog used to obscure objects further away.* |
+| ![](milestones/9a_Fog_OFF.png) | ![](milestones/9b_Fog_ON.png) |
+
 <h2>
 Requirements
 </h2>
@@ -212,14 +276,19 @@ Project layout:
     - **core/**
         - application.cpp → main application
         - scene.cpp → object setup + renderer call
+    - **light/**
+        - light.cpp → light cube object
     - **player/**
         - crosshair.cpp → crosshair UI icon
     - **renderer/**
         - debugpass.cpp → gBuffer normal + depth view
+        - fogpass.cpp → fog pass
+        - fxaapass.cpp → FXAA pass
         - gbufferpass.cpp → gBuffer pass
+        - presentpass.cpp → helper pass
         - renderer.cpp → render pipeline
         - ssaopass.cpp → SSAO pass
-        - fxaapass.cpp → FXAA pass
+        - waterpass.cpp → water pass
     - **save/**
         - save.cpp → world state saving
     - **system/**
