@@ -26,6 +26,8 @@ struct InputState
 	bool placeBlockPressed = false;
 	bool removeBlockPressed = false;
 	bool quitRequested = false;
+	bool enableImguiPressed = false;
+	bool disableImguiPressed = false;
 };
 
 class Scene

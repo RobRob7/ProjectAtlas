@@ -39,6 +39,7 @@ private:
 	void drawTopBar(GLFWwindow* window, ImTextureID logoTex);
 	void drawStatsFPS();
 	void drawInspector();
+	void setImGuiInputEnabled(bool enabled);
 private:
 	// window top bar logo
 	uint32_t logoTex_;
@@ -48,6 +49,11 @@ private:
 	// place/delete block limit
 	bool leftMouseDown_  = false;
 	bool rightMouseDown_ = false;
+
+	// camera/cursor mode
+	bool cameraModeOn_{ true };
+
+	bool showImguiUI_{ true };
 
 	int width_;
 	int height_;

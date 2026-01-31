@@ -113,7 +113,6 @@ Application::Application(int width, int height, const char* windowTitle)
 	ImGui::CreateContext();
 
 	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
@@ -178,14 +177,28 @@ void Application::run()
 			glfwSetWindowShouldClose(window_, true);
 		}
 
+		// process imgui UI display
+		if (input.enableImguiPressed)
+		{
+			showImguiUI_ = true;
+		}
+		if (input.disableImguiPressed)
+		{
+			showImguiUI_ = false;
+		}
+
 		// process camera active/inactive mouse cursor
 		if (input.enableCameraPressed)
 		{
 			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			cameraModeOn_ = true;
+			setImGuiInputEnabled(false);
 		}
 		if (input.disableCameraPressed)
 		{
 			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			cameraModeOn_ = false;
+			setImGuiInputEnabled(true);
 		}
 		///////////////////////////////////
 
@@ -245,6 +258,10 @@ InputState Application::buildInputState()
 	in.disableCameraPressed = (glfwGetKey(window_, GLFW_KEY_MINUS) == GLFW_PRESS);
 	in.enableCameraPressed = (glfwGetKey(window_, GLFW_KEY_EQUAL) == GLFW_PRESS);
 
+	// IMGUI display
+	in.disableImguiPressed = (glfwGetKey(window_, GLFW_KEY_LEFT) == GLFW_PRESS);
+	in.enableImguiPressed = (glfwGetKey(window_, GLFW_KEY_RIGHT) == GLFW_PRESS);
+
 	// movement
 	in.w = (glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS);
 	in.s = (glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS);
@@ -268,9 +285,11 @@ void Application::drawFullUI()
 {
 	drawTopBar(window_, logoTex_);
 
-	drawStatsFPS();
-
-	drawInspector();
+	if (showImguiUI_)
+	{
+		drawStatsFPS();
+		drawInspector();
+	}
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -424,6 +443,7 @@ void Application::drawInspector()
 	// ------- renderer -------
 	if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen))
 	{
+#ifdef _DEBUG
 		// render mode
 		std::string_view mode = "ERROR!";
 		
@@ -443,6 +463,10 @@ void Application::drawInspector()
 		}
 		ImGui::Text("Render Mode:\n %s", mode.data());
 
+		ImGui::Separator();
+#endif
+		// camera/cursor mode
+		ImGui::Text("Mode:\n %s", cameraModeOn_ ? "Camera" : "Cursor");
 		ImGui::Separator();
 
 		// render count + status
@@ -504,7 +528,7 @@ void Application::drawInspector()
 		if (changed)
 		{
 			const float kMinGap = 100.0f;
-			const float minFogStart = 50.0f;
+			const float minFogStart = 25.0f;
 			if (settings.fogSettings.start < minFogStart)
 				settings.fogSettings.start = minFogStart;
 
@@ -620,3 +644,16 @@ void Application::drawInspector()
 	ImGui::End();
 
 } // end of drawInspector()
+
+void Application::setImGuiInputEnabled(bool enabled)
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableGamepad;
+
+	io.WantCaptureKeyboard = enabled;
+	io.WantCaptureMouse = enabled;
+
+	io.MouseDrawCursor = enabled;
+} // end of setImGuiInputEnabled()
