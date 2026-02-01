@@ -538,6 +538,7 @@ void Application::drawInspector()
 				settings.fogSettings.end = settings.fogSettings.start + kMinGap;
 			}
 		}
+		ImGui::Separator();
 	}
 
 	// ------- camera -------
@@ -573,6 +574,7 @@ void Application::drawInspector()
 			camera.setCameraPosition(pos);
 			camera.setFarPlane(fp);
 		}
+		ImGui::Separator();
 	}
 
 	// ------- light -------
