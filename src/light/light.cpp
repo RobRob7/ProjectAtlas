@@ -92,5 +92,9 @@ void Light::setPosition(const glm::vec3& pos)
 
 void Light::setColor(const glm::vec3& color)
 {
-	color_ = color;
+	color_ = {
+		std::clamp(color.x, MIN_COLOR, MAX_COLOR),
+		std::clamp(color.y, MIN_COLOR, MAX_COLOR),
+		std::clamp(color.z, MIN_COLOR, MAX_COLOR)
+	};
 } // end of setColor()

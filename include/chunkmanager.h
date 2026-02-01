@@ -15,6 +15,7 @@
 #include <memory>
 #include <optional>
 #include <cstdint>
+#include <algorithm>
 
 struct BlockHit
 {
@@ -26,7 +27,12 @@ struct BlockHit
 class ChunkManager
 {
 public:
-	ChunkManager(int viewRadiusInChunks = 20);
+	const int MIN_RADIUS = 5;
+	const int MAX_RADIUS = 40;
+	const float MIN_AMBSTR = 0.05f;
+	const float MAX_AMBSTR = 0.5f;
+public:
+	ChunkManager(int viewRadiusInChunks = 10);
 
 	void init();
 
@@ -60,7 +66,7 @@ public:
 	void enableFrustumCulling(bool enable);
 
 private:
-	float ambientStrength_ = 0.5f;
+	float ambientStrength_{ 0.5f };
 	Save saveWorld_;
 
 	// opaque + water shader
@@ -74,8 +80,8 @@ private:
 	bool enableFrustumCulling_ = true;
 
 	// count
-	uint32_t frameChunksRendered_ = 0;
-	uint32_t frameBlocksRendered_ = 0;
+	uint32_t frameChunksRendered_{ 0 };
+	uint32_t frameBlocksRendered_{ 0 };
 
 	glm::vec3 lastCameraPos_{};
 

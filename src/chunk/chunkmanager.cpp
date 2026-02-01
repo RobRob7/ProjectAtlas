@@ -343,7 +343,7 @@ int ChunkManager::getViewRadius() const
 
 void ChunkManager::setViewRadius(int r)
 {
-	viewRadius_ = r;
+	viewRadius_ = std::clamp(r, MIN_RADIUS, MAX_RADIUS);
 } // end of setViewRadius()
 
 std::optional<Shader>& ChunkManager::getOpaqueShader()
@@ -368,7 +368,7 @@ float ChunkManager::getAmbientStrength() const
 
 void ChunkManager::setAmbientStrength(float strength)
 {
-	ambientStrength_ = strength;
+	ambientStrength_ = std::clamp(strength, MIN_AMBSTR, MAX_AMBSTR);
 } // end of setAmbientStrength()
 
 void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step)

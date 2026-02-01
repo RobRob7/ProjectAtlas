@@ -2,8 +2,8 @@
 
 in VS_OUT {
     vec3 worldPos;
-    vec3 normal;
-    vec2 uv;
+    // vec3 normal;
+    // vec2 uv;
     vec4 clipPos;
 } fs_in;
 
@@ -11,10 +11,13 @@ uniform sampler2D u_reflectionTex;
 uniform sampler2D u_refractionTex;
 uniform sampler2D u_refractionDepthTex;
 uniform sampler2D u_dudvTex;
+uniform sampler2D u_normalTex;
+uniform sampler2D u_ssaoTex;
 
 uniform float u_time;
 uniform float u_distortStrength = 0.02;
 uniform float u_waveSpeed = 0.03;
+uniform float u_waveStrength = 0.03;
 
 uniform float u_near;
 uniform float u_far;
@@ -35,118 +38,56 @@ float linearizeDepth(float z01)
 
 void main()
 {
-    // NDC [-1, 1]
-    vec2 ndc = fs_in.clipPos.xy / fs_in.clipPos.w;
-    // uv [0, 1]
-    vec2 uv = ndc * 0.5 + 0.5;
-    uv = clamp(uv, 0.001, 0.999);
+    // [0,1]
+    vec2 ndc = (fs_in.clipPos.xy / fs_in.clipPos.w) * 0.5 + 0.5;
+    ndc = clamp(ndc, 0.001, 0.999);
 
-    vec3 N = normalize(fs_in.normal);
-    vec3 V = normalize(u_viewPos - fs_in.worldPos);
+    // AO
+    float ao = texture(u_ssaoTex,  ndc).r;
 
-    // --- DUDV --- //
-    vec2 baseUV = fs_in.worldPos.xz * 0.02;
-    float t = u_time;
+    vec2 reflectTextCoords = vec2(ndc.x, 1.0 - ndc.y);
+	vec2 refractTexCoords  = ndc;
 
-    vec2 uv1 = fract(baseUV + vec2( t * u_waveSpeed,  t * u_waveSpeed * 0.5));
-    vec2 uv2 = fract(baseUV * 1.73 + vec2(-t * u_waveSpeed * 0.6, t * u_waveSpeed * 0.9));
+    float tilingScale = 0.1;
+    vec2 waterUV = fs_in.worldPos.xz * tilingScale;
+    waterUV += vec2(u_time * u_waveSpeed, u_time * u_waveSpeed * 0.5);
 
-    vec2 d1 = texture(u_dudvTex, uv1).rg * 2.0 - 1.0;
-    vec2 d2 = texture(u_dudvTex, uv2).rg * 2.0 - 1.0;
+    vec2 dudv = texture(u_dudvTex, waterUV).rg * 2.0 - 1.0;
+    ivec2 sz = textureSize(u_refractionTex, 0);
+    vec2 texel = 1.0 / vec2(sz);
 
-    // blend them (not 50/50 if you want variety)
-    vec2 dudv = normalize(d1 + d2 * 0.7);
-    float waveNormalStrength = 0.35;
+    float maxPixels = 8.0;
+    vec2 totalDistortion = dudv * (u_waveStrength * maxPixels) * texel;
 
-    // dudv is in [-1,1], treat it as XZ slope
-    vec3 waveN = normalize(vec3(-dudv.x * waveNormalStrength,
-                                1.0,
-                                -dudv.y * waveNormalStrength));
+	reflectTextCoords += totalDistortion;
+	reflectTextCoords = clamp(reflectTextCoords, 0.001,0.999);
 
-    // blend with mesh normal
-    N = normalize(mix(N, waveN, 0.75));
+	refractTexCoords += totalDistortion;
+	refractTexCoords = clamp(refractTexCoords, 0.001, 0.999);
 
-    // scale distortion in screen space
-    float ndv = clamp(dot(N, V), 0.0, 1.0);
-    float waveBoost = mix(1.5, 0.6, ndv); // more at grazing angles
-    vec2 distortion = dudv * (u_distortStrength * waveBoost);
+	vec4 reflectColor = texture(u_reflectionTex, reflectTextCoords);
+	vec4 refractColor = texture(u_refractionTex, refractTexCoords);
+    float depthFade = clamp(
+        (fs_in.worldPos.y - 65.0 + 2.0) / 6.0,
+        0.0, 1.0
+    );
 
-    // distorted UVs for refraction/reflection
-    float refrDist = 1.0;
-    float reflDist = 0.35;
-    vec2 refrUV = uv + distortion * refrDist;
-    vec2 reflUV = uv + distortion * reflDist;
+float aoStrength = mix(0.2, 0.75, depthFade);
+    refractColor.rgb *= mix(1.0, ao, aoStrength);
 
-    // clamp after distortion
-    refrUV = clamp(refrUV, 0.001, 0.999);
-    reflUV = clamp(reflUV, 0.001, 0.999);
+	vec3 viewVector = normalize(u_viewPos - fs_in.worldPos);
+	float refractiveFactor = dot(viewVector, vec3(0.0, 1.0, 0.0));
+	refractiveFactor = pow(refractiveFactor, 2.0);
 
-    // REFRACTION + REFLECTION
-    vec3 refraction = texture(u_refractionTex, refrUV).rgb;
-    vec3 reflection = texture(u_reflectionTex, reflUV).rgb;
+	vec4 normalMapColor = texture(u_normalTex, waterUV);
+	vec3 normal = vec3(normalMapColor.r * 2.0 - 1.0, normalMapColor.b, normalMapColor.g * 2.0 - 1.0);
+	normal = normalize(normal);
 
-    float fresnel = pow(1.0 - ndv, 5.0);
-    fresnel = mix(0.02, 0.98, fresnel);
+	vec3 reflectedLight = reflect(normalize(fs_in.worldPos - u_lightPos), normal);
+	float specular = max(dot(reflectedLight, viewVector), 0.0);
+	specular = pow(specular, 20.0);
+	vec3 specularHighlights = u_lightColor * specular * 0.6;
 
-    // SHORELINE
-    float sceneDepth01 = texture(u_refractionDepthTex, uv).r;
-    float sceneDepth   = linearizeDepth(sceneDepth01);
-
-    float waterDepth01  = gl_FragCoord.z;
-    float waterDepth    = linearizeDepth(waterDepth01);
-
-    float thickness = max(sceneDepth - waterDepth, 0.0);
-
-    float edgeFade = clamp(thickness / 1.5, 0.0, 1.0);
-    float alpha = mix(0.1, 0.85, edgeFade);
-
-    // DEPTH ABSORPTION
-    vec3 deepColor = vec3(0.0, 0.25, 0.35);
-    float absorb = clamp(thickness / 8.0, 0.0, 1.0);
-
-    // FOG
-    float fogTune = 0.15;
-    float fog = clamp(1.0 - exp(-thickness * fogTune), 0.0, 1.0);
-
-    // tune refraction
-    refraction = mix(refraction, deepColor, absorb);
-    refraction = mix(refraction, deepColor, fog);
-
-    vec3 base = mix(refraction, reflection, fresnel);
-
-    // LIGHTING
-    vec3 waterTint = vec3(0.0, 0.1, 0.3);
-
-    // light cube
-    vec3 L = normalize(u_lightPos - fs_in.worldPos);
-
-    // add attenuation
-    float distance = length(u_lightPos - fs_in.worldPos);
-    float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
-
-    // ambient + diffuse tint
-    vec3 ambient = u_ambientStrength * waterTint;
-    float diff = max(dot(N, L), 0.0);
-    vec3 diffuse = waterTint * diff * 0.25;
-    diffuse *= attenuation;
-
-    // blinn-phong specular
-    vec3 H = normalize(L + V);
-    float shininess = 64.0;
-    float specStrength = 0.25;
-    float spec = pow(max(dot(N, H), 0.0), shininess);
-    vec3 specular = u_lightColor * spec * specStrength;
-    specular *= attenuation;
-    specular *= fresnel;
-
-    // world ambient strength tune
-    float env = clamp(u_ambientStrength, 0.0, 1.0);
-    base *= mix(0.05, 1.0, env);
-
-    float specEnv = mix(0.2, 1.0, env);
-    spec *= specEnv;
-
-    // final color
-    vec3 color = base + (ambient + diffuse + specular);
-    FragColor = vec4(color, alpha);
+	FragColor = mix(reflectColor, refractColor, refractiveFactor);
+	FragColor = mix(FragColor, vec4(0.0,0.03,0.5,1.0), 0.1) + vec4(specularHighlights,0.0);
 }

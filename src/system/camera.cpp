@@ -122,7 +122,14 @@ void Camera::processMouseScroll(float yoffset)
 void Camera::invertPitch()
 {
 	pitch_ = -pitch_;
+
+	// prior enable state
+	bool wasEnabled = isEnabled_;
+	isEnabled_ = true;
 	updateCameraVectors();
+
+	// resore prior enable state
+	isEnabled_ = wasEnabled;
 } // end of invertPitch()
 
 // mouse handlers
@@ -167,12 +174,17 @@ bool Camera::isEnabled() const
 	return isEnabled_;
 } // end of isEnabled()
 
-glm::mat4 Camera::getProjectionMatrix(float aspectRatio, float nearPlane, float farPlane) const
+glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const
 {
 	return glm::perspective(glm::radians(zoom_), aspectRatio, nearPlane_, farPlane_);
 } // end of getProjectionMatrix()
 
 glm::vec3 Camera::getCameraPosition() const
+{
+	return position_;
+} // end of getCameraPosition()
+
+glm::vec3& Camera::getCameraPosition()
 {
 	return position_;
 } // end of getCameraPosition()
@@ -187,6 +199,11 @@ glm::vec3 Camera::getCameraDirection() const
 	return front_;
 } // end of getCameraDirection()
 
+glm::vec3 Camera::getCameraUp() const
+{
+	return up_;
+} // end of getCameraUp()
+
 float Camera::getNearPlane() const
 {
 	return nearPlane_;
@@ -199,7 +216,7 @@ float Camera::getFarPlane() const
 
 void Camera::setFarPlane(float fp)
 {
-	farPlane_ = fp;
+	farPlane_ = std::clamp(fp, MIN_FARPLANE, MAX_FARPLANE);
 } // end of setFarPlane()
 
 float Camera::getMovementSpeed() const
@@ -209,7 +226,7 @@ float Camera::getMovementSpeed() const
 
 void Camera::setMovementSpeed(float speed)
 {
-	movementSpeed_ = speed;
+	movementSpeed_ = std::clamp(speed, MIN_MOVESPEED, MAX_MOVESPEED);
 } // end of setMovementSpeed()
 
 
