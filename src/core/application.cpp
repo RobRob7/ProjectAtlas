@@ -550,11 +550,10 @@ void Application::drawInspector()
 
 		bool changed = false;
 
-		changed |= ImGui::DragFloat("Movement Speed##cam", &movementSpeed, 0.1f, 2.5f, 7.5f);
+		changed |= ImGui::DragFloat("Movement Speed##cam", &movementSpeed, 0.1f);
 		if (ImGui::Button("Reset##cam_mov"))
 		{
-			movementSpeed = 2.5f;
-			camera.setMovementSpeed(movementSpeed);
+			camera.setMovementSpeed(camera.MIN_MOVESPEED);
 		}
 		changed |= ImGui::DragFloat3("Position##cam", glm::value_ptr(pos), 0.1f);
 		if (ImGui::Button("Reset##cam_pos"))
@@ -562,11 +561,10 @@ void Application::drawInspector()
 			pos = glm::vec3(0.0f, 100.0f, 3.0f);
 			camera.setCameraPosition(pos);
 		}
-		changed |= ImGui::DragFloat("Far Plane##cam", &fp, 5.0f, 200.0f, 4000.0f);
+		changed |= ImGui::DragFloat("Far Plane##cam", &fp, 5.0f);
 		if (ImGui::Button("Reset##cam_fp"))
 		{
-			fp = 2000.0f;
-			camera.setFarPlane(fp);
+			camera.setFarPlane(camera.MIN_FARPLANE);
 		}
 
 		if (changed)
@@ -594,7 +592,7 @@ void Application::drawInspector()
 		changed |= ImGui::ColorEdit3("Color##light", glm::value_ptr(color));
 		if (ImGui::Button("Reset##Color"))
 		{
-			light.setColor(glm::vec3(1.0f));
+			light.setColor(glm::vec3(light.MAX_COLOR));
 		}
 
 		if (changed)
@@ -613,27 +611,22 @@ void Application::drawInspector()
 
 		ChunkManager& world = scene_->getWorld();
 		float ambientStrength = world.getAmbientStrength();
-		changed |= ImGui::DragFloat("Ambient Strength##world", &ambientStrength, 0.01f, 0.0f, 0.5f);
+		changed |= ImGui::DragFloat("Ambient Strength##world", &ambientStrength, 0.01f);
 		if (ImGui::Button("Reset##amb"))
 		{
-			ambientStrength = 0.5f;
+			ambientStrength = world.MAX_AMBSTR;
 			world.setAmbientStrength(ambientStrength);
 		}
 		int viewRadius = world.getViewRadius();
-		changed |= ImGui::DragInt("View Radius##world", &viewRadius, 1, 1, 40);
+		changed |= ImGui::DragInt("View Radius##world", &viewRadius, 1);
 		if (ImGui::Button("Reset##radius"))
 		{
-			viewRadius = 12;
+			viewRadius = world.MIN_RADIUS;
 			world.setViewRadius(viewRadius);
 		}
 
 		if (changed)
 		{
-			const float minAmbStr = 0.05f;
-			if (ambientStrength < minAmbStr)
-			{
-				ambientStrength = minAmbStr;
-			}
 			world.setAmbientStrength(ambientStrength);
 			world.setViewRadius(viewRadius);
 		}
@@ -642,7 +635,6 @@ void Application::drawInspector()
 	}
 
 	ImGui::End();
-
 } // end of drawInspector()
 
 void Application::setImGuiInputEnabled(bool enabled)

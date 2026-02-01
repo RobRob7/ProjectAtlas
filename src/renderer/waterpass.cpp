@@ -10,16 +10,20 @@ void WaterPass::init()
 {
     dudvTex_.emplace("dudv.png");
     dudvTex_->setWrapRepeat();
+    normalTex_.emplace("waternormal.png");
+    normalTex_->setWrapRepeat();
 } // end of init()
 
 void WaterPass::resize(int w, int h)
 {
     if (w <= 0 || h <= 0) return;
-    if (w == width_ && h == height_) return;
+    if (w == fullW_ && h == fullH_) return;
     
     destroyTargets();
-    width_ = w;
-    height_ = h;
+    fullW_ = w;
+    fullH_ = h;
+    width_  = std::max(1, w / factor_);
+    height_ = std::max(1, h / factor_);
     createTargets();
 } // end of resize()
 
@@ -56,6 +60,11 @@ const uint32_t& WaterPass::getDuDVTex() const
     return dudvTex_->m_ID;
 } // end of getDuDVTex()
 
+const uint32_t& WaterPass::getNormalTex() const
+{
+    return normalTex_->m_ID;
+} // end of getNormalTex()
+
 
 //--- PRIVATE ---//
 void WaterPass::createTargets()
@@ -66,14 +75,14 @@ void WaterPass::createTargets()
 
     // reflection
     glCreateTextures(GL_TEXTURE_2D, 1, &reflColorTex_);
-    glTextureStorage2D(reflColorTex_, 1, GL_RGBA8, width_ / 1, height_ / 1);
+    glTextureStorage2D(reflColorTex_, 1, GL_RGBA8, width_, height_);
     glTextureParameteri(reflColorTex_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTextureParameteri(reflColorTex_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTextureParameteri(reflColorTex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTextureParameteri(reflColorTex_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glCreateRenderbuffers(1, &reflDepthRBO_);
-    glNamedRenderbufferStorage(reflDepthRBO_, GL_DEPTH_COMPONENT24, width_ / 1, height_ / 1);
+    glNamedRenderbufferStorage(reflDepthRBO_, GL_DEPTH_COMPONENT24, width_, height_);
 
     glNamedFramebufferTexture(reflFBO_, GL_COLOR_ATTACHMENT0, reflColorTex_, 0);
     glNamedFramebufferRenderbuffer(reflFBO_, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, reflDepthRBO_);
@@ -83,14 +92,14 @@ void WaterPass::createTargets()
 
     // refraction
     glCreateTextures(GL_TEXTURE_2D, 1, &refrColorTex_);
-    glTextureStorage2D(refrColorTex_, 1, GL_RGBA8, width_ / 1, height_ / 1);
+    glTextureStorage2D(refrColorTex_, 1, GL_RGBA8, width_, height_);
     glTextureParameteri(refrColorTex_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTextureParameteri(refrColorTex_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTextureParameteri(refrColorTex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTextureParameteri(refrColorTex_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glCreateTextures(GL_TEXTURE_2D, 1, &refrDepthTex_);
-    glTextureStorage2D(refrDepthTex_, 1, GL_DEPTH_COMPONENT24, width_ / 1, height_ / 1);
+    glTextureStorage2D(refrDepthTex_, 1, GL_DEPTH_COMPONENT24, width_, height_);
     glTextureParameteri(refrDepthTex_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTextureParameteri(refrDepthTex_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTextureParameteri(refrDepthTex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -150,9 +159,12 @@ void WaterPass::destroyTargets()
 void WaterPass::waterPass(const RenderInputs& in)
 {
     glEnable(GL_DEPTH_TEST);
-
     waterReflectionPass(in);
     waterRefractionPass(in);
+
+    // restore framebuffer + viewport
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, fullW_, fullH_);
 
     glDisable(GL_DEPTH_TEST);
 } // end of waterPass()
@@ -160,35 +172,49 @@ void WaterPass::waterPass(const RenderInputs& in)
 void WaterPass::waterReflectionPass(const RenderInputs& in)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, reflFBO_);
-    glViewport(0, 0, width_ / 1, height_ / 1);
+    glViewport(0, 0, width_, height_);
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // build reflected view matrix
-    float waterHeight = 64.9f;
-    glm::mat4 view = in.camera->getViewMatrix();
-    glm::mat4 R(1.0f);
-    R[1][1] = -1.0f;
-    R[3][1] = 2.0f * waterHeight;
-    glm::mat4 reflView = view * R;
+    float waterHeight = static_cast<float>(SEA_LEVEL) + 1.0f;
+    const float eps = 0.05f;
+    Camera& camera = *in.camera;
+    float distance = 2.0f * (camera.getCameraPosition().y - waterHeight);
+    camera.getCameraPosition().y -= distance;
+    camera.invertPitch();
+    glm::mat4 reflView = camera.getViewMatrix();
 
     // set clip plane (clip everything below water)
-    glm::vec4 clipPlane{ 0, 1, 0, -waterHeight };
+    glm::vec4 clipPlane{ 0, 1, 0, -(waterHeight + eps)};
     auto& opaqueShader = in.world->getOpaqueShader();
     opaqueShader->use();
     opaqueShader->setVec4("u_clipPlane", clipPlane);
     opaqueShader->setBool("u_useClipPlane", true);
 
-    const float aspect = (height_ > 0)
-        ? (static_cast<float>(width_) / static_cast<float>(height_))
+    // disable SSAO
+    opaqueShader->setBool("u_useSSAO", false);
+
+    // restore res
+    int widthAdj = width_ * factor_;
+    int heightAdj = height_ * factor_;
+    const float aspect = (fullH_ > 0)
+        ? (static_cast<float>(fullW_) / static_cast<float>(fullH_))
         : 1.0f;
     const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
+
+    opaqueShader->setVec3("u_viewPos", camera.getCameraPosition());
 
     // render objects (non-UI)
     in.world->renderOpaque(*opaqueShader, reflView, proj);
     in.light->render(reflView, proj);
     in.skybox->render(reflView, proj);
 
+    // restore camera
+    camera.getCameraPosition().y += distance;
+    camera.invertPitch();
+
+    // disable clip plane
     opaqueShader->use();
     opaqueShader->setBool("u_useClipPlane", false);
 } // end of waterReflectionPass()
@@ -196,21 +222,29 @@ void WaterPass::waterReflectionPass(const RenderInputs& in)
 void WaterPass::waterRefractionPass(const RenderInputs& in)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, refrFBO_);
-    glViewport(0, 0, width_ / 1, height_ / 1);
+    glViewport(0, 0, width_, height_);
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float waterHeight = 64.9f;
     // set clip plane (clip everything above water)
-    glm::vec4 clipPlane{ 0, -1, 0, waterHeight };
+    float waterHeight = static_cast<float>(SEA_LEVEL) + 1.0f;
+    const float eps = 0.05f;
+    glm::vec4 clipPlane{ 0, -1, 0, (waterHeight - eps) };
     auto& opaqueShader = in.world->getOpaqueShader();
     opaqueShader->use();
     opaqueShader->setVec4("u_clipPlane", clipPlane);
     opaqueShader->setBool("u_useClipPlane", true);
 
+    // disable SSAO
+    opaqueShader->setBool("u_useSSAO", false);
+
     const glm::mat4 view = in.camera->getViewMatrix();
-    const float aspect = (height_ > 0)
-        ? (static_cast<float>(width_) / static_cast<float>(height_))
+
+    // restore res
+    int widthAdj = width_ * factor_;
+    int heightAdj = height_ * factor_;
+    const float aspect = (fullH_ > 0)
+        ? (static_cast<float>(fullW_) / static_cast<float>(fullH_))
         : 1.0f;
     const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
 
@@ -220,6 +254,7 @@ void WaterPass::waterRefractionPass(const RenderInputs& in)
     in.world->renderOpaque(*opaqueShader, view, proj);
     in.light->render(view, proj);
 
+    // disable clip plane
     opaqueShader->use();
     opaqueShader->setBool("u_useClipPlane", false);
 } // end of waterRefractionPass()

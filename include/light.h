@@ -12,9 +12,13 @@
 #include <cstdint>
 #include <cstddef>
 #include <optional>
+#include <algorithm>
 
 class Light
 {
+public:
+	const float MIN_COLOR = 0.0f;
+	const float MAX_COLOR = 1.0f;
 public:
 	Light(const glm::vec3& pos, const glm::vec3& color = glm::vec3(1.0f));
 	~Light();

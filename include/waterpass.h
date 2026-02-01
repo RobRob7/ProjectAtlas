@@ -31,10 +31,14 @@ public:
 	const uint32_t& getRefrDepthTex() const;
 
 	const uint32_t& getDuDVTex() const;
+	const uint32_t& getNormalTex() const;
 
 private:
+	int factor_{ 2 };
 	int width_{};
 	int height_{};
+	int fullW_{ 0 };
+	int fullH_{ 0 };
 
 	uint32_t reflFBO_{};
 	uint32_t reflColorTex_{};
@@ -45,6 +49,7 @@ private:
 	uint32_t refrDepthTex_{};
 
 	std::optional<Texture> dudvTex_;
+	std::optional<Texture> normalTex_;
 private:
 	void createTargets();
 	void destroyTargets();

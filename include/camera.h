@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <algorithm>
+
 // camera movement options
 enum Camera_Movement {
 	FORWARD,
@@ -22,6 +24,12 @@ const float ZOOM		= 90.0f;
 // cameracontroller class
 class Camera
 {
+public:
+	const float MIN_NEARPLANE = 0.1f;
+	const float MIN_MOVESPEED = 5.0f;
+	const float MAX_MOVESPEED = 10.0f;
+	const float MIN_FARPLANE = 200.0f;
+	const float MAX_FARPLANE = 4000.0f;
 public:
 	// constructor with vectors
 	Camera(int width, int height, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH);
@@ -62,12 +70,15 @@ public:
 	void setEnabled(bool enabled);
 	bool isEnabled() const;
 
-	glm::mat4 getProjectionMatrix(float aspectRatio, float nearPlane = 0.1f, float farPlane = 200.0f) const;
+	glm::mat4 getProjectionMatrix(float aspectRatio) const;
 
 	glm::vec3 getCameraPosition() const;
+	glm::vec3& getCameraPosition();
 	void setCameraPosition(glm::vec3 pos);
 
 	glm::vec3 getCameraDirection() const;
+	glm::vec3 getCameraUp() const;
+
 
 	float getNearPlane() const;
 	float getFarPlane() const;
@@ -96,8 +107,8 @@ private:
 	glm::vec3 right_{};
 	glm::vec3 worldUp_{};
 
-	float nearPlane_{0.1f};
-	float farPlane_{2000.0f};
+	float nearPlane_{ MIN_NEARPLANE };
+	float farPlane_{ MIN_FARPLANE };
 
 	// euler angles
 	float yaw_{};
@@ -107,7 +118,7 @@ private:
 	float movementSpeed_{};
 	float mouseSensitivity_{};
 	float zoom_{};
-	float accelerationMultiplier_ = 1.0f;
+	float accelerationMultiplier_{ 1.0f };
 private:
 	// calculates the front vector from the Camera's (updated) Euler angles
 	void updateCameraVectors();
