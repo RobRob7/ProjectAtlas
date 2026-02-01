@@ -12,7 +12,7 @@ void Scene::init(Renderer& renderer)
 	renderer.init();
 	renderer.resize(width_, height_);
 
-	camera_.emplace(width_, height_, glm::vec3(0.0f, 100.0f, 3.0f));
+	camera_.emplace(width_, height_, glm::vec3(0.0f, 75.0f, 3.0f));
 
 	skybox_.emplace();
 	skybox_->init();
@@ -23,7 +23,7 @@ void Scene::init(Renderer& renderer)
 	crosshair_.emplace();
 	crosshair_->init();
 
-	light_.emplace(camera_->getCameraPosition());
+	light_.emplace(camera_->getCameraPosition() + glm::vec3(0.0f, 25.0f, 0.0f));
 	light_->init();
 } // end of init
 
