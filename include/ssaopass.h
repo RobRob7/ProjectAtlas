@@ -8,8 +8,8 @@
 
 #include <cstdlib>
 #include <optional>
-#include <array>
 #include <vector>
+#include <array>
 #include <stdexcept>
 #include <random>
 #include <algorithm>
@@ -49,8 +49,9 @@ private:
 	static constexpr int kNoiseSize_ = 4;
 	float radius_ = 5.0f;
 	float bias_ = 0.05f;
+	static constexpr int MAX_KERNEL_SIZE = 64;
 	int kernelSize_ = 64;
-	std::array<glm::vec3, 64> samples_{};
+	std::array<glm::vec3, MAX_KERNEL_SIZE> samples_{};
 
 private:
 	void createTargets();
