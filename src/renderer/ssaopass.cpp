@@ -91,8 +91,10 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 	glBindVertexArray(fsVao_);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
+	// restore GL state
 	glBindVertexArray(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
 } // end of render()
 
 uint32_t SSAOPass::aoRawTexture() const
@@ -117,7 +119,14 @@ void SSAOPass::setBias(float b)
 
 void SSAOPass::setKernelSize(int k)
 {
-	kernelSize_ = std::clamp(k, 1, 64);
+	int newKernelSize = std::clamp(k, 1, MAX_KERNEL_SIZE);
+
+	// only update kernel size if different than current
+	if (newKernelSize == kernelSize_) return;
+
+	kernelSize_ = newKernelSize;
+	
+	createKernel();
 } // end of setKernelSize()
 
 
@@ -211,7 +220,7 @@ void SSAOPass::createKernel()
 	std::mt19937 rng{ std::random_device{}() };
 	std::uniform_real_distribution<float> dist01{ 0.0f,1.0f };
 
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < kernelSize_; ++i)
 	{
 		// hemisphere around +z (tangent space)
 		glm::vec3 s{
@@ -223,7 +232,7 @@ void SSAOPass::createKernel()
 		s *= dist01(rng);
 
 		// bias samples toward the origin
-		float scale = float(i) / 64.0f;
+		float scale = static_cast<float>(i) / static_cast<float>(kernelSize_);
 		scale = 0.1f + (scale * scale) * (1.0f - 0.1f);
 		s *= scale;
 
@@ -232,7 +241,7 @@ void SSAOPass::createKernel()
 
 	// upload kernel
 	ssaoShader_->use();
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < kernelSize_; ++i)
 	{
 		ssaoShader_->setVec3(("u_samples[" + std::to_string(i) + "]").c_str(), samples_[i]);
 	} // end for

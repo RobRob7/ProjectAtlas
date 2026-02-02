@@ -2,6 +2,8 @@
 
 in vec2 vUV;
 
+#define MAX_KERNEL_SIZE 64
+
 uniform sampler2D u_gNormal;
 uniform sampler2D u_gDepth;
 uniform sampler2D u_noise;
@@ -14,7 +16,7 @@ uniform float u_radius;
 uniform float u_bias;
 uniform int u_kernelSize;
 
-uniform vec3 u_samples[64];
+uniform vec3 u_samples[MAX_KERNEL_SIZE];
 
 out float FragAO;
 
