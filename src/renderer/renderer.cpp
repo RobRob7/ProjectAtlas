@@ -91,7 +91,7 @@ void Renderer::renderFrame(const RenderInputs& in)
     worldShader->setVec3("u_lightColor", in.light->getColor());
 
     // ssao
-    worldShader->setVec2("u_screenSize", glm::vec2(width_, height_));
+    worldShader->setVec2("u_screenSize", glm::vec2{ width_, height_ });
     worldShader->setBool("u_useSSAO", renderSettings_.useSSAO);
     worldShader->setInt("u_ssao", 3);
     if (renderSettings_.useSSAO)
@@ -112,13 +112,13 @@ void Renderer::renderFrame(const RenderInputs& in)
     waterShader->setVec3("u_lightColor", in.light->getColor());
     waterShader->setFloat("u_near", in.camera->getNearPlane());
     waterShader->setFloat("u_far", in.camera->getFarPlane());
+    waterShader->setVec2("u_screenSize", glm::vec2{ width_, height_ });
 
     waterShader->setInt("u_reflectionTex", 4);
     waterShader->setInt("u_refractionTex", 5);
     waterShader->setInt("u_refractionDepthTex", 6);
     waterShader->setInt("u_dudvTex", 7);
     waterShader->setInt("u_normalTex", 8);
-    waterShader->setInt("u_ssaoTex", 3);
     waterShader->setFloat("u_time", in.time);
 
     // bind textures

@@ -32,7 +32,7 @@ public:
 	const float MIN_AMBSTR = 0.05f;
 	const float MAX_AMBSTR = 0.5f;
 public:
-	ChunkManager(int viewRadiusInChunks = 10);
+	ChunkManager(int viewRadiusInChunks = 15);
 
 	void init();
 

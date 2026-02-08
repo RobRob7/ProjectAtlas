@@ -179,6 +179,7 @@ void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
 {
 	opaqueShader_->use();
 	glBindTextureUnit(0, atlas_->m_ID);
+	opaqueShader_->setInt("u_atlas", 0);
 	opaqueShader_->setMat4("u_view", view);
 	opaqueShader_->setMat4("u_proj", proj);
 
@@ -202,7 +203,9 @@ void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
 		glm::mat4 model = glm::translate(
 			glm::mat4(1.0f),
 			glm::vec3(chunk->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->getChunk().m_chunkZ * CHUNK_SIZE));
+		glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
 		opaqueShader_->setMat4("u_model", model);
+		opaqueShader_->setMat3("u_normalMatrix", normalMatrix);
 
 		chunk->renderChunkOpaque();
 	} // end for
@@ -212,6 +215,7 @@ void ChunkManager::renderOpaque(Shader& shader, const glm::mat4& view, const glm
 {
 	shader.use();
 	glBindTextureUnit(0, atlas_->m_ID);
+	shader.setInt("u_atlas", 0);
 	shader.setMat4("u_view", view);
 	shader.setMat4("u_proj", proj);
 
@@ -235,7 +239,9 @@ void ChunkManager::renderOpaque(Shader& shader, const glm::mat4& view, const glm
 		glm::mat4 model = glm::translate(
 			glm::mat4(1.0f),
 			glm::vec3(chunk->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->getChunk().m_chunkZ * CHUNK_SIZE));
+		glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
 		shader.setMat4("u_model", model);
+		shader.setMat3("u_normalMatrix", normalMatrix);
 
 		chunk->renderChunkOpaque();
 	} // end for
@@ -246,9 +252,6 @@ void ChunkManager::renderWater(const glm::mat4& view, const glm::mat4& proj)
 	waterShader_->use();
 	waterShader_->setMat4("u_view", view);
 	waterShader_->setMat4("u_proj", proj);
-
-	// atlas texture
-	glBindTextureUnit(0, atlas_->m_ID);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -269,7 +272,9 @@ void ChunkManager::renderWater(const glm::mat4& view, const glm::mat4& proj)
 		glm::mat4 model = glm::translate(
 			glm::mat4(1.0f),
 			glm::vec3(chunk->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->getChunk().m_chunkZ * CHUNK_SIZE));
+		glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
 		waterShader_->setMat4("u_model", model);
+		waterShader_->setMat3("u_normalMatrix", normalMatrix);
 
 		chunk->renderChunkWater();
 	} // end for

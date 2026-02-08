@@ -521,7 +521,7 @@ void Application::drawInspector()
 		changed |= ImGui::DragFloat("End Pos##fog", &settings.fogSettings.end, 0.1f, settings.fogSettings.start, 2000.0f);
 		if (ImGui::Button("Reset##fog_end"))
 		{
-			settings.fogSettings.end = 400.0f;
+			settings.fogSettings.end = 200.0f;
 		}
 
 		// ensure start + kMinGap <= end ALWAYS
