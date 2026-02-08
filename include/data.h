@@ -12,6 +12,11 @@ struct Vertex
 	glm::vec2 uv;
 };
 
+struct VertexWater
+{
+    glm::vec3 pos;
+};
+
 inline constexpr std::array<uint32_t, 6> FACE_INDICES = { 0, 1, 2, 0, 2, 3 };
 
 

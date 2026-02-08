@@ -116,7 +116,7 @@ public:
 
 private:
     // water
-    std::vector<Vertex> waterVertices_;
+    std::vector<VertexWater> waterVertices_;
     std::vector<uint32_t> waterIndices_;
     uint32_t waterVao_{};
     uint32_t waterVbo_{};
