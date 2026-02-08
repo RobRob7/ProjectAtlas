@@ -37,23 +37,23 @@ ChunkMesh::ChunkMesh(int chunkX, int chunkY)
 	glCreateBuffers(1, &waterEbo_);
 
 	// attach buffers to vao
-	glVertexArrayVertexBuffer(waterVao_, 0, waterVbo_, 0, sizeof(Vertex));
+	glVertexArrayVertexBuffer(waterVao_, 0, waterVbo_, 0, sizeof(VertexWater));
 	glVertexArrayElementBuffer(waterVao_, waterEbo_);
 
 	// position
 	glEnableVertexArrayAttrib(waterVao_, 0);
-	glVertexArrayAttribFormat(waterVao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+	glVertexArrayAttribFormat(waterVao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(VertexWater, pos));
 	glVertexArrayAttribBinding(waterVao_, 0, 0);
 
-	// normal
-	glEnableVertexArrayAttrib(waterVao_, 1);
-	glVertexArrayAttribFormat(waterVao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-	glVertexArrayAttribBinding(waterVao_, 1, 0);
+	//// normal
+	//glEnableVertexArrayAttrib(waterVao_, 1);
+	//glVertexArrayAttribFormat(waterVao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+	//glVertexArrayAttribBinding(waterVao_, 1, 0);
 
-	// uv
-	glEnableVertexArrayAttrib(waterVao_, 2);
-	glVertexArrayAttribFormat(waterVao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
-	glVertexArrayAttribBinding(waterVao_, 2, 0);
+	//// uv
+	//glEnableVertexArrayAttrib(waterVao_, 2);
+	//glVertexArrayAttribFormat(waterVao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+	//glVertexArrayAttribBinding(waterVao_, 2, 0);
 
 	buildChunkMesh();
 	uploadChunkMesh();
@@ -118,7 +118,7 @@ void ChunkMesh::uploadChunkMesh()
 	// WATER reupload into vbo
 	glNamedBufferData(
 		waterVbo_,
-		waterVertices_.size() * sizeof(Vertex),
+		waterVertices_.size() * sizeof(VertexWater),
 		waterVertices_.empty() ? nullptr : waterVertices_.data(),
 		GL_STATIC_DRAW
 	);
@@ -301,10 +301,10 @@ void ChunkMesh::buildChunkMesh()
 
 			uint32_t start = static_cast<uint32_t>(waterVertices_.size());
 
-			Vertex v0; v0.pos = p0; v0.normal = { 0,1,0 }; v0.uv = atlasUV({ 0,0 }, tileX, tileY);
-			Vertex v1; v1.pos = p1; v1.normal = { 0,1,0 }; v1.uv = atlasUV({ 1,0 }, tileX, tileY);
-			Vertex v2; v2.pos = p2; v2.normal = { 0,1,0 }; v2.uv = atlasUV({ 1,1 }, tileX, tileY);
-			Vertex v3; v3.pos = p3; v3.normal = { 0,1,0 }; v3.uv = atlasUV({ 0,1 }, tileX, tileY);
+			VertexWater v0; v0.pos = p0;
+			VertexWater v1; v1.pos = p1;
+			VertexWater v2; v2.pos = p2;
+			VertexWater v3; v3.pos = p3;
 
 			waterVertices_.push_back(v0);
 			waterVertices_.push_back(v1);
