@@ -28,7 +28,7 @@ public:
 	const float MIN_NEARPLANE = 0.1f;
 	const float MIN_MOVESPEED = 5.0f;
 	const float MAX_MOVESPEED = 10.0f;
-	const float MIN_FARPLANE = 200.0f;
+	const float MIN_FARPLANE = 1000.0f;
 	const float MAX_FARPLANE = 4000.0f;
 public:
 	// constructor with vectors

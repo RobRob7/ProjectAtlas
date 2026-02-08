@@ -26,7 +26,7 @@ public:
 private:
     glm::vec3 fogColor_{ 1.0f, 1.0f, 1.0f };
     float fogStart_{ 50.0f };
-    float fogEnd_{ 400.0f };
+    float fogEnd_{ 200.0f };
 
     uint32_t fsVao_{};
     std::optional<Shader> shader_;

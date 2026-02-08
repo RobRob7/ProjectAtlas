@@ -36,8 +36,8 @@ struct FogSettings
 {
 	glm::vec3 color{ 1.0f, 1.0f, 1.0f };
 
-	float start = 75.0f;
-	float end = 400.0f;
+	float start = 50.0f;
+	float end = 200.0f;
 };
 
 struct RenderSettings

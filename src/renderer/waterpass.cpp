@@ -159,6 +159,7 @@ void WaterPass::destroyTargets()
 void WaterPass::waterPass(const RenderInputs& in)
 {
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CLIP_DISTANCE0);
     waterReflectionPass(in);
     waterRefractionPass(in);
 
@@ -167,6 +168,7 @@ void WaterPass::waterPass(const RenderInputs& in)
     glViewport(0, 0, fullW_, fullH_);
 
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CLIP_DISTANCE0);
 } // end of waterPass()
 
 void WaterPass::waterReflectionPass(const RenderInputs& in)
@@ -177,8 +179,7 @@ void WaterPass::waterReflectionPass(const RenderInputs& in)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // build reflected view matrix
-    float waterHeight = static_cast<float>(SEA_LEVEL) + 1.0f;
-    const float eps = 0.05f;
+    float waterHeight = static_cast<float>(SEA_LEVEL) + 0.9f;
     Camera& camera = *in.camera;
     float distance = 2.0f * (camera.getCameraPosition().y - waterHeight);
     camera.getCameraPosition().y -= distance;
@@ -186,18 +187,14 @@ void WaterPass::waterReflectionPass(const RenderInputs& in)
     glm::mat4 reflView = camera.getViewMatrix();
 
     // set clip plane (clip everything below water)
-    glm::vec4 clipPlane{ 0, 1, 0, -(waterHeight + eps)};
+    glm::vec4 clipPlane{ 0, 1, 0, -(waterHeight)};
     auto& opaqueShader = in.world->getOpaqueShader();
     opaqueShader->use();
     opaqueShader->setVec4("u_clipPlane", clipPlane);
-    opaqueShader->setBool("u_useClipPlane", true);
 
     // disable SSAO
     opaqueShader->setBool("u_useSSAO", false);
 
-    // restore res
-    int widthAdj = width_ * factor_;
-    int heightAdj = height_ * factor_;
     const float aspect = (fullH_ > 0)
         ? (static_cast<float>(fullW_) / static_cast<float>(fullH_))
         : 1.0f;
@@ -213,10 +210,6 @@ void WaterPass::waterReflectionPass(const RenderInputs& in)
     // restore camera
     camera.getCameraPosition().y += distance;
     camera.invertPitch();
-
-    // disable clip plane
-    opaqueShader->use();
-    opaqueShader->setBool("u_useClipPlane", false);
 } // end of waterReflectionPass()
 
 void WaterPass::waterRefractionPass(const RenderInputs& in)
@@ -227,22 +220,17 @@ void WaterPass::waterRefractionPass(const RenderInputs& in)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // set clip plane (clip everything above water)
-    float waterHeight = static_cast<float>(SEA_LEVEL) + 1.0f;
-    const float eps = 0.05f;
-    glm::vec4 clipPlane{ 0, -1, 0, (waterHeight - eps) };
+    float waterHeight = static_cast<float>(SEA_LEVEL) + 0.9f;
+    glm::vec4 clipPlane{ 0, -1, 0, (waterHeight) };
     auto& opaqueShader = in.world->getOpaqueShader();
     opaqueShader->use();
     opaqueShader->setVec4("u_clipPlane", clipPlane);
-    opaqueShader->setBool("u_useClipPlane", true);
 
     // disable SSAO
     opaqueShader->setBool("u_useSSAO", false);
 
     const glm::mat4 view = in.camera->getViewMatrix();
 
-    // restore res
-    int widthAdj = width_ * factor_;
-    int heightAdj = height_ * factor_;
     const float aspect = (fullH_ > 0)
         ? (static_cast<float>(fullW_) / static_cast<float>(fullH_))
         : 1.0f;
@@ -253,8 +241,4 @@ void WaterPass::waterRefractionPass(const RenderInputs& in)
     // render objects (non-UI)
     in.world->renderOpaque(*opaqueShader, view, proj);
     in.light->render(view, proj);
-
-    // disable clip plane
-    opaqueShader->use();
-    opaqueShader->setBool("u_useClipPlane", false);
 } // end of waterRefractionPass()
