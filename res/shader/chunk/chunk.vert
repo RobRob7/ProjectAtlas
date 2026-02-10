@@ -7,21 +7,10 @@ uniform mat4 u_view;
 uniform mat4 u_proj;
 uniform vec4 u_clipPlane;
 
-out vec2 UV;
+flat out uvec2 Tile;
+out vec2 TileUV;
 out vec3 FragWorldPos;
 out vec3 Normal;
-
-// constants
-const int ATLAS_COLS = 32;
-const int ATLAS_ROWS = 32;
-
-const vec2[4] uvSample = 
-{ 
-    {0, 0},
-    {0, 1},
-    {1, 1},
-    {1, 0}
-};
 
 const vec3[6] normalSample =
 {
@@ -32,20 +21,6 @@ const vec3[6] normalSample =
     { 0,  0,  1},
     { 0,  0, -1}
 };
-
-// compute UV
-vec2 atlasUV(uint tileX, uint tileY, uint index)
-{
-	float tileW = 1.0f / ATLAS_COLS;
-	float tileH = 1.0f / ATLAS_ROWS;
-
-    vec2 uv = {
-        (tileX + uvSample[index].x) * tileW,
-		(tileY + uvSample[index].y) * tileH
-    };
-
-    return uv;
-} // end of atlasUV()
 
 void main()
 {
@@ -61,11 +36,9 @@ void main()
     uint tileX = combinedCopy & 31;
     combinedCopy >>= 5;
 
-    // derive UV
-    UV = atlasUV(tileX, tileY, uvIndex);
-
     // derive normal index
-    Normal = normalSample[combinedCopy & 7];
+    uint normalIndex = combinedCopy & 7;
+    Normal = normalSample[normalIndex];
     combinedCopy >>= 3;
 
     vec3 aPos;
@@ -79,12 +52,29 @@ void main()
     aPos.z = float(combinedCopy & 15);
     combinedCopy >>= 4;
     
+    Tile = uvec2(tileX, tileY);
     vec3 world = aPos + vec3(u_chunkOrigin);
     vec4 worldPos = vec4(world, 1.0);
+    FragWorldPos = world;
+
+    // X faces use (z,y)
+    if (normalIndex == 0u || normalIndex == 1u)
+    {      
+        TileUV = world.zy; // +/-X
+    }
+    // Y faces use (x,z)
+    else if (normalIndex == 2u || normalIndex == 3u) 
+    {
+        TileUV = world.xz; // +/-Y
+    }
+    // Z faces use (x,y)
+    else
+    {
+        TileUV = world.xy; // +/-Z
+    }
 
     // clipping plane
     gl_ClipDistance[0] = dot(worldPos, u_clipPlane);
-    FragWorldPos = world;
     
     gl_Position = u_proj * u_view * worldPos;
 }

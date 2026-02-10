@@ -1,6 +1,7 @@
 #version 460 core
 
-in vec2 UV;
+flat in uvec2 Tile;
+in vec2 TileUV;
 in vec3 FragWorldPos;
 in vec3 Normal;
 
@@ -16,9 +17,22 @@ uniform sampler2D u_ssao;
 
 out vec4 FragColor;
 
+const float ATLAS_COLS = 32.0;
+const float ATLAS_ROWS = 32.0;
+
+vec2 atlasUV(uvec2 tile, vec2 local01)
+{
+    vec2 tileW = vec2(1.0 / ATLAS_COLS, 1.0 / ATLAS_ROWS);
+    return (vec2(tile) + local01) * tileW;
+}
+
 void main()
 {
-    vec4 texColor = texture(u_atlas, UV);
+    // get correct UV (due to greedy meshing)
+    vec2 local = fract(TileUV);
+    vec2 uv = atlasUV(Tile, local);
+
+    vec4 texColor = texture(u_atlas, uv);
 
     // allow textures to be see-through
     // (like tree canopy texture)

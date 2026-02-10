@@ -198,110 +198,273 @@ void ChunkMesh::buildChunkMesh()
 	opaqueVertices_.reserve(CHUNK_SIZE * CHUNK_SIZE * 24);
 	opaqueIndices_.reserve(CHUNK_SIZE * CHUNK_SIZE * 24);
 
-	renderedBlockCount_ = 0;
+	//renderedBlockCount_ = 0;
 
-	// indexing
-	auto addFace = [&]( const std::array<glm::vec3, 4> faceVerts,
-						const std::array<uint32_t, 6> faceIndices,
-						int bx, int by, int bz,
-						BlockID id,
-						FaceDir faceDir)
-		{
-			uint32_t startIndex = static_cast<uint32_t>(opaqueVertices_.size());
+	//// indexing
+	//auto addFace = [&]( const std::array<glm::vec3, 4> faceVerts,
+	//					const std::array<uint32_t, 6> faceIndices,
+	//					int bx, int by, int bz,
+	//					BlockID id,
+	//					FaceDir faceDir)
+	//	{
+	//		uint32_t startIndex = static_cast<uint32_t>(opaqueVertices_.size());
 
-			int tileX;
-			int tileY;
-			getBlockTile(id, tileX, tileY, faceDir);
+	//		int tileX;
+	//		int tileY;
+	//		getBlockTile(id, tileX, tileY, faceDir);
 
-			
+	//		
 
-			// pack data
-			for (int i = 0; i < 4; ++i)
-			{
-				Vertex v{};
-				v.sample = PackVertexU32(
-					static_cast<uint32_t>(i),
-					static_cast<uint32_t>(tileX), static_cast<uint32_t>(tileY),
-					static_cast<uint32_t>(faceDir),
-					static_cast<uint32_t>(faceVerts[i].x + bx),
-					static_cast<uint32_t>(faceVerts[i].y + by),
-					static_cast<uint32_t>(faceVerts[i].z + bz));
+	//		// pack data
+	//		for (int i = 0; i < 4; ++i)
+	//		{
+	//			Vertex v{};
+	//			v.sample = PackVertexU32(
+	//				static_cast<uint32_t>(i),
+	//				static_cast<uint32_t>(tileX), static_cast<uint32_t>(tileY),
+	//				static_cast<uint32_t>(faceDir),
+	//				static_cast<uint32_t>(faceVerts[i].x + bx),
+	//				static_cast<uint32_t>(faceVerts[i].y + by),
+	//				static_cast<uint32_t>(faceVerts[i].z + bz));
 
-				opaqueVertices_.push_back(v);
-			} // end for
+	//			opaqueVertices_.push_back(v);
+	//		} // end for
 
-			for (int i = 0; i < 6; ++i)
-			{
-				opaqueIndices_.push_back(startIndex + faceIndices[i]);
-			} // end for
+	//		for (int i = 0; i < 6; ++i)
+	//		{
+	//			opaqueIndices_.push_back(startIndex + faceIndices[i]);
+	//		} // end for
+	//	};
+
+	//// opaque
+	//for (int x = 0; x < CHUNK_SIZE; ++x)
+	//{
+	//	for (int y = 0; y < CHUNK_SIZE_Y; ++y)
+	//	{
+	//		for (int z = 0; z < CHUNK_SIZE; ++z)
+	//		{
+	//			BlockID id = chunkData_.getBlockID(x, y, z);
+
+	//			// air, skip
+	//			if (id == BlockID::Air) continue;
+
+	//			// water, skip
+	//			if (id == BlockID::Water)
+	//			{
+	//				continue;
+	//			}
+
+	//			// count bool
+	//			bool emittedAnyFace = false;
+
+	//			// +X
+	//			if (isTransparent(x + 1, y, z))
+	//			{
+	//				addFace(FACE_POS_X, FACE_INDICES, x, y, z, id, FaceDir::PosX);
+	//				emittedAnyFace = true;
+	//			}
+	//			// -X
+	//			if (isTransparent(x - 1, y, z))
+	//			{
+	//				addFace(FACE_NEG_X, FACE_INDICES, x, y, z, id, FaceDir::NegX);
+	//				emittedAnyFace = true;
+	//			}
+	//			// +Y
+	//			if (isTransparent(x, y + 1, z))
+	//			{
+	//				addFace(FACE_POS_Y, FACE_INDICES, x, y, z, id, FaceDir::PosY);
+	//				emittedAnyFace = true;
+	//			}
+	//			// -Y
+	//			if (isTransparent(x, y - 1, z))
+	//			{
+	//				addFace(FACE_NEG_Y, FACE_INDICES, x, y, z, id, FaceDir::NegY);
+	//				emittedAnyFace = true;
+	//			}
+	//			// +Z
+	//			if (isTransparent(x, y, z + 1))
+	//			{
+	//				addFace(FACE_POS_Z, FACE_INDICES, x, y, z, id, FaceDir::PosZ);
+	//				emittedAnyFace = true;
+	//			}
+	//			// -Z
+	//			if (isTransparent(x, y, z - 1))
+	//			{
+	//				addFace(FACE_NEG_Z, FACE_INDICES, x, y, z, id, FaceDir::NegZ);
+	//				emittedAnyFace = true;
+	//			}
+
+	//			// count update
+	//			if (emittedAnyFace)
+	//			{
+	//				++renderedBlockCount_;
+	//			}
+	//		} // end for
+	//	} // end for
+	//} // end for
+
+	auto isOpaque = [&](BlockID id) {
+		return id != BlockID::Air && id != BlockID::Water;
 		};
 
-	// opaque
-	for (int x = 0; x < CHUNK_SIZE; ++x)
-	{
-		for (int y = 0; y < CHUNK_SIZE_Y; ++y)
+	struct MaskCell {
+		bool valid = false;
+		BlockID id{};
+		FaceDir dir{};
+		int tileX = 0;
+		int tileY = 0;
+	};
+
+	auto emitQuad = [&](glm::ivec3 p0, glm::ivec3 p1, glm::ivec3 p2, glm::ivec3 p3,
+		FaceDir dir, int tileX, int tileY)
 		{
-			for (int z = 0; z < CHUNK_SIZE; ++z)
+			uint32_t start = (uint32_t)opaqueVertices_.size();
+
+			// IMPORTANT: keep a consistent winding order per face
+			glm::ivec3 corners[4] = { p0, p1, p2, p3 };
+
+			for (int c = 0; c < 4; ++c) {
+				Vertex v{};
+				v.sample = PackVertexU32(
+					(uint32_t) c,
+					(uint32_t)tileX, (uint32_t)tileY,
+					(uint32_t)dir,
+					(uint32_t)corners[c].x,
+					(uint32_t)corners[c].y,
+					(uint32_t)corners[c].z
+				);
+				opaqueVertices_.push_back(v);
+			}
+
+			// 2 tris
+			opaqueIndices_.push_back(start + 0);
+			opaqueIndices_.push_back(start + 1);
+			opaqueIndices_.push_back(start + 2);
+			opaqueIndices_.push_back(start + 0);
+			opaqueIndices_.push_back(start + 2);
+			opaqueIndices_.push_back(start + 3);
+		};
+
+	const int dims[3] = { CHUNK_SIZE, CHUNK_SIZE_Y, CHUNK_SIZE };
+
+	// Sweep axis d (0=x,1=y,2=z)
+	for (int d = 0; d < 3; ++d)
+	{
+		int u = (d + 1) % 3;
+		int v = (d + 2) % 3;
+
+		int q[3] = { 0,0,0 };
+		q[d] = 1;
+
+		std::vector<MaskCell> mask(dims[u] * dims[v]);
+		int x[3] = { 0,0,0 };
+
+		for (x[d] = -1; x[d] < dims[d]; ++x[d])
+		{
+			// --- Build mask for this slice ---
+			int n = 0;
+			for (x[v] = 0; x[v] < dims[v]; ++x[v])
 			{
-				BlockID id = chunkData_.getBlockID(x, y, z);
+				for (x[u] = 0; x[u] < dims[u]; ++x[u], ++n)
+				{
+					BlockID a = BlockID::Air;
+					BlockID b = BlockID::Air;
 
-				// air, skip
-				if (id == BlockID::Air) continue;
+					if (x[d] >= 0)
+						a = chunkData_.getBlockID(x[0], x[1], x[2]);
+					if (x[d] < dims[d] - 1)
+						b = chunkData_.getBlockID(x[0] + q[0], x[1] + q[1], x[2] + q[2]);
 
-				// water, skip
-				if (id == BlockID::Water)
-				{
-					continue;
-				}
+					bool aSolid = (x[d] >= 0) && isOpaque(a);
+					bool bSolid = (x[d] < dims[d] - 1) && isOpaque(b);
 
-				// count bool
-				bool emittedAnyFace = false;
+					MaskCell cell{};
+					cell.valid = false;
 
-				// +X
-				if (isTransparent(x + 1, y, z))
-				{
-					addFace(FACE_POS_X, FACE_INDICES, x, y, z, id, FaceDir::PosX);
-					emittedAnyFace = true;
-				}
-				// -X
-				if (isTransparent(x - 1, y, z))
-				{
-					addFace(FACE_NEG_X, FACE_INDICES, x, y, z, id, FaceDir::NegX);
-					emittedAnyFace = true;
-				}
-				// +Y
-				if (isTransparent(x, y + 1, z))
-				{
-					addFace(FACE_POS_Y, FACE_INDICES, x, y, z, id, FaceDir::PosY);
-					emittedAnyFace = true;
-				}
-				// -Y
-				if (isTransparent(x, y - 1, z))
-				{
-					addFace(FACE_NEG_Y, FACE_INDICES, x, y, z, id, FaceDir::NegY);
-					emittedAnyFace = true;
-				}
-				// +Z
-				if (isTransparent(x, y, z + 1))
-				{
-					addFace(FACE_POS_Z, FACE_INDICES, x, y, z, id, FaceDir::PosZ);
-					emittedAnyFace = true;
-				}
-				// -Z
-				if (isTransparent(x, y, z - 1))
-				{
-					addFace(FACE_NEG_Z, FACE_INDICES, x, y, z, id, FaceDir::NegZ);
-					emittedAnyFace = true;
-				}
+					// Face between a and b if one is solid and the other is transparent
+					if (aSolid && isTransparent(x[0] + q[0], x[1] + q[1], x[2] + q[2]))
+					{
+						cell.valid = true;
+						cell.id = a;
+						cell.dir = (d == 0) ? FaceDir::PosX : (d == 1) ? FaceDir::PosY : FaceDir::PosZ;
+						getBlockTile(a, cell.tileX, cell.tileY, cell.dir);
+						++renderedBlockCount_;
+					}
+					else if (bSolid && isTransparent(x[0], x[1], x[2]))
+					{
+						cell.valid = true;
+						cell.id = b;
+						cell.dir = (d == 0) ? FaceDir::NegX : (d == 1) ? FaceDir::NegY : FaceDir::NegZ;
+						getBlockTile(b, cell.tileX, cell.tileY, cell.dir);
+						++renderedBlockCount_;
+					}
 
-				// count update
-				if (emittedAnyFace)
-				{
-					++renderedBlockCount_;
+					mask[n] = cell;
 				}
-			} // end for
-		} // end for
-	} // end for
+			}
+
+			// --- Greedy merge rectangles on mask ---
+			n = 0;
+			for (int j = 0; j < dims[v]; ++j)
+			{
+				for (int i = 0; i < dims[u]; )
+				{
+					MaskCell c = mask[n];
+					if (!c.valid) { ++i; ++n; continue; }
+
+					int w = 1;
+					while (i + w < dims[u]) {
+						MaskCell c2 = mask[n + w];
+						if (!c2.valid || c2.id != c.id || c2.dir != c.dir ||
+							c2.tileX != c.tileX || c2.tileY != c.tileY)
+							break;
+						++w;
+					}
+
+					int h = 1;
+					bool stop = false;
+					while (j + h < dims[v] && !stop) {
+						for (int k = 0; k < w; ++k) {
+							MaskCell c2 = mask[n + k + h * dims[u]];
+							if (!c2.valid || c2.id != c.id || c2.dir != c.dir ||
+								c2.tileX != c.tileX || c2.tileY != c.tileY)
+							{
+								stop = true; break;
+							}
+						}
+						if (!stop) ++h;
+					}
+
+					int du[3] = { 0,0,0 };
+					int dv[3] = { 0,0,0 };
+					du[u] = w;
+					dv[v] = h;
+
+					int base[3] = { 0,0,0 };
+					base[u] = i;
+					base[v] = j;
+					base[d] = x[d] + 1; // plane between cells
+
+					glm::ivec3 p0(base[0], base[1], base[2]);
+					glm::ivec3 p1(base[0] + dv[0], base[1] + dv[1], base[2] + dv[2]);
+					glm::ivec3 p2(base[0] + du[0] + dv[0], base[1] + du[1] + dv[1], base[2] + du[2] + dv[2]);
+					glm::ivec3 p3(base[0] + du[0], base[1] + du[1], base[2] + du[2]);
+
+					const bool neg = (c.dir == FaceDir::NegX || c.dir == FaceDir::NegY || c.dir == FaceDir::NegZ);
+					if (neg) emitQuad(p0, p3, p2, p1, c.dir, c.tileX, c.tileY);
+					else     emitQuad(p0, p1, p2, p3, c.dir, c.tileX, c.tileY);
+
+					// clear mask region
+					for (int yy = 0; yy < h; ++yy)
+						for (int xx = 0; xx < w; ++xx)
+							mask[n + xx + yy * dims[u]].valid = false;
+
+					i += w;
+					n += w;
+				}
+			}
+		}
+	}
 
 	// water
 	waterVertices_.clear();
