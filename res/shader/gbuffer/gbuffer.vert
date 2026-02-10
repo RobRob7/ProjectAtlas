@@ -30,7 +30,7 @@ void main()
     // derive normal index
     uint n = combinedCopy & 7u;
     n = min(n, 5u);
-    vs_out.normalVS = normalSample[n];
+    vs_out.normalVS = normalize(mat3(u_view) * normalSample[n]);
     combinedCopy >>= 3;
 
     vec3 aPos;
