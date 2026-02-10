@@ -28,7 +28,7 @@ class ChunkManager
 {
 public:
 	const int MIN_RADIUS = 5;
-	const int MAX_RADIUS = 40;
+	const int MAX_RADIUS = 100;
 	const float MIN_AMBSTR = 0.05f;
 	const float MAX_AMBSTR = 0.5f;
 public:

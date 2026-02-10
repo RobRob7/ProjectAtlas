@@ -10,7 +10,9 @@ Features:
 - Screen-Space Ambient Occlusion (SSAO)
 - Fast Approximate Anti-Aliasing (FXAA)
 - Camera View Frustum Culling
-- Terrain generation using libnoise
+- Greedy Meshing for Chunks
+- Memory-Efficient Vertex Storage
+- Terrain generation using LibNoise
 - Placement and deletion of blocks
 - World data persistence:
     - Auto-saving world state
@@ -44,9 +46,11 @@ Rendering & Engine Techniques
 
 This project focuses on implementing real-time rendering techniques that are commonly used in modern game engines. Each technique was implemented from scratch and integrated into a multi-pass rendering pipeline.
 
+> **Note:** FPS comparisons were recorded at the same camera position. Relative gains are hardware-agnostic; absolute FPS varies by GPU.
+
 ### Rendering Pipeline Overview
 
-1. G-Buffer pass (normals + depth)
+1. G-buffer pass (normals + depth)
 2. SSAO pass + blur
 3. Water reflection & refraction passes
 4. Forward render (scene objects)
@@ -75,7 +79,7 @@ Post-Processing Fog
 </h4>
 
 - Screen-space, depth-based fog applied as a post-processing pass.
-- Configurable fog color, and start/end distances.
+- Configurable fog color and start/end distances.
 - Integrates seamlessly with SSAO, FXAA, and lighting passes.
 
 **Why it matters:**  
@@ -87,7 +91,7 @@ Demonstrates the ability to implement additional post-processing effects that in
 Screen-Space Ambient Occlusion (SSAO)
 </h4>
 
-- Utilizes a G-Buffer that stores view space normals and depth.
+- Utilizes a G-buffer that stores view space normals and depth.
 - Generates a random sample kernel in view space and projects samples into screen space.
 - Calculates occlusion by comparing sampled depth values against the current fragment depth.
 - A blur pass is applied to reduce high frequency noise while preserving edge detail.
@@ -107,7 +111,7 @@ Fast Approximate Anti-Aliasing (FXAA)
 - Identifies and smooths jagged edges.
 
 **Why it matters:**  
-FXAA is a cost-efficient method for anti-aliasing with minimal cost that is ideal for voxel engines.
+FXAA is a cost-efficient method for anti-aliasing with minimal performance cost that is ideal for voxel engines.
 
 <!--  -->
 ---
@@ -128,10 +132,42 @@ Frustum culling drastically reduces GPU workload by efficiently rendering only t
 <!--  -->
 ---
 <h4>
+Greedy Meshing
+</h4>
+
+- The chunk mesh is generated using greedy meshing, which scans each chunk in three passes (one per axis).
+- For each pass, adjacent voxels are compared to detect visible faces. Adjacent faces that match in attributes are merged into larger quads.
+- Noticeable performance increase from 342 FPS to 662 FPS (~94% improvement) measured on an RTX 5090 at the same camera position.
+
+**Why it matters:**  
+Greedy meshing reduces the number of draw calls and triangles sent to the GPU, improving overall rendering performance.
+
+<!--  -->
+---
+<h4>
+Memory-Efficient Vertex Storage
+</h4>
+
+![unoptimized](milestones/10_OPT_OFF.png)
+![optimized](milestones/10_OPT_ON.png)
+
+- Significantly reduced the per-vertex memory footprint for opaque geometry.
+- Previously, each vertex stored position (vec3), normal (vec3), and UV (vec2) totaling 32 bytes. New version packs this data inside a single uint32_t (4 bytes).
+- ~88% reduction in RAM usage: 1579 MB -> 185 MB.
+- ~14% reduction in VRAM usage: 5282 MB -> 4526 MB.
+
+> **Note:** VRAM reduction is smaller than RAM reduction due to textures and framebuffers dominating total GPU memory usage.
+
+**Why it matters:**  
+Smaller vertices reduce CPU memory pressure, improve cache efficiency, and allow significantly larger worlds and higher chunk counts without exhausting system memory.
+
+<!--  -->
+---
+<h4>
 Procedural Terrain Generation
 </h4>
 
-- Utilizes libnoise library to generate terrain heightmap.
+- Utilizes the LibNoise library to generate a terrain heightmap.
 - This allows for varied terrain features such as hills, oceans, and trees.
 
 **Why it matters:**  
@@ -150,7 +186,6 @@ World State Persistence System
 **Why it matters:**  
 Persistent world state demonstrates data-oriented design beyond real-time rendering.
 
-
 ---
 <!--  -->
 <!--  -->
@@ -163,9 +198,9 @@ Milestones
 | *Initial terrain generation using a simple heightmap.* |
 | ![Alt Text 1](milestones/1_terraingen_cubemap.png)|
 
-| Terrain Generation w/libnoise |
+| Terrain Generation w/LibNoise |
 |---------|
-| *Terrain generation using libnoise for more interesting views, trees are WIP.* |
+| *Terrain generation using LibNoise for more interesting views, trees are WIP.* |
 | ![Alt Text 1](milestones/2_betterterrain_blocksplace.png)|
 
 | Proper Tree Generation |
@@ -173,9 +208,9 @@ Milestones
 | *Updated tree generation to randomly construct canopy.* |
 | ![Alt Text 1](milestones/3_propertrees.png)|
 
-| G-Buffer Normal | G-Buffer Depth |
+| G-buffer Normal | G-buffer Depth |
 |----------------------------|--------------------------------|
-| *Working on implementing SSAO. Implemented G-Buffer with debug view for surface normals.* | *Working on implementing SSAO. Implemented G-Buffer with debug view for depth.* |
+| *Working on implementing SSAO. Implemented G-buffer with debug view for surface normals.* | *Working on implementing SSAO. Implemented G-buffer with debug view for depth.* |
 | ![](milestones/4a_normals.png) | ![](milestones/4b_depth.png) |
 
 | SSAO (Off) | SSAO (On) |
@@ -205,11 +240,20 @@ Milestones
 | *World rendered without fog enabled.* | *Post-processing fog used to obscure objects further away.* |
 | ![](milestones/9a_Fog_OFF.png) | ![](milestones/9b_Fog_ON.png) |
 
+| Optimizations (Off) | Optimizations (On) |
+|----------------------------|--------------------------------|
+| *World rendered without frustum culling, vertex memory reduction, and greedy meshing.* | *World rendered WITH frustum culling, vertex memory reduction, and greedy meshing.* |
+| *FPS: 342* | *FPS: 662 = ~94%  Increase in Performance* |
+| |*~88% reduction in RAM usage: 1579 MB -> 185 MB.* |
+| ![](milestones/10a1_OPT_OFF.png) | ![](milestones/10b1_OPT_ON.png) |
+| ![](milestones/10a2_OPT_OFF.png) | ![](milestones/10b2_OPT_ON.png) |
+
 <h2>
 Requirements
 </h2>
 
-> - [Download](https://visualstudio.microsoft.com/vs/community/) Visual Studio 2022 Community Edition.
+> - [Download](https://git-scm.com/install/) and install Git
+> - [Download](https://visualstudio.microsoft.com/vs/community/) Visual Studio 2022 Community Edition or newer.
 > -- Install workloads: *Desktop development with C++*.
 > - [Download](https://cmake.org/download/) and install CMake (>= v3.31.0).
 
@@ -258,7 +302,7 @@ Libraries already provided, the following are used:
 |[GLFW](https://www.glfw.org/download.html)|API for creating windows, contexts and surfaces, receiving input and events|v3.4|
 |[GLM](https://github.com/g-truc/glm/releases/tag/1.0.1)|Header only C++ mathematics library|v1.01|
 |[ImGui](https://github.com/ocornut/imgui/releases/tag/v1.92.5)|Bloat-free Graphical User interface for C++|v1.92.5|
-|[libnoise](https://libnoise.sourceforge.net/)|A portable, open-source, coherent noise-generating library for C++|v1.0.0|
+|[LibNoise](https://libnoise.sourceforge.net/)|A portable, open-source, coherent noise-generating library for C++|v1.0.0|
 
 <h2>
 Project Structure
@@ -266,7 +310,7 @@ Project Structure
 
 Project layout:
 - **include/**
-  - all my header files
+  - internal header files
 - **src/**
     - main.cpp → main driver
     - **chunk/**
@@ -281,10 +325,10 @@ Project layout:
     - **player/**
         - crosshair.cpp → crosshair UI icon
     - **renderer/**
-        - debugpass.cpp → gBuffer normal + depth view
+        - debugpass.cpp → G-buffer normal + depth view
         - fogpass.cpp → fog pass
         - fxaapass.cpp → FXAA pass
-        - gbufferpass.cpp → gBuffer pass
+        - gbufferpass.cpp → G-buffer pass
         - presentpass.cpp → helper pass
         - renderer.cpp → render pipeline
         - ssaopass.cpp → SSAO pass
