@@ -19,16 +19,6 @@ ChunkMesh::ChunkMesh(int chunkX, int chunkY)
 	glVertexArrayAttribIFormat(opaqueVao_, 0, 1, GL_UNSIGNED_INT, offsetof(Vertex, sample));
 	glVertexArrayAttribBinding(opaqueVao_, 0, 0);
 
-	//// normal
-	//glEnableVertexArrayAttrib(opaqueVao_, 1);
-	//glVertexArrayAttribFormat(opaqueVao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-	//glVertexArrayAttribBinding(opaqueVao_, 1, 0);
-
-	//// uv
-	//glEnableVertexArrayAttrib(opaqueVao_, 2);
-	//glVertexArrayAttribFormat(opaqueVao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
-	//glVertexArrayAttribBinding(opaqueVao_, 2, 0);
-
 
 	// WATER
 	// create VAO + buffers
@@ -44,16 +34,6 @@ ChunkMesh::ChunkMesh(int chunkX, int chunkY)
 	glEnableVertexArrayAttrib(waterVao_, 0);
 	glVertexArrayAttribFormat(waterVao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(VertexWater, pos));
 	glVertexArrayAttribBinding(waterVao_, 0, 0);
-
-	//// normal
-	//glEnableVertexArrayAttrib(waterVao_, 1);
-	//glVertexArrayAttribFormat(waterVao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-	//glVertexArrayAttribBinding(waterVao_, 1, 0);
-
-	//// uv
-	//glEnableVertexArrayAttrib(waterVao_, 2);
-	//glVertexArrayAttribFormat(waterVao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
-	//glVertexArrayAttribBinding(waterVao_, 2, 0);
 
 	buildChunkMesh();
 	uploadChunkMesh();
@@ -200,67 +180,22 @@ void ChunkMesh::buildChunkMesh()
 
 			
 
-			// offset block local face positions by block position in world
+			// pack data
 			for (int i = 0; i < 4; ++i)
 			{
 				Vertex v{};
-				//v.sample = 0u;
-				//// pos X
-				//v.sample |= static_cast<uint32_t>(faceVerts[i].x + bx) & 31u;
-				//v.sample <<= 9;
-				//// pos Y
-				//v.sample |= static_cast<uint32_t>(faceVerts[i].y + by) & 511u;
-				//v.sample <<= 5;
-				//// pos Z
-				//v.sample |= static_cast<uint32_t>(faceVerts[i].z + bz) & 31u;
-				//v.sample <<= 3;
-
-				//// normal
-				//v.sample |= static_cast<uint32_t>(faceDir) & 7u;
-				//v.sample <<= 5;
-
-				//// uv x
-				//v.sample |= static_cast<uint32_t>(tileX) & 31u;
-				//v.sample <<= 5;
-				//// uv y
-				//v.sample |= static_cast<uint32_t>(tileY) & 31u;
-
-				//// tile y
-				//v.sample |= tileY & 31;
-				//v.sample <<= 5;
-				//// tile x
-				//v.sample |= tileX & 31;
-				//v.sample <<= 5;
-
-				//// normal
-				//v.sample |= static_cast<uint32_t>(faceDir) & 7;
-				//v.sample <<= 3;
-
-				//// pos Z
-				//v.sample |= static_cast<uint32_t>(faceVerts[i].z + bz) & 31;
-				//v.sample <<= 5;
-				//// pos Y
-				//v.sample |= static_cast<uint32_t>(faceVerts[i].y + by) & 511;
-				//v.sample <<= 9;
-				//// pos X
-				//v.sample |= static_cast<uint32_t>(faceVerts[i].x + bx) & 31;
-
-
-
-				uint32_t s = 0;
 				// UV tileY
-				s |= (static_cast<uint32_t>(tileY) & 31u) << 0;
+				v.sample |= (static_cast<uint32_t>(tileY) & 31u) << 0;
 				// UV tileX
-				s |= (static_cast<uint32_t>(tileX) & 31u) << 5;
+				v.sample |= (static_cast<uint32_t>(tileX) & 31u) << 5;
 
 				// normal index
-				s |= (static_cast<uint32_t>(faceDir) & 7u) << 10;
+				v.sample |= (static_cast<uint32_t>(faceDir) & 7u) << 10;
 
 				// pos
-				s |= (static_cast<uint32_t>(faceVerts[i].x + bx) & 31u) << 13;
-				s |= (static_cast<uint32_t>(faceVerts[i].y + by) & 511u) << 18;
-				s |= (static_cast<uint32_t>(faceVerts[i].z + bz) & 31u) << 27;
-				v.sample = s;
+				v.sample |= (static_cast<uint32_t>(faceVerts[i].x + bx) & 31u) << 13;
+				v.sample |= (static_cast<uint32_t>(faceVerts[i].y + by) & 511u) << 18;
+				v.sample |= (static_cast<uint32_t>(faceVerts[i].z + bz) & 31u) << 27;
 
 				opaqueVertices_.push_back(v);
 			} // end for
