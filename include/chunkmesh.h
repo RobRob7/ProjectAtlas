@@ -156,6 +156,7 @@ private:
 private:
 	void buildChunkMesh();
 	bool isTransparent(int x, int y, int z);
+    uint32_t computeRenderedBlockCount();
 
     // atlas
     glm::vec2 atlasUV(const glm::vec2& localUV, int tileX, int tileY);
