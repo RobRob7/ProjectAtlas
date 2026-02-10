@@ -32,22 +32,22 @@ void Light::init()
 	glNamedBufferData(vbo_, sizeof(CUBE_VERTICES), CUBE_VERTICES.data(), GL_STATIC_DRAW);
 
 	// attach buffers to vao
-	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, sizeof(Vertex));
+	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, sizeof(VertexLight));
 
 	// position
 	glEnableVertexArrayAttrib(vao_, 0);
-	glVertexArrayAttribFormat(vao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+	glVertexArrayAttribFormat(vao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(VertexLight, pos));
 	glVertexArrayAttribBinding(vao_, 0, 0);
 
 	// normal
 	glEnableVertexArrayAttrib(vao_, 1);
-	glVertexArrayAttribFormat(vao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+	glVertexArrayAttribFormat(vao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(VertexLight, normal));
 	glVertexArrayAttribBinding(vao_, 1, 0);
 
-	// uv
-	glEnableVertexArrayAttrib(vao_, 2);
-	glVertexArrayAttribFormat(vao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
-	glVertexArrayAttribBinding(vao_, 2, 0);
+	//// uv
+	//glEnableVertexArrayAttrib(vao_, 2);
+	//glVertexArrayAttribFormat(vao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+	//glVertexArrayAttribBinding(vao_, 2, 0);
 } // end of init()
 
 void Light::render(const glm::mat4& view, const glm::mat4& proj)

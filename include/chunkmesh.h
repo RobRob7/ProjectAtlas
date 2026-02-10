@@ -13,58 +13,105 @@
 #include <cstddef>
 #include <optional>
 
-// +X (right) face
-inline constexpr std::array<Vertex, 4> FACE_POS_X = { {
-    {{1, 0, 0}, {1, 0, 0}, {0, 0}},
-    {{1, 1, 0}, {1, 0, 0}, {0, 1}},
-    {{1, 1, 1}, {1, 0, 0}, {1, 1}},
-    {{1, 0, 1}, {1, 0, 0}, {1, 0}}
+inline constexpr std::array<glm::vec3, 4> FACE_POS_X = { {
+    {1, 0, 0},
+    {1, 1, 0},
+    {1, 1, 1},
+    {1, 0, 1}
 } };
 
 // -X (left) face
-inline constexpr std::array<Vertex, 4> FACE_NEG_X = { {
-    {{0, 0, 1}, {-1, 0, 0}, {0, 0}},
-    {{0, 1, 1}, {-1, 0, 0}, {0, 1}},
-    {{0, 1, 0}, {-1, 0, 0}, {1, 1}},
-    {{0, 0, 0}, {-1, 0, 0}, {1, 0}}
+inline constexpr std::array<glm::vec3, 4> FACE_NEG_X = { {
+    {0, 0, 1},
+    {0, 1, 1},
+    {0, 1, 0},
+    {0, 0, 0}
 } };
 
 // +Y (top) face
-inline constexpr std::array<Vertex, 4> FACE_POS_Y = { {
-    {{0, 1, 0}, {0, 1, 0}, {0, 0}},
-    {{1, 1, 0}, {0, 1, 0}, {1, 0}},
-    {{1, 1, 1}, {0, 1, 0}, {1, 1}},
-    {{0, 1, 1}, {0, 1, 0}, {0, 1}}
+inline constexpr std::array<glm::vec3, 4> FACE_POS_Y = { {
+    {0, 1, 0},
+    {1, 1, 0},
+    {1, 1, 1},
+    {0, 1, 1}
 } };
 
 // -Y (bottom) face
-inline constexpr std::array<Vertex, 4> FACE_NEG_Y = { {
-    {{0, 0, 1}, {0, -1, 0}, {0, 0}},
-    {{1, 0, 1}, {0, -1, 0}, {1, 0}},
-    {{1, 0, 0}, {0, -1, 0}, {1, 1}},
-    {{0, 0, 0}, {0, -1, 0}, {0, 1}}
+inline constexpr std::array<glm::vec3, 4> FACE_NEG_Y = { {
+    {0, 0, 1},
+    {1, 0, 1},
+    {1, 0, 0},
+    {0, 0, 0}
 } };
 
 // +Z (front) face
-inline constexpr std::array<Vertex, 4> FACE_POS_Z = { {
-    {{0, 0, 1}, {0, 0, 1}, {0, 0}},
-    {{0, 1, 1}, {0, 0, 1}, {0, 1}},
-    {{1, 1, 1}, {0, 0, 1}, {1, 1}},
-    {{1, 0, 1}, {0, 0, 1}, {1, 0}}
+inline constexpr std::array<glm::vec3, 4> FACE_POS_Z = { {
+    {0, 0, 1},
+    {0, 1, 1},
+    {1, 1, 1},
+    {1, 0, 1}
 } };
 
 // -Z (back) face
-inline constexpr std::array<Vertex, 4> FACE_NEG_Z = { {
-    {{1, 0, 0}, {0, 0, -1}, {0, 0}},
-    {{1, 1, 0}, {0, 0, -1}, {0, 1}},
-    {{0, 1, 0}, {0, 0, -1}, {1, 1}},
-    {{0, 0, 0}, {0, 0, -1}, {1, 0}}
+inline constexpr std::array<glm::vec3, 4> FACE_NEG_Z = { {
+    {1, 0, 0},
+    {1, 1, 0},
+    {0, 1, 0},
+    {0, 0, 0}
 } };
+
+// +X (right) face
+//inline constexpr std::array<Vertex, 4> FACE_POS_X = { {
+//    {{1, 0, 0}, {1, 0, 0}, {0, 0}},
+//    {{1, 1, 0}, {1, 0, 0}, {0, 1}},
+//    {{1, 1, 1}, {1, 0, 0}, {1, 1}},
+//    {{1, 0, 1}, {1, 0, 0}, {1, 0}}
+//} };
+//
+//// -X (left) face
+//inline constexpr std::array<Vertex, 4> FACE_NEG_X = { {
+//    {{0, 0, 1}, {-1, 0, 0}, {0, 0}},
+//    {{0, 1, 1}, {-1, 0, 0}, {0, 1}},
+//    {{0, 1, 0}, {-1, 0, 0}, {1, 1}},
+//    {{0, 0, 0}, {-1, 0, 0}, {1, 0}}
+//} };
+//
+//// +Y (top) face
+//inline constexpr std::array<Vertex, 4> FACE_POS_Y = { {
+//    {{0, 1, 0}, {0, 1, 0}, {0, 0}},
+//    {{1, 1, 0}, {0, 1, 0}, {1, 0}},
+//    {{1, 1, 1}, {0, 1, 0}, {1, 1}},
+//    {{0, 1, 1}, {0, 1, 0}, {0, 1}}
+//} };
+//
+//// -Y (bottom) face
+//inline constexpr std::array<Vertex, 4> FACE_NEG_Y = { {
+//    {{0, 0, 1}, {0, -1, 0}, {0, 0}},
+//    {{1, 0, 1}, {0, -1, 0}, {1, 0}},
+//    {{1, 0, 0}, {0, -1, 0}, {1, 1}},
+//    {{0, 0, 0}, {0, -1, 0}, {0, 1}}
+//} };
+//
+//// +Z (front) face
+//inline constexpr std::array<Vertex, 4> FACE_POS_Z = { {
+//    {{0, 0, 1}, {0, 0, 1}, {0, 0}},
+//    {{0, 1, 1}, {0, 0, 1}, {0, 1}},
+//    {{1, 1, 1}, {0, 0, 1}, {1, 1}},
+//    {{1, 0, 1}, {0, 0, 1}, {1, 0}}
+//} };
+//
+//// -Z (back) face
+//inline constexpr std::array<Vertex, 4> FACE_NEG_Z = { {
+//    {{1, 0, 0}, {0, 0, -1}, {0, 0}},
+//    {{1, 1, 0}, {0, 0, -1}, {0, 1}},
+//    {{0, 1, 0}, {0, 0, -1}, {1, 1}},
+//    {{0, 0, 0}, {0, 0, -1}, {1, 0}}
+//} };
 
 inline constexpr int ATLAS_COLS = 32;
 inline constexpr int ATLAS_ROWS = 32;
 
-enum class FaceDir {
+enum class FaceDir : int {
     PosX, NegX,
     PosY, NegY,
     PosZ, NegZ

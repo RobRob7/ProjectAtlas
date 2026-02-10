@@ -14,20 +14,20 @@ ChunkMesh::ChunkMesh(int chunkX, int chunkY)
 	glVertexArrayVertexBuffer(opaqueVao_, 0, opaqueVbo_, 0, sizeof(Vertex));
 	glVertexArrayElementBuffer(opaqueVao_, opaqueEbo_);
 
-	// position
+	// combined data packed in int
 	glEnableVertexArrayAttrib(opaqueVao_, 0);
-	glVertexArrayAttribFormat(opaqueVao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, pos));
+	glVertexArrayAttribIFormat(opaqueVao_, 0, 1, GL_UNSIGNED_INT, offsetof(Vertex, sample));
 	glVertexArrayAttribBinding(opaqueVao_, 0, 0);
 
-	// normal
-	glEnableVertexArrayAttrib(opaqueVao_, 1);
-	glVertexArrayAttribFormat(opaqueVao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
-	glVertexArrayAttribBinding(opaqueVao_, 1, 0);
+	//// normal
+	//glEnableVertexArrayAttrib(opaqueVao_, 1);
+	//glVertexArrayAttribFormat(opaqueVao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+	//glVertexArrayAttribBinding(opaqueVao_, 1, 0);
 
-	// uv
-	glEnableVertexArrayAttrib(opaqueVao_, 2);
-	glVertexArrayAttribFormat(opaqueVao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
-	glVertexArrayAttribBinding(opaqueVao_, 2, 0);
+	//// uv
+	//glEnableVertexArrayAttrib(opaqueVao_, 2);
+	//glVertexArrayAttribFormat(opaqueVao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+	//glVertexArrayAttribBinding(opaqueVao_, 2, 0);
 
 
 	// WATER
@@ -186,7 +186,7 @@ void ChunkMesh::buildChunkMesh()
 	renderedBlockCount_ = 0;
 
 	// indexing
-	auto addFace = [&](const std::array<Vertex, 4> faceVerts,
+	auto addFace = [&]( const std::array<glm::vec3, 4> faceVerts,
 						const std::array<uint32_t, 6> faceIndices,
 						int bx, int by, int bz,
 						BlockID id,
@@ -198,18 +198,77 @@ void ChunkMesh::buildChunkMesh()
 			int tileY;
 			getBlockTile(id, tileX, tileY, faceDir);
 
+			
+
 			// offset block local face positions by block position in world
 			for (int i = 0; i < 4; ++i)
 			{
-				Vertex v = faceVerts[i];
-				v.pos += glm::vec3(bx, by, bz);
-				v.uv = atlasUV(v.uv, tileX, tileY);
+				Vertex v{};
+				//v.sample = 0u;
+				//// pos X
+				//v.sample |= static_cast<uint32_t>(faceVerts[i].x + bx) & 31u;
+				//v.sample <<= 9;
+				//// pos Y
+				//v.sample |= static_cast<uint32_t>(faceVerts[i].y + by) & 511u;
+				//v.sample <<= 5;
+				//// pos Z
+				//v.sample |= static_cast<uint32_t>(faceVerts[i].z + bz) & 31u;
+				//v.sample <<= 3;
+
+				//// normal
+				//v.sample |= static_cast<uint32_t>(faceDir) & 7u;
+				//v.sample <<= 5;
+
+				//// uv x
+				//v.sample |= static_cast<uint32_t>(tileX) & 31u;
+				//v.sample <<= 5;
+				//// uv y
+				//v.sample |= static_cast<uint32_t>(tileY) & 31u;
+
+				//// tile y
+				//v.sample |= tileY & 31;
+				//v.sample <<= 5;
+				//// tile x
+				//v.sample |= tileX & 31;
+				//v.sample <<= 5;
+
+				//// normal
+				//v.sample |= static_cast<uint32_t>(faceDir) & 7;
+				//v.sample <<= 3;
+
+				//// pos Z
+				//v.sample |= static_cast<uint32_t>(faceVerts[i].z + bz) & 31;
+				//v.sample <<= 5;
+				//// pos Y
+				//v.sample |= static_cast<uint32_t>(faceVerts[i].y + by) & 511;
+				//v.sample <<= 9;
+				//// pos X
+				//v.sample |= static_cast<uint32_t>(faceVerts[i].x + bx) & 31;
+
+
+
+				uint32_t s = 0;
+				// UV tileY
+				s |= (static_cast<uint32_t>(tileY) & 31u) << 0;
+				// UV tileX
+				s |= (static_cast<uint32_t>(tileX) & 31u) << 5;
+
+				// normal index
+				s |= (static_cast<uint32_t>(faceDir) & 7u) << 10;
+
+				// pos
+				s |= (static_cast<uint32_t>(faceVerts[i].x + bx) & 31u) << 13;
+				s |= (static_cast<uint32_t>(faceVerts[i].y + by) & 511u) << 18;
+				s |= (static_cast<uint32_t>(faceVerts[i].z + bz) & 31u) << 27;
+				v.sample = s;
+
 				opaqueVertices_.push_back(v);
-			}
+			} // end for
+
 			for (int i = 0; i < 6; ++i)
 			{
 				opaqueIndices_.push_back(startIndex + faceIndices[i]);
-			}
+			} // end for
 		};
 
 	// opaque
