@@ -2,7 +2,7 @@
 
 layout (location = 0) in uint combined;
 
-uniform mat4 u_model;
+uniform vec3 u_chunkOrigin;
 uniform mat4 u_view;
 uniform mat4 u_proj;
 
@@ -23,14 +23,12 @@ out VS_OUT {
 
 void main()
 {
-    mat4 modelView = u_view * u_model;
-
     uint combinedCopy = combined;
 
     // skip tileX, tileY
     combinedCopy >>= 10;
     // derive normal index
-    vs_out.normalVS = normalize(mat3(modelView) * normalSample[combinedCopy & 7]);
+    vs_out.normalVS = normalize(mat3(u_view) * normalSample[combinedCopy & 7]);
     combinedCopy >>= 3;
 
     vec3 aPos;
@@ -43,8 +41,9 @@ void main()
     // derive aPos.z
     aPos.z = float(combinedCopy & 31);
     combinedCopy >>= 5;
-    
-    gl_Position = u_proj * modelView * vec4(aPos, 1.0);
+
+    vec3 world = aPos + vec3(u_chunkOrigin);
+    gl_Position = u_proj * u_view * vec4(world, 1.0);
 }
 
 
