@@ -25,22 +25,24 @@ void main()
 {
     uint combinedCopy = combined;
 
-    // skip tileX, tileY
-    combinedCopy >>= 10;
+    // skip uv index, tileX, tileY
+    combinedCopy >>= 12;
     // derive normal index
-    vs_out.normalVS = normalize(mat3(u_view) * normalSample[combinedCopy & 7]);
+    uint n = combinedCopy & 7u;
+    n = min(n, 5u);
+    vs_out.normalVS = normalSample[n];
     combinedCopy >>= 3;
 
     vec3 aPos;
     // derive aPos.x
-    aPos.x = float(combinedCopy & 31);
-    combinedCopy >>= 5;
+    aPos.x = float(combinedCopy & 15);
+    combinedCopy >>= 4;
     // derive aPos.y
     aPos.y = float(combinedCopy & 511);
     combinedCopy >>= 9;
     // derive aPos.z
-    aPos.z = float(combinedCopy & 31);
-    combinedCopy >>= 5;
+    aPos.z = float(combinedCopy & 15);
+    combinedCopy >>= 4;
 
     vec3 world = aPos + vec3(u_chunkOrigin);
     gl_Position = u_proj * u_view * vec4(world, 1.0);

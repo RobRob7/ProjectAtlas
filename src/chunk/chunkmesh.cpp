@@ -1,5 +1,40 @@
 #include "chunkmesh.h"
 
+//--- HELPER ---//
+// world opaque vertices
+// LAYOUT (32u bits)
+// 0  - 1   : UV corner index
+// 2  - 6   : tileY
+// 7  - 11  : tileX
+// 12 - 14  : normal index
+// 15 - 18  : x pos
+// 19 - 27  : y pos
+// 28 - 31  : z pos
+static inline uint32_t PackVertexU32(
+	uint32_t uvCorner, uint32_t tileX, uint32_t tileY,
+	uint32_t normalIdx, uint32_t x, uint32_t y, uint32_t z)
+{
+	uint32_t packed{};
+	// uv corner index
+	packed |= (uvCorner & 3u) << 0;
+
+	// UV tileY
+	packed |= (tileY & 31u) << 2;
+	// UV tileX
+	packed |= (tileX & 31u) << 7;
+
+	// normal index
+	packed |= (normalIdx & 7u) << 12;
+
+	// pos
+	packed |= (x & 15u) << 15;
+	packed |= (y & 511u) << 19;
+	packed |= (z & 15u) << 28;
+
+	return packed;
+} // end of PackVertexU32()
+
+
 //--- PUBLIC ---//
 ChunkMesh::ChunkMesh(int chunkX, int chunkY)
 	: chunkData_(chunkX, chunkY)
@@ -184,18 +219,13 @@ void ChunkMesh::buildChunkMesh()
 			for (int i = 0; i < 4; ++i)
 			{
 				Vertex v{};
-				// UV tileY
-				v.sample |= (static_cast<uint32_t>(tileY) & 31u) << 0;
-				// UV tileX
-				v.sample |= (static_cast<uint32_t>(tileX) & 31u) << 5;
-
-				// normal index
-				v.sample |= (static_cast<uint32_t>(faceDir) & 7u) << 10;
-
-				// pos
-				v.sample |= (static_cast<uint32_t>(faceVerts[i].x + bx) & 31u) << 13;
-				v.sample |= (static_cast<uint32_t>(faceVerts[i].y + by) & 511u) << 18;
-				v.sample |= (static_cast<uint32_t>(faceVerts[i].z + bz) & 31u) << 27;
+				v.sample = PackVertexU32(
+					static_cast<uint32_t>(i),
+					static_cast<uint32_t>(tileX), static_cast<uint32_t>(tileY),
+					static_cast<uint32_t>(faceDir),
+					static_cast<uint32_t>(faceVerts[i].x + bx),
+					static_cast<uint32_t>(faceVerts[i].y + by),
+					static_cast<uint32_t>(faceVerts[i].z + bz));
 
 				opaqueVertices_.push_back(v);
 			} // end for

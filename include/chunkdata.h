@@ -25,7 +25,7 @@ enum class BlockID : uint8_t
 	Water
 };
 
-inline constexpr int CHUNK_SIZE = 16;
+inline constexpr int CHUNK_SIZE = 15;
 inline constexpr int CHUNK_SIZE_Y = 256;
 
 inline constexpr int SEA_LEVEL = 64;

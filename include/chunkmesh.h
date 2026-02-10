@@ -2,7 +2,6 @@
 #define CHUNKMESH_H
 
 #include "chunkdata.h"
-#include "data.h"
 
 #include <glm/glm.hpp>
 #include <glad/glad.h>
@@ -12,6 +11,27 @@
 #include <cstdint>
 #include <cstddef>
 #include <optional>
+
+// world opaque vertices
+// LAYOUT (32u bits)
+// 0  - 1   : UV corner index
+// 2  - 6   : tileY
+// 7  - 11  : tileX
+// 12 - 14  : normal index
+// 15 - 18  : x pos
+// 19 - 27  : y pos
+// 28 - 31  : z pos
+struct Vertex
+{
+    uint32_t sample;
+};
+
+struct VertexWater
+{
+    glm::vec3 pos;
+};
+
+inline constexpr std::array<uint32_t, 6> FACE_INDICES = { 0, 1, 2, 0, 2, 3 };
 
 inline constexpr std::array<glm::vec3, 4> FACE_POS_X = { {
     {1, 0, 0},

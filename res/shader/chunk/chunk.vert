@@ -34,14 +34,14 @@ const vec3[6] normalSample =
 };
 
 // compute UV
-vec2 atlasUV(uint tileX, uint tileY)
+vec2 atlasUV(uint tileX, uint tileY, uint index)
 {
 	float tileW = 1.0f / ATLAS_COLS;
 	float tileH = 1.0f / ATLAS_ROWS;
 
     vec2 uv = {
-        (tileX + uvSample[gl_VertexID % 4].x) * tileW,
-		(tileY + uvSample[gl_VertexID % 4].y) * tileH
+        (tileX + uvSample[index].x) * tileW,
+		(tileY + uvSample[index].y) * tileH
     };
 
     return uv;
@@ -50,6 +50,10 @@ vec2 atlasUV(uint tileX, uint tileY)
 void main()
 {
     uint combinedCopy = combined;
+    // derive uv corner index
+    uint uvIndex = combinedCopy & 3;
+    combinedCopy >>= 2;
+
     // derive tileY
     uint tileY = combinedCopy & 31;
     combinedCopy >>= 5;
@@ -58,7 +62,7 @@ void main()
     combinedCopy >>= 5;
 
     // derive UV
-    UV = atlasUV(tileX, tileY);
+    UV = atlasUV(tileX, tileY, uvIndex);
 
     // derive normal index
     Normal = normalSample[combinedCopy & 7];
@@ -66,14 +70,14 @@ void main()
 
     vec3 aPos;
     // derive aPos.x
-    aPos.x = float(combinedCopy & 31);
-    combinedCopy >>= 5;
+    aPos.x = float(combinedCopy & 15);
+    combinedCopy >>= 4;
     // derive aPos.y
     aPos.y = float(combinedCopy & 511);
     combinedCopy >>= 9;
     // derive aPos.z
-    aPos.z = float(combinedCopy & 31);
-    combinedCopy >>= 5;
+    aPos.z = float(combinedCopy & 15);
+    combinedCopy >>= 4;
     
     vec3 world = aPos + vec3(u_chunkOrigin);
     vec4 worldPos = vec4(world, 1.0);
