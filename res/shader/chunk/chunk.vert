@@ -2,8 +2,7 @@
 
 layout (location = 0) in uint combined;
 
-uniform mat4 u_model;
-uniform mat3 u_normalMatrix;
+uniform vec3 u_chunkOrigin;
 uniform mat4 u_view;
 uniform mat4 u_proj;
 uniform vec4 u_clipPlane;
@@ -62,7 +61,7 @@ void main()
     UV = atlasUV(tileX, tileY);
 
     // derive normal index
-    Normal = u_normalMatrix * normalSample[combinedCopy & 7];
+    Normal = normalSample[combinedCopy & 7];
     combinedCopy >>= 3;
 
     vec3 aPos;
@@ -76,11 +75,12 @@ void main()
     aPos.z = float(combinedCopy & 31);
     combinedCopy >>= 5;
     
+    vec3 world = aPos + vec3(u_chunkOrigin);
+    vec4 worldPos = vec4(world, 1.0);
 
-    vec4 worldPos = u_model * vec4(aPos, 1.0);
     // clipping plane
     gl_ClipDistance[0] = dot(worldPos, u_clipPlane);
-    FragWorldPos = worldPos.xyz;
+    FragWorldPos = world;
     
     gl_Position = u_proj * u_view * worldPos;
 }

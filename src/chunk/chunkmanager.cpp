@@ -189,8 +189,11 @@ void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
 	frameChunksRendered_ = 0;
 	for (auto& [coord, chunk] : chunks_)
 	{
+		// chunkX, chunkZ
+		int chunkX = chunk->getChunk().m_chunkX;
+		int chunkZ = chunk->getChunk().m_chunkZ;
 		// set AABB
-		AABB box = ChunkWorldAABB(chunk->getChunk().m_chunkX, chunk->getChunk().m_chunkZ);
+		AABB box = ChunkWorldAABB(chunkX, chunkZ);
 		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
 		{
 			continue;
@@ -200,13 +203,7 @@ void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
 		++frameChunksRendered_;
 		frameBlocksRendered_ += chunk->getRenderedBlockCount();
 
-		glm::mat4 model = glm::translate(
-			glm::mat4(1.0f),
-			glm::vec3(chunk->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->getChunk().m_chunkZ * CHUNK_SIZE));
-		glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
-		opaqueShader_->setMat4("u_model", model);
-		opaqueShader_->setMat3("u_normalMatrix", normalMatrix);
-
+		opaqueShader_->setVec3("u_chunkOrigin", glm::vec3(chunkX * CHUNK_SIZE, 0, chunkZ * CHUNK_SIZE));
 		chunk->renderChunkOpaque();
 	} // end for
 } // end of render()
@@ -225,8 +222,11 @@ void ChunkManager::renderOpaque(Shader& shader, const glm::mat4& view, const glm
 	frameChunksRendered_ = 0;
 	for (auto& [coord, chunk] : chunks_)
 	{
+		// chunkX, chunkZ
+		int chunkX = chunk->getChunk().m_chunkX;
+		int chunkZ = chunk->getChunk().m_chunkZ;
 		// set AABB
-		AABB box = ChunkWorldAABB(chunk->getChunk().m_chunkX, chunk->getChunk().m_chunkZ);
+		AABB box = ChunkWorldAABB(chunkX, chunkZ);
 		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
 		{
 			continue;
@@ -236,13 +236,7 @@ void ChunkManager::renderOpaque(Shader& shader, const glm::mat4& view, const glm
 		++frameChunksRendered_;
 		frameBlocksRendered_ += chunk->getRenderedBlockCount();
 
-		glm::mat4 model = glm::translate(
-			glm::mat4(1.0f),
-			glm::vec3(chunk->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->getChunk().m_chunkZ * CHUNK_SIZE));
-		glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
-		shader.setMat4("u_model", model);
-		shader.setMat3("u_normalMatrix", normalMatrix);
-
+		shader.setVec3("u_chunkOrigin", glm::vec3(chunkX * CHUNK_SIZE, 0, chunkZ * CHUNK_SIZE));
 		chunk->renderChunkOpaque();
 	} // end for
 } // end of render()
