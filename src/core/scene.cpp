@@ -65,10 +65,10 @@ void Scene::update(float dt, const InputState& in)
 	{
 		camera_->setAccelerationMultiplier(in.sprint ? 15.0f : 1.0f);
 
-		if (in.w) camera_->processKeyboard(FORWARD, dt);
-		if (in.a) camera_->processKeyboard(LEFT, dt);
-		if (in.s) camera_->processKeyboard(BACKWARD, dt);
-		if (in.d) camera_->processKeyboard(RIGHT, dt);
+		if (in.w) camera_->processKeyboard(CameraMovement::FORWARD, dt);
+		if (in.a) camera_->processKeyboard(CameraMovement::LEFT, dt);
+		if (in.s) camera_->processKeyboard(CameraMovement::BACKWARD, dt);
+		if (in.d) camera_->processKeyboard(CameraMovement::RIGHT, dt);
 
 		if (in.removeBlockPressed)
 		{
