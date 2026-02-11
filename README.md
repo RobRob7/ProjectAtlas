@@ -343,6 +343,8 @@ Project layout:
         - save.cpp → world state saving
     - **system/**
         - camera.cpp → camera system
+    - **ui/**
+        - ui.cpp → UI system
     - **utility/**
         - cubemap.cpp → setup + render cubemap
         - shader.cpp → shader helper class

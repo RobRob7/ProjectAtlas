@@ -3,25 +3,13 @@
 
 #include "scene.h"
 #include "renderer.h"
-#include "texture.h"
+#include "ui.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <imgui.h>
-#include <imgui_impl_opengl3.h>
-#include <imgui_impl_glfw.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include <memory>
-#include <stdexcept>
 #include <algorithm>
-#define NOMINMAX
-#include <windows.h>
-#include <psapi.h>
-
-inline constexpr float TOP_BAR_HEIGHT = 36.0f;
-inline constexpr float INSPECTOR_WIDTH = 400.0f;
 
 class Application
 {
@@ -33,27 +21,12 @@ public:
 
 private:
 	InputState buildInputState();
-
-	void drawFullUI();
-
-	void drawTopBar(GLFWwindow* window, ImTextureID logoTex);
-	void drawStatsFPS();
-	void drawInspector();
-	void setImGuiInputEnabled(bool enabled);
 private:
-	// window top bar logo
-	uint32_t logoTex_;
-
 	RenderInputs in_;
 
 	// place/delete block limit
 	bool leftMouseDown_  = false;
 	bool rightMouseDown_ = false;
-
-	// camera/cursor mode
-	bool cameraModeOn_{ true };
-
-	bool showImguiUI_{ true };
 
 	int width_;
 	int height_;
@@ -72,7 +45,6 @@ private:
 
 	std::unique_ptr<Scene> scene_;
 	std::unique_ptr<Renderer> renderer_;
+	std::unique_ptr<UI> ui_;
 };
-
-size_t GetProcessMemoryMB();
 #endif
