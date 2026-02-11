@@ -1,15 +1,11 @@
 #ifndef CHUNKDATA_H
 #define CHUNKDATA_H
 
-#include <glm/glm.hpp>
-#include <noise/noise.h>
 #include <noise/noiseutils.h>
 
 #include <cstdint>
 #include <array>
-#include <cmath>
 #include <istream>
-#include <random>
 
 // blocks
 enum class BlockID : uint8_t

@@ -1,5 +1,10 @@
 #include "chunkdata.h"
 
+#include <noise/noise.h>
+ 
+#include <random>
+#include <cmath>
+
 //--- PUBLIC ---//
 ChunkData::ChunkData(int cx, int cz)
 {
