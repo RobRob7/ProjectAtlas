@@ -4,13 +4,13 @@
 #include "chunkdata.h"
 
 #include <glm/glm.hpp>
-#include <glad/glad.h>
 
 #include <vector>
 #include <array>
 #include <cstdint>
 #include <cstddef>
 #include <optional>
+#include <functional>
 
 // world opaque vertices
 // LAYOUT (32u bits)
