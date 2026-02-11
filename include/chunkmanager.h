@@ -2,20 +2,18 @@
 #define CHUNKMANAGER_H
 
 #include "chunkmesh.h"
-#include "shader.h"
-#include "texture.h"
 #include "save.h"
 
+class Shader;
+class Texture;
+
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
 #include <memory>
-#include <optional>
 #include <cstdint>
-#include <algorithm>
 
 struct BlockHit
 {
@@ -27,10 +25,10 @@ struct BlockHit
 class ChunkManager
 {
 public:
-	const int MIN_RADIUS = 5;
-	const int MAX_RADIUS = 100;
-	const float MIN_AMBSTR = 0.05f;
-	const float MAX_AMBSTR = 0.5f;
+	static constexpr int MIN_RADIUS = 5;
+	static constexpr int MAX_RADIUS = 100;
+	static constexpr float MIN_AMBSTR = 0.05f;
+	static constexpr float MAX_AMBSTR = 0.5f;
 public:
 	ChunkManager(int viewRadiusInChunks = 15);
 
@@ -47,15 +45,15 @@ public:
 	int getViewRadius() const;
 	void setViewRadius(int r);
 
-	std::optional<Shader>& getOpaqueShader();
-	std::optional<Shader>& getWaterShader();
+	std::unique_ptr<Shader>& getOpaqueShader();
+	std::unique_ptr<Shader>& getWaterShader();
 
 	const glm::vec3& getLastCameraPos() const;
 
 	float getAmbientStrength() const;
 	void setAmbientStrength(float strength);
 
-	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f);
+	void placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir);
 
 	void saveWorld();
 
@@ -70,11 +68,11 @@ private:
 	Save saveWorld_;
 
 	// opaque + water shader
-	std::optional<Shader> opaqueShader_;
-	std::optional<Shader> waterShader_;
+	std::unique_ptr<Shader> opaqueShader_;
+	std::unique_ptr<Shader> waterShader_;
 
 	// texture atlas
-	std::optional<Texture> atlas_;
+	std::unique_ptr<Texture> atlas_;
 
 	// frustum culling toggle
 	bool enableFrustumCulling_ = true;
@@ -92,9 +90,9 @@ private:
 
 	// raycast data
 	BlockID lastBlockUsed_;
-	const float maxDistanceRay_ = 5.0f;
+	static constexpr float maxDistanceRay_ = 5.0f;
 private:
-	BlockHit raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float step = 0.1f) const;
+	BlockHit raycastBlocks(const glm::vec3& origin, const glm::vec3& dir) const;
 };
 
 #endif
