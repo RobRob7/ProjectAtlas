@@ -1,8 +1,18 @@
 ﻿#include "application.h"
 
+#include "scene.h"
+#include "renderer.h"
+#include "ui.h"
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
+#include <memory>
+#include <stdexcept>
+
 //--- PUBLIC ---//
-Application::Application(int width, int height, const char* windowTitle)
-	: width_(width), height_(height), windowTitle_(windowTitle)
+Application::Application(int width, int height)
+	: width_(width), height_(height)
 {
 	// intialize GLFW
 	if (!glfwInit())

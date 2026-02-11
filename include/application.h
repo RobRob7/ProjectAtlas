@@ -1,20 +1,22 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "scene.h"
-#include "renderer.h"
-#include "ui.h"
+#include "renderinputs.h"
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+struct GLFWwindow;
+
+class Scene;
+class Renderer;
+class UI;
+
+struct InputState;
 
 #include <memory>
-#include <algorithm>
 
 class Application
 {
 public:
-	Application(int width, int height, const char* windowTitle);
+	Application(int width, int height);
 	~Application();
 
 	void run();
@@ -30,7 +32,6 @@ private:
 
 	int width_;
 	int height_;
-	const char* windowTitle_;
 
 	GLFWwindow* window_ = nullptr;
 
