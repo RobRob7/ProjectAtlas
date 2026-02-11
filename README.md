@@ -137,7 +137,13 @@ Greedy Meshing
 
 - The chunk mesh is generated using greedy meshing, which scans each chunk in three passes (one per axis).
 - For each pass, adjacent voxels are compared to detect visible faces. Adjacent faces that match in attributes are merged into larger quads.
-- Noticeable performance increase from 342 FPS to 662 FPS (~94% improvement) measured on an RTX 5090 at the same camera position.
+
+| GPU            | Optimizations Off (FPS) | Optimizations On (FPS) | FPS Change | % Increase |
+|----------------|---------------|--------------|------------|----------|
+| Intel Arc A370M      | 39.9          | 73.8          | +33.9       | +85.0%   |
+| AMD Radeon 780M       | 39.3           | 90.7          | +51.4       | +130.8%   |
+| Nvidia RTX 4060m       | 103.0           | 210.1          | +107.1       | +104.0%   |
+| Nvidia RTX 5090       | 342.2           | 662.0          | +319.8        | +93.5%   |
 
 **Why it matters:**  
 Greedy meshing reduces the number of draw calls and triangles sent to the GPU, improving overall rendering performance.
@@ -252,7 +258,7 @@ Milestones
 Requirements
 </h2>
 
-> - [Download](https://git-scm.com/install/) and install Git
+> - [Download](https://git-scm.com/install/) and install Git.
 > - [Download](https://visualstudio.microsoft.com/vs/community/) Visual Studio 2022 Community Edition or newer.
 > -- Install workloads: *Desktop development with C++*.
 > - [Download](https://cmake.org/download/) and install CMake (>= v3.31.0).
