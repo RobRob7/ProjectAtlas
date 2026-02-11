@@ -1,4 +1,9 @@
-#include "Camera.h"
+#include "camera.h"
+
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <algorithm>
+#include <cmath>
 
 //--- PUBLIC ---//
 // constructor with vectors
@@ -61,18 +66,18 @@ glm::mat4 Camera::getViewMatrix() const
 
 // processes input received from any keyboard-like input system.
 // accepts input parameter in the form of camera defined ENUM
-void Camera::processKeyboard(Camera_Movement direction, float deltaTime)
+void Camera::processKeyboard(CameraMovement direction, float deltaTime)
 {
 	if (isEnabled_)
 	{
 		float velocity = movementSpeed_ * deltaTime * accelerationMultiplier_;
-		if (direction == FORWARD)
+		if (direction == CameraMovement::FORWARD)
 			position_ += front_ * velocity;
-		if (direction == BACKWARD)
+		if (direction == CameraMovement::BACKWARD)
 			position_ -= front_ * velocity;
-		if (direction == LEFT)
+		if (direction == CameraMovement::LEFT)
 			position_ -= right_ * velocity;
-		if (direction == RIGHT)
+		if (direction == CameraMovement::RIGHT)
 			position_ += right_ * velocity;
 	}
 } // end of processKeyboard()
@@ -189,7 +194,7 @@ glm::vec3& Camera::getCameraPosition()
 	return position_;
 } // end of getCameraPosition()
 
-void Camera::setCameraPosition(glm::vec3 pos)
+void Camera::setCameraPosition(const glm::vec3& pos)
 {
 	position_ = pos;
 } // end of setCameraPosition()
