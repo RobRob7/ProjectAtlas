@@ -1,5 +1,7 @@
 #include "chunkmesh.h"
 
+#include <glad/glad.h>
+
 //--- HELPER ---//
 // world opaque vertices
 // LAYOUT (32u bits)
