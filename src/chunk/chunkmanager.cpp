@@ -1,5 +1,16 @@
 #include "chunkmanager.h"
 
+#include "shader.h"
+#include "texture.h"
+
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <algorithm>
+#include <limits>
+#include <cmath>
+#include <utility>
+
+
 //--- HELPER ---//
 struct Plane
 {
@@ -91,9 +102,12 @@ ChunkManager::ChunkManager(int viewRadiusInChunks)
 
 void ChunkManager::init()
 {
-	opaqueShader_.emplace("chunk/chunk.vert", "chunk/chunk.frag");
-	waterShader_.emplace("water/water.vert", "water/water.frag");
-	atlas_.emplace("blocks.png", true);
+	//opaqueShader_.emplace("chunk/chunk.vert", "chunk/chunk.frag");
+	opaqueShader_ = std::make_unique<Shader>("chunk/chunk.vert", "chunk/chunk.frag");
+	//waterShader_.emplace("water/water.vert", "water/water.frag");
+	waterShader_ = std::make_unique<Shader>("water/water.vert", "water/water.frag");
+	//atlas_.emplace("blocks.png", true);
+	atlas_ = std::make_unique<Texture>("blocks.png", true);
 } // end of initShaderTexture()
 
 void ChunkManager::update(const glm::vec3& cameraPos)
@@ -345,12 +359,12 @@ void ChunkManager::setViewRadius(int r)
 	viewRadius_ = std::clamp(r, MIN_RADIUS, MAX_RADIUS);
 } // end of setViewRadius()
 
-std::optional<Shader>& ChunkManager::getOpaqueShader()
+std::unique_ptr<Shader>& ChunkManager::getOpaqueShader()
 {
 	return opaqueShader_;
 } // end of getOpaqueShader()
 
-std::optional<Shader>& ChunkManager::getWaterShader()
+std::unique_ptr<Shader>& ChunkManager::getWaterShader()
 {
 	return waterShader_;
 } // end of getWaterShader()
@@ -370,9 +384,9 @@ void ChunkManager::setAmbientStrength(float strength)
 	ambientStrength_ = std::clamp(strength, MIN_AMBSTR, MAX_AMBSTR);
 } // end of setAmbientStrength()
 
-void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir, float step)
+void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin, const glm::vec3& dir)
 {
-	BlockHit hit = raycastBlocks(origin, dir, maxDistanceRay_);
+	BlockHit hit = raycastBlocks(origin, dir);
 	// place op
 	if (shouldPlace)
 	{
@@ -444,7 +458,7 @@ void ChunkManager::enableFrustumCulling(bool enable)
 
 
 //--- PRIVATE ---//
-BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& dir, float step) const
+BlockHit ChunkManager::raycastBlocks(const glm::vec3& origin, const glm::vec3& dir) const
 {
 	BlockHit hit;
 
