@@ -1,5 +1,9 @@
 #include "crosshair.h"
 
+#include "shader.h"
+
+#include <glad/glad.h>
+
 //--- PUBLIC ---//
 Crosshair::Crosshair(float size)
 	: size_(size)
@@ -8,25 +12,12 @@ Crosshair::Crosshair(float size)
 
 Crosshair::~Crosshair()
 {
-	if (vao_)
-	{
-		glDeleteVertexArrays(1, &vao_);
-	}
-	if (vbo_)
-	{
-		glDeleteBuffers(1, &vbo_);
-	}
+	destroyGL();
 } // end of destructor
 
 void Crosshair::init()
 {
-	crosshairShader_.emplace("crosshair/crosshair.vert", "crosshair/crosshair.frag");
-} // end of init()
-
-void Crosshair::render()
-{
-	// Disable depth so crosshair draws on top
-	glDisable(GL_DEPTH_TEST);
+	crosshairShader_ = std::make_unique<Shader>("crosshair/crosshair.vert", "crosshair/crosshair.frag");
 
 	glm::vec2 center{ 0.0f, 0.0f };
 
@@ -40,22 +31,42 @@ void Crosshair::render()
 		center.x, center.y + size_
 	};
 
-	glGenVertexArrays(1, &vao_);
-	glGenBuffers(1, &vbo_);
-	glBindVertexArray(vao_);
+	glCreateVertexArrays(1, &vao_);
+	glCreateBuffers(1, &vbo_);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glNamedBufferData(vbo_, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// attach buffer to vao
+	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, sizeof(float) * 2);
+
+	glEnableVertexArrayAttrib(vao_, 0);
+	glVertexArrayAttribFormat(vao_, 0, 2, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(vao_, 0, 0);
+} // end of init()
+
+void Crosshair::render()
+{
+	// Disable depth so crosshair draws on top
+	glDisable(GL_DEPTH_TEST);
 
 	crosshairShader_->use();
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
+	glBindVertexArray(vao_);
 	glDrawArrays(GL_LINES, 0, 4);
-
-	glDeleteBuffers(1, &vbo_);
-	glDeleteVertexArrays(1, &vao_);
 
 	// re-enable depth test after drawing
 	glEnable(GL_DEPTH_TEST);
 } // end of render()
+
+
+//--- PRIVATE ---//
+void Crosshair::destroyGL()
+{
+	if (vao_)
+	{
+		glDeleteVertexArrays(1, &vao_);
+	}
+	if (vbo_)
+	{
+		glDeleteBuffers(1, &vbo_);
+	}
+} // end of destroyGL()
