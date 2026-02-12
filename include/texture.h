@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <array>
 
 class Texture
@@ -16,7 +17,7 @@ public:
 public:
 	Texture(const std::string& filePath, const bool needToFlip = false);
 	// constructor for cubemap texture
-	Texture(const std::array<std::string, 6>& textures, const bool needToFlip = false);
+	Texture(const std::array<std::string_view, 6>& textures, const bool needToFlip = false);
 	~Texture();
 
 	// disallow copy
