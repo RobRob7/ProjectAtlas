@@ -146,7 +146,7 @@ void Renderer::renderFrame(const RenderInputs& in)
     uint32_t finalColorTex = forwardColorTex_;
     if (renderSettings_.useFXAA)
     {
-        fxaaPass_.render(forwardColorTex_, width_, height_);
+        fxaaPass_.render(forwardColorTex_);
         finalColorTex = fxaaPass_.getOutputTex();
     }
 

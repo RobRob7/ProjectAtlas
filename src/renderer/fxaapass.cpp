@@ -1,5 +1,12 @@
 #include "fxaapass.h"
 
+#include "shader.h"
+
+#include <glm/glm.hpp>
+#include <glad/glad.h>
+
+#include <stdexcept>
+
 //--- PUBLIC ---//
 FXAAPass::~FXAAPass()
 {
@@ -8,7 +15,10 @@ FXAAPass::~FXAAPass()
 
 void FXAAPass::init()
 {
-	shader_.emplace("fxaapass/fxaa.vert", "fxaapass/fxaa.frag");
+	shader_ = std::make_unique<Shader>("fxaapass/fxaa.vert", "fxaapass/fxaa.frag");
+
+	shader_->use();
+	shader_->setInt("u_sceneColorTex", 0);
 
 	glCreateVertexArrays(1, &fsVao_);
 } // end of init()
@@ -22,38 +32,25 @@ void FXAAPass::resize(int w, int h)
 	width_ = w;
 	height_ = h;
 	createTargets();
+
+	shader_->use();
+	shader_->setVec2("u_inverseScreenSize", glm::vec2(1.0f / static_cast<float>(width_), 1.0f / static_cast<float>(height_)));
 } // end of resize()
 
-void FXAAPass::destroyGL()
+void FXAAPass::render(uint32_t sceneColorTex)
 {
-	destroyTargets();
-
-	if (fsVao_)
-	{
-		glDeleteVertexArrays(1, &fsVao_);
-		fsVao_ = 0;
-	}
-
-	width_ = 0;
-	height_ = 0;
-} // end of destroyGL()
-
-void FXAAPass::render(uint32_t sceneColorTex, int w, int h)
-{
-	if (!shader_ || !sceneColorTex || w <= 0 || h <= 0)
+	if (!shader_ || !sceneColorTex || width_ <= 0 || height_ <= 0)
 		return;
+
+	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
+
+	glViewport(0, 0, width_, height_);
 
 	glDisable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, fxaaFBO_);
 	glBindVertexArray(fsVao_);
 
-	glViewport(0, 0, w, h);
-	glClear(GL_COLOR_BUFFER_BIT);
-
 	shader_->use();
-	shader_->setInt("u_sceneColorTex", 0);
-	shader_->setVec2("u_inverseScreenSize", glm::vec2(1.0f / static_cast<float>(w), 1.0f / static_cast<float>(h)));
-
 	shader_->setFloat("u_edgeSharpnessQuality", edgeSharpnessQuality_);
 	shader_->setFloat("u_edgeThresholdMax", edgeThresholdMax_);
 	shader_->setFloat("u_edgeThresholdMin", edgeThresholdMin_);
@@ -62,9 +59,9 @@ void FXAAPass::render(uint32_t sceneColorTex, int w, int h)
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	glBindVertexArray(0);
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	if (prevDepth) glEnable(GL_DEPTH_TEST);
 } // end of render()
 
 void FXAAPass::setSharpnessQuality(float v)
@@ -123,3 +120,17 @@ void FXAAPass::destroyTargets()
 		fxaaColorTex_ = 0;
 	}
 } // end of destroyTargets()
+
+void FXAAPass::destroyGL()
+{
+	destroyTargets();
+
+	if (fsVao_)
+	{
+		glDeleteVertexArrays(1, &fsVao_);
+		fsVao_ = 0;
+	}
+
+	width_ = 0;
+	height_ = 0;
+} // end of destroyGL()
