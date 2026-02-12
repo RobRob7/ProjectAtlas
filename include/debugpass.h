@@ -1,15 +1,21 @@
 #ifndef DEBUGPASS_H
 #define DEBUGPASS_H
 
-#include "shader.h"
+class Shader;
 
-#include <optional>
+#include <memory>
 #include <cstdint>
 
 class DebugPass
 {
 public:
+	DebugPass() = default;
 	~DebugPass();
+
+	DebugPass(const DebugPass&) = delete;
+	DebugPass& operator=(const DebugPass&) = delete;
+	DebugPass(DebugPass&&) = delete;
+	DebugPass& operator=(DebugPass&&) = delete;
 
 	void init();
 	void destroyGL();
@@ -17,7 +23,7 @@ public:
 
 private:
 	uint32_t vao_{};
-	std::optional<Shader> debugShader_;
+	std::unique_ptr<Shader> debugShader_;
 };
 
 #endif

@@ -1,5 +1,7 @@
 #include "debugpass.h"
 
+#include "shader.h"
+
 //--- PUBLIC ---//
 DebugPass::~DebugPass()
 {
@@ -8,9 +10,13 @@ DebugPass::~DebugPass()
 
 void DebugPass::init()
 {
-	debugShader_.emplace("debugpass/debugpass.vert", "debugpass/debugpass.frag");
+	debugShader_ = std::make_unique<Shader>("debugpass/debugpass.vert", "debugpass/debugpass.frag");
 
 	glCreateVertexArrays(1, &vao_);
+
+	debugShader_->use();
+	debugShader_->setInt("u_normal", 0);
+	debugShader_->setInt("u_depth", 1);
 } // end of init()
 
 void DebugPass::destroyGL()
@@ -24,7 +30,9 @@ void DebugPass::destroyGL()
 
 void DebugPass::render(uint32_t normalTex, uint32_t depthTex, float nearPlane, float farPlane, int mode)
 {
-	if (!debugShader_) return;
+	if (!debugShader_ || vao_ == 0) return;
+
+	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDisable(GL_DEPTH_TEST);
@@ -36,10 +44,9 @@ void DebugPass::render(uint32_t normalTex, uint32_t depthTex, float nearPlane, f
 
 	glBindTextureUnit(0, normalTex);
 	glBindTextureUnit(1, depthTex);
-	debugShader_->setInt("u_normal", 0);
-	debugShader_->setInt("u_depth", 1);
 
 	glBindVertexArray(vao_);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
-	glBindVertexArray(0);
+
+	if (prevDepth) glEnable(GL_DEPTH_TEST);
 } // end of render()
