@@ -1,14 +1,10 @@
 #ifndef FXAAPASS_H
 #define FXAAPASS_H
 
-#include "shader.h"
-
-#include <glm/glm.hpp>
-#include <glad/glad.h>
+class Shader;
 
 #include <cstdint>
-#include <optional>
-#include <stdexcept>
+#include <memory>
 
 class FXAAPass
 {
@@ -17,8 +13,7 @@ public:
 
     void init();
     void resize(int w, int h);
-    void destroyGL();
-    void render(uint32_t sceneColorTex, int w, int h);
+    void render(uint32_t sceneColorTex);
 
     void setSharpnessQuality(float v);
     void setEdgeThresholdMax(float v);
@@ -38,10 +33,11 @@ private:
     uint32_t fxaaFBO_{};
     uint32_t fxaaColorTex_{};
 
-    std::optional<Shader> shader_;
+    std::unique_ptr<Shader> shader_;
 private:
     void createTargets();
     void destroyTargets();
+    void destroyGL();
 };
 
 #endif
