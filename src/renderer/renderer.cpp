@@ -156,7 +156,7 @@ void Renderer::renderFrame(const RenderInputs& in)
     fogPass_.setFogEnd(renderSettings_.fogSettings.end);
     if (renderSettings_.useFog)
     {
-        fogPass_.render(finalColorTex, forwardDepthTex_, width_, height_,
+        fogPass_.render(finalColorTex, forwardDepthTex_,
             in.camera->getNearPlane(), in.camera->getFarPlane(), in.world->getAmbientStrength());
     }
     else
