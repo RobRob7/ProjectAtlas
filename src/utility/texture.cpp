@@ -74,7 +74,7 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 	stbi_image_free(data);
 } // end of constructor
 
-Texture::Texture(const std::array<std::string, 6>& textures, const bool needToFlip)
+Texture::Texture(const std::array<std::string_view, 6>& textures, const bool needToFlip)
 {
 	// flip image vertically
 	stbi_set_flip_vertically_on_load(needToFlip);
@@ -89,7 +89,9 @@ Texture::Texture(const std::array<std::string, 6>& textures, const bool needToFl
 
 	for (size_t i = 0; i < textures.size(); ++i)
 	{
-		std::string path = RESOURCES_PATH + textures[i];
+		std::string path = std::string(RESOURCES_PATH);
+		path += textures[i];
+
 		unsigned char* data = stbi_load(path.c_str(), &w, &h, &nrChannels, 0);
 		width_ = w;
 		height_ = h;

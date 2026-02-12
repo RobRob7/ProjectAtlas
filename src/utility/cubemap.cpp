@@ -1,39 +1,99 @@
 #include "cubemap.h"
 
-//--- PUBLIC ---//
-CubeMap::CubeMap(const std::array<std::string, 6>& textures)
-	: texture_(textures), cubemapTexture_(texture_.m_ID)
+#include "texture.h"
+#include "shader.h"
+
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <memory>
+
+const std::array<float, 108> SkyboxVertices =
 {
+	// positions          
+	-1.0f,  1.0f, -1.0f,
+	-1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	-1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f
+};
+
+// cubemap default
+const std::array<std::string_view, 6> DEFAULT_FACES = { {
+	"texture/cubemap/space_alt/right.png",
+	"texture/cubemap/space_alt/left.png",
+	"texture/cubemap/space_alt/top.png",
+	"texture/cubemap/space_alt/bottom.png",
+	"texture/cubemap/space_alt/front.png",
+	"texture/cubemap/space_alt/back.png"
+} };
+
+//--- PUBLIC ---//
+CubeMap::CubeMap(const std::array<std::string_view, 6>& textures)
+{
+	faces_ = textures;
 } // end of constructor
 
 // destructor
 CubeMap::~CubeMap()
 {
-	if (vao_)
-	{
-		glDeleteVertexArrays(1, &vao_);
-		vao_ = 0;
-	}
-	if (vbo_)
-	{
-		glDeleteBuffers(1, &vbo_);
-		vbo_ = 0;
-	}
-
+	destroyGL();
 } // end of destructor
 
 void CubeMap::init()
 {
-	shader_.emplace("/cubemap/cubemap.vert", "/cubemap/cubemap.frag");
+	shader_ = std::make_unique<Shader>("cubemap/cubemap.vert", "cubemap/cubemap.frag");
+	texture_ = std::make_unique<Texture>(faces_);
 
 	// VAO + VBO
-	glGenVertexArrays(1, &vao_);
-	glGenBuffers(1, &vbo_);
-	glBindVertexArray(vao_);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(SkyboxVertices), &SkyboxVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glCreateVertexArrays(1, &vao_);
+	glCreateBuffers(1, &vbo_);
+
+	// upload vertex data
+	glNamedBufferData(vbo_, sizeof(SkyboxVertices), SkyboxVertices.data(), GL_STATIC_DRAW);
+
+	// attach vbo to vao
+	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, 3 * sizeof(float));
+
+	// pos attribute = 0
+	glEnableVertexArrayAttrib(vao_, 0);
+	glVertexArrayAttribFormat(vao_, 0, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(vao_, 0, 0);
 
 	shader_->use();
 	shader_->setInt("skybox", 0);
@@ -63,11 +123,26 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 	shader_->setMat4("u_projection", projection);
 
 	glBindVertexArray(vao_);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture_);
+	glBindTextureUnit(0, texture_->m_ID);
+
 	glDrawArrays(GL_TRIANGLES, 0, 36);
-	glBindVertexArray(0);
 
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
 } // end of render()
+
+
+//--- PRIVATE ---//
+void CubeMap::destroyGL()
+{
+	if (vao_)
+	{
+		glDeleteVertexArrays(1, &vao_);
+		vao_ = 0;
+	}
+	if (vbo_)
+	{
+		glDeleteBuffers(1, &vbo_);
+		vbo_ = 0;
+	}
+} // end of destroyGL()

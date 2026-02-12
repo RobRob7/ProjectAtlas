@@ -1,77 +1,25 @@
 #ifndef CUBEMAP_H
 #define CUBEMAP_H
 
-#include "texture.h"
-#include "shader.h"
+class Texture;
+class Shader;
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
-#include <string>
+#include <string_view>
+#include <array>
 #include <cstdint>
-#include <optional>
+#include <memory>
 
-// cubemap default
-inline const std::array<std::string, 6> DEFAULT_FACES = { {
-    "texture/cubemap/space_alt/right.png",
-    "texture/cubemap/space_alt/left.png",
-    "texture/cubemap/space_alt/top.png",
-    "texture/cubemap/space_alt/bottom.png",
-    "texture/cubemap/space_alt/front.png",
-    "texture/cubemap/space_alt/back.png"
-} };
 
-const float SkyboxVertices[] =
-{
-    // positions          
-    -1.0f,  1.0f, -1.0f,
-    -1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-
-    -1.0f, -1.0f,  1.0f,
-    -1.0f, -1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f,  1.0f,
-    -1.0f, -1.0f,  1.0f,
-
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-
-    -1.0f, -1.0f,  1.0f,
-    -1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f,
-    -1.0f, -1.0f,  1.0f,
-
-    -1.0f,  1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f, -1.0f,
-
-    -1.0f, -1.0f, -1.0f,
-    -1.0f, -1.0f,  1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-    -1.0f, -1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f
-};
+extern const std::array<float, 108> SkyboxVertices;
+extern const std::array<std::string_view, 6> DEFAULT_FACES;
 
 class CubeMap
 {
 public:
 	// constructor
-    CubeMap(const std::array<std::string, 6>& textures = DEFAULT_FACES);
+    CubeMap(const std::array<std::string_view, 6>& textures = DEFAULT_FACES);
     // destructor
     ~CubeMap();
 
@@ -86,14 +34,18 @@ public:
     void render(const glm::mat4& view, const glm::mat4& projection, const float time = -1.0) const;
 
 private:
+    void destroyGL();
+private:
     // cubemap shader
-    std::optional<Shader> shader_;
+    std::unique_ptr<Shader> shader_;
     // cubemap texture
-    Texture texture_;
-    uint32_t& cubemapTexture_;
+    std::unique_ptr<Texture> texture_;
+
     // cubemap VAO, VBO
     uint32_t vao_{};
     uint32_t vbo_{};
+
+    std::array<std::string_view, 6> faces_;
 };
 
 #endif
