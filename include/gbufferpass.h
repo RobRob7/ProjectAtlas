@@ -1,15 +1,13 @@
 #ifndef GBUFFERPASS_H
-#define GBUFFFERPASS_H
+#define GBUFFERPASS_H
 
-#include "chunkmanager.h"
-#include "shader.h"
+class Shader;
+class ChunkManager;
 
-#include <glad/glad.h>
 #include <glm/glm.hpp>
 
 #include <cstdint>
-#include <stdexcept>
-#include <optional>
+#include <memory>
 
 class GBufferPass
 {
@@ -17,7 +15,6 @@ public:
 	~GBufferPass();
 	void init();
 	void resize(int w, int h);
-	void destroyGL();
 
 	void render(ChunkManager& world, const glm::mat4& view, const glm::mat4& proj);
 
@@ -29,7 +26,7 @@ private:
 	int width_{};
 	int height_{};
 
-	std::optional<Shader> gBufferShader_;
+	std::unique_ptr<Shader> gBufferShader_;
 
 	uint32_t fbo_{};
 	uint32_t gNormalTexture_{};
@@ -37,6 +34,7 @@ private:
 private:
 	void createTargets();
 	void destroyTargets();
+	void destroyGL();
 };
 
 #endif

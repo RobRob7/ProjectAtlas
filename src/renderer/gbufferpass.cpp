@@ -1,5 +1,12 @@
 #include "gbufferpass.h"
 
+#include "shader.h"
+#include "chunkmanager.h"
+
+#include <glad/glad.h>
+
+#include <stdexcept>
+
 //--- PUBLIC ---//
 GBufferPass::~GBufferPass()
 {
@@ -8,7 +15,7 @@ GBufferPass::~GBufferPass()
 
 void GBufferPass::init()
 {
-	gBufferShader_.emplace("gbuffer/gbuffer.vert", "gbuffer/gbuffer.frag");
+	gBufferShader_ = std::make_unique<Shader>("gbuffer/gbuffer.vert", "gbuffer/gbuffer.frag");
 } // end of init()
 
 void GBufferPass::resize(int w, int h)
@@ -16,33 +23,26 @@ void GBufferPass::resize(int w, int h)
 	if (w <= 0 || h <= 0) return;
 	if (w == width_ && h == height_) return;
 
-	destroyGL();
+	destroyTargets();
 	width_	= w;
 	height_ = h;
 	createTargets();
 } // end of resize()
 
-void GBufferPass::destroyGL()
-{
-	destroyTargets();
-
-	width_ = 0;
-	height_ = 0;
-} // end of destroyGL()
-
 void GBufferPass::render(ChunkManager& world, const glm::mat4& view, const glm::mat4& proj)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+	if (!gBufferShader_ || !fbo_ || width_ <= 0 || height_ <= 0) return;
+
 	glViewport(0, 0, width_, height_);
+
 	glEnable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	gBufferShader_->use();
-	gBufferShader_->setMat4("u_view", view);
-	gBufferShader_->setMat4("u_proj", proj);
-
 	world.renderOpaque(*gBufferShader_, view, proj);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 } // end of render()
 
 uint32_t GBufferPass::getNormalTexture() const
@@ -114,3 +114,11 @@ void GBufferPass::destroyTargets()
 		gDepthTexture_ = 0;
 	}
 } // end of destroyTargets()
+
+void GBufferPass::destroyGL()
+{
+	destroyTargets();
+
+	width_ = 0;
+	height_ = 0;
+} // end of destroyGL()
