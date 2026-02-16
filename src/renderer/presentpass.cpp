@@ -19,15 +19,24 @@ void PresentPass::init()
 	glCreateVertexArrays(1, &fsVao_);
 } // end of init()
 
-void PresentPass::render(uint32_t sceneColorTex, int w, int h)
+void PresentPass::resize(int w, int h)
 {
-	if (!shader_ || !sceneColorTex || w <= 0 || h <= 0) 
+	if (w <= 0 || h <= 0) return;
+	if (w == width_ && h == height_) return;
+
+	width_ = w;
+	height_ = h;
+} // end of resize()
+
+void PresentPass::render(uint32_t sceneColorTex)
+{
+	if (!shader_ || !sceneColorTex || width_ <= 0 || height_ <= 0) 
 		return;
 
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0, 0, w, h);
+	glViewport(0, 0, width_, height_);
 	glDisable(GL_DEPTH_TEST);
 
 	shader_->use();

@@ -1,13 +1,13 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "renderinputs.h"
+class ChunkManager;
+class Camera;
+class Light;
+class CubeMap;
+class Crosshair;
 
-#include "chunkmanager.h"
-#include "camera.h"
-#include "light.h"
-#include "cubemap.h"
-#include "crosshair.h"
+#include "renderinputs.h"
 
 #include "gbufferpass.h"
 #include "debugpass.h"
@@ -15,15 +15,11 @@
 #include "fxaapass.h"
 #include "presentpass.h"
 #include "waterpass.h"
-
 #include "fogpass.h"
 
 #include <glm/glm.hpp>
-#include <glad/glad.h>
 
 #include <cstdint>
-#include <iostream>
-#include <stdexcept>
 
 enum class DebugMode : int
 {
@@ -60,6 +56,8 @@ struct RenderSettings
 class Renderer
 {
 public:
+	~Renderer();
+
 	void init();
 	void resize(int w, int h);
 	void renderFrame(const RenderInputs& in);
@@ -67,7 +65,8 @@ public:
 	RenderSettings& settings();
 
 private:
-	void fxaaResize();
+	void destroyGL();
+	void resizeForwardTargets();
 private:
 	int width_{};
 	int height_{};

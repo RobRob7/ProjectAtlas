@@ -1,8 +1,25 @@
 #include "renderer.h"
 
+#include "chunkmanager.h"
+#include "camera.h"
+#include "light.h"
+#include "cubemap.h"
+#include "crosshair.h"
+
+#include <glad/glad.h>
+
+#include <stdexcept>
+
 //--- PUBLIC ---//
+Renderer::~Renderer()
+{
+    destroyGL();
+} // end of destructor
+
 void Renderer::init()
 {
+    destroyGL();
+
 	gbuffer_.init();
 	debugPass_.init();
     ssaoPass_.init();
@@ -29,8 +46,9 @@ void Renderer::resize(int w, int h)
     ssaoPass_.resize(width_, height_);
     fxaaPass_.resize(width_, height_);
     waterPass_.resize(width_, height_);
+    presentPass_.resize(width_, height_);
 
-    fxaaResize();
+    resizeForwardTargets();
 } // end of resize()
 
 void Renderer::renderFrame(const RenderInputs& in)
@@ -127,7 +145,6 @@ void Renderer::renderFrame(const RenderInputs& in)
     glBindTextureUnit(6, waterPass_.getRefrDepthTex());
     glBindTextureUnit(7, waterPass_.getDuDVTex());
     glBindTextureUnit(8, waterPass_.getNormalTex());
-    glBindTextureUnit(9, ssaoPass_.aoRawTexture());
 
     // render objects (non-UI)
     in.world->renderOpaque(view, proj);
@@ -161,7 +178,7 @@ void Renderer::renderFrame(const RenderInputs& in)
     }
     else
     {
-        presentPass_.render(finalColorTex, width_, height_);
+        presentPass_.render(finalColorTex);
     }
     // --------------- END POST-PROCESSING --------------- //
 
@@ -178,7 +195,28 @@ RenderSettings& Renderer::settings()
 
 
 //--- PRIVATE ---//
-void Renderer::fxaaResize()
+void Renderer::destroyGL()
+{
+    if (forwardFBO_)
+    {
+        glDeleteFramebuffers(1, &forwardFBO_);
+        forwardFBO_ = 0;
+    }
+
+    if (forwardColorTex_)
+    {
+        glDeleteTextures(1, &forwardColorTex_);
+        forwardColorTex_ = 0;
+    }
+
+    if (forwardDepthTex_)
+    {
+        glDeleteTextures(1, &forwardDepthTex_);
+        forwardDepthTex_ = 0;
+    }
+} // end of destroyGL()
+
+void Renderer::resizeForwardTargets()
 {
     // recreate textures
     if (forwardColorTex_)
@@ -218,4 +256,4 @@ void Renderer::fxaaResize()
     {
         throw std::runtime_error("FBO 'forwardFBO_' is incomplete!");
     }
-} // end of fxaaResize()
+} // end of resizeForwardTargets()

@@ -10,6 +10,8 @@ DebugPass::~DebugPass()
 
 void DebugPass::init()
 {
+	destroyGL();
+
 	debugShader_ = std::make_unique<Shader>("debugpass/debugpass.vert", "debugpass/debugpass.frag");
 
 	glCreateVertexArrays(1, &vao_);

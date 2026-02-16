@@ -15,6 +15,8 @@ FXAAPass::~FXAAPass()
 
 void FXAAPass::init()
 {
+	destroyGL();
+
 	shader_ = std::make_unique<Shader>("fxaapass/fxaa.vert", "fxaapass/fxaa.frag");
 
 	shader_->use();

@@ -15,6 +15,8 @@ GBufferPass::~GBufferPass()
 
 void GBufferPass::init()
 {
+	destroyGL();
+
 	gBufferShader_ = std::make_unique<Shader>("gbuffer/gbuffer.vert", "gbuffer/gbuffer.frag");
 } // end of init()
 

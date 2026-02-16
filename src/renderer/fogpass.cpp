@@ -12,6 +12,8 @@ FogPass::~FogPass()
 
 void FogPass::init()
 {
+	destroyGL();
+
 	shader_ = std::make_unique<Shader>("fogpass/fog.vert", "fogpass/fog.frag");
 
 	shader_->use();
