@@ -1,15 +1,15 @@
 #ifndef CUBEMAP_H
 #define CUBEMAP_H
 
-class Texture;
-class Shader;
-
 #include <glm/glm.hpp>
 
 #include <string_view>
 #include <array>
 #include <cstdint>
 #include <memory>
+
+class Texture;
+class Shader;
 
 extern const std::array<float, 108> SkyboxVertices;
 extern const std::array<std::string_view, 6> DEFAULT_FACES;

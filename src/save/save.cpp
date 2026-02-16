@@ -1,8 +1,21 @@
 #include "save.h"
 
+#include "chunkdata.h"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <cstdint>
+
+struct ChunkFileHeader
+{
+	int32_t version = 1;
+	int32_t cx{};
+	int32_t cz{};
+	int32_t sizeX = CHUNK_SIZE;
+	int32_t sizeY = CHUNK_SIZE_Y;
+	int32_t sizeZ = CHUNK_SIZE;
+};
 
 //--- PUBLIC ---//
 Save::Save() = default;

@@ -133,7 +133,7 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 	shader_->setMat4("u_projection", projection);
 
 	glBindVertexArray(vao_);
-	glBindTextureUnit(0, texture_->m_ID);
+	glBindTextureUnit(0, texture_->ID());
 
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 

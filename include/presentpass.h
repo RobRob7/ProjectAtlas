@@ -1,10 +1,10 @@
 #ifndef PRESENTPASS_H
 #define PRESENTPASS_H
 
-class Shader;
-
 #include <cstdint>
 #include <memory>
+
+class Shader;
 
 class PresentPass
 {

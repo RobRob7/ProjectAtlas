@@ -3,15 +3,14 @@
 
 #include "renderinputs.h"
 
+#include <memory>
+
 struct GLFWwindow;
 
 class Scene;
 class Renderer;
 class UI;
-
 struct InputState;
-
-#include <memory>
 
 class Application
 {

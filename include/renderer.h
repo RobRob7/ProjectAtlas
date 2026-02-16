@@ -1,6 +1,11 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include <glm/glm.hpp>
+
+#include <cstdint>
+#include <memory>
+
 class ChunkManager;
 class Camera;
 class Light;
@@ -15,12 +20,7 @@ class PresentPass;
 class WaterPass;
 class FogPass;
 
-#include "renderinputs.h"
-
-#include <glm/glm.hpp>
-
-#include <cstdint>
-#include <memory>
+struct RenderInputs;
 
 enum class DebugMode : int
 {

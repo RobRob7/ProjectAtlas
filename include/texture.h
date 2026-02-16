@@ -1,19 +1,13 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include <glad/glad.h>
-
 #include <cstdint>
-#include <iostream>
 #include <string>
 #include <string_view>
 #include <array>
 
 class Texture
 {
-public:
-	// texture ID
-	uint32_t m_ID{};
 public:
 	Texture(const std::string& filePath, const bool needToFlip = false);
 	// constructor for cubemap texture
@@ -30,8 +24,10 @@ public:
 	Texture& operator=(Texture&& other) noexcept;
 
 	void setWrapRepeat();
+	uint32_t ID() const;
 
 private:
+	uint32_t id_{};
 	std::string filePath_;
 	// texture width
 	int32_t width_{};

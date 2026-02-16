@@ -2,6 +2,8 @@
 
 #include <glad/glad.h>
 
+#include <cstddef>
+
 //--- HELPER ---//
 // world opaque vertices
 // LAYOUT (32u bits)

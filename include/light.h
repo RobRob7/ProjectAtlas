@@ -1,13 +1,13 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
-class Shader;
-
 #include <glm/glm.hpp>
 
 #include <array>
 #include <cstdint>
 #include <memory>
+
+class Shader;
 
 extern const std::array<float, 288> CUBE_VERTICES;
 

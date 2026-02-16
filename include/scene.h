@@ -1,6 +1,8 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include <memory>
+
 class Camera;
 class CubeMap;
 class Crosshair;
@@ -9,8 +11,6 @@ class Light;
 
 class Renderer;
 struct RenderInputs;
-
-#include <memory>
 
 struct InputState
 {

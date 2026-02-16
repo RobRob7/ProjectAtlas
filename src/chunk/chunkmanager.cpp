@@ -3,6 +3,7 @@
 #include "shader.h"
 #include "texture.h"
 
+#include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
@@ -194,7 +195,7 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
 {
 	opaqueShader_->use();
-	glBindTextureUnit(0, atlas_->m_ID);
+	glBindTextureUnit(0, atlas_->ID());
 	opaqueShader_->setInt("u_atlas", 0);
 	opaqueShader_->setMat4("u_view", view);
 	opaqueShader_->setMat4("u_proj", proj);
@@ -227,7 +228,7 @@ void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
 void ChunkManager::renderOpaque(Shader& shader, const glm::mat4& view, const glm::mat4& proj)
 {
 	shader.use();
-	glBindTextureUnit(0, atlas_->m_ID);
+	glBindTextureUnit(0, atlas_->ID());
 	shader.setMat4("u_view", view);
 	shader.setMat4("u_proj", proj);
 

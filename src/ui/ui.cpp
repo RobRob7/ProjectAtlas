@@ -8,6 +8,7 @@
 #include "camera.h"
 #include "light.h"
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
@@ -15,7 +16,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <string_view>
 #define NOMINMAX
 #include <windows.h>
 #include <psapi.h>
@@ -40,7 +40,7 @@ UI::UI(GLFWwindow* window, RenderSettings& rs)
 	enabled_(true), cameraModeOn_(true)
 {
 	// window top nav bar logo
-	logoTex_ = (void*)(intptr_t)Texture("blocks.png").m_ID;
+	logoTex_ = (void*)(intptr_t)Texture("blocks.png").ID();
 
 	// ------ imgui init ------ //
 	IMGUI_CHECKVERSION();

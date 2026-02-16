@@ -1,12 +1,12 @@
 #ifndef SSAOPASS_H
 #define SSAOPASS_H
 
-class Shader;
-
 #include <glm/glm.hpp>
 
 #include <memory>
 #include <array>
+
+class Shader;
 
 class SSAOPass
 {

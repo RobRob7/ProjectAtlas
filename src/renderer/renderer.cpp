@@ -15,6 +15,8 @@
 #include "waterpass.h"
 #include "fogpass.h"
 
+#include "renderinputs.h"
+
 #include <glad/glad.h>
 
 #include <stdexcept>
