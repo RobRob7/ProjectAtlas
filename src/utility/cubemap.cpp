@@ -117,7 +117,7 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 
 		glm::mat4 skyRot = glm::rotate(glm::mat4(1.0f),
 			time * speed,
-			glm::vec3(1.0f, 1.0f, 0.0f));
+			glm::vec3(0.0f, 1.0f, 0.0f));
 		viewStrippedTranslation = glm::mat4(glm::mat3(skyRot)) * viewStrippedTranslation;
 	}
 

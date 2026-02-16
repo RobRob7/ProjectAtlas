@@ -40,7 +40,8 @@ UI::UI(GLFWwindow* window, RenderSettings& rs)
 	enabled_(true), cameraModeOn_(true)
 {
 	// window top nav bar logo
-	logoTex_ = (void*)(intptr_t)Texture("blocks.png").ID();
+	//logoTex_ = (void*)(intptr_t)Texture("blocks.png").ID();
+	logoTex_ = std::make_unique<Texture>("blocks.png");
 
 	// ------ imgui init ------ //
 	IMGUI_CHECKVERSION();
@@ -122,7 +123,7 @@ void UI::drawTopBar()
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 
-	const float barHeight = 36.0f;
+	const float barHeight = 30.0f;
 	const float padding = 8.0f;
 	const float btnSize = 18.0f;
 
@@ -142,8 +143,10 @@ void UI::drawTopBar()
 	ImGui::PopStyleVar();
 
 	// ----- logo -----
-	ImGui::Image(logoTex_, ImVec2(20, 20));
-	ImGui::SameLine();
+	float h = barHeight;
+	float aspect = static_cast<float>(logoTex_->getWidth()) / static_cast<float>(logoTex_->getHeight());
+	ImGui::Image((void*)(intptr_t)logoTex_->ID(), ImVec2(h * aspect, h));
+	ImGui::SameLine(0.0f, 1.0f);
 
 	// ----- title -----
 	ImGui::TextUnformatted("Project Atlas");

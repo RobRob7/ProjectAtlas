@@ -218,3 +218,13 @@ void Texture::setNoMipmapsLinear() const
 	glTextureParameteri(id_, GL_TEXTURE_BASE_LEVEL, 0);
 	glTextureParameteri(id_, GL_TEXTURE_MAX_LEVEL, 0);
 } // end of setNoMipmapsLinear()
+
+int32_t Texture::getWidth() const
+{
+	return width_;
+} // end of getWidth()
+
+int32_t Texture::getHeight() const
+{
+	return height_;
+} // end of getHeight()
