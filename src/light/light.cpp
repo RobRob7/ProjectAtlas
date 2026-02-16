@@ -1,35 +1,107 @@
 #include "light.h"
 
+#include "shader.h"
+
+#include <glm/gtc/matrix_transform.hpp>
+#include <glad/glad.h>
+
+#include <algorithm>
+#include <cstddef>
+
+struct VertexLight
+{
+	glm::vec3 pos;
+	glm::vec3 normal;
+	glm::vec2 uv;
+};
+
+// pos, normals, texcoords
+const std::array<float, 288> CUBE_VERTICES = {
+	// =========================
+	// Back face (Z-)
+	// =========================
+	-0.5f,-0.5f,-0.5f,   0.0f,0.0f,-1.0f,   0.0f,0.0f,
+	 0.5f,-0.5f,-0.5f,   0.0f,0.0f,-1.0f,   1.0f,0.0f,
+	 0.5f, 0.5f,-0.5f,   0.0f,0.0f,-1.0f,   1.0f,1.0f,
+	 0.5f, 0.5f,-0.5f,   0.0f,0.0f,-1.0f,   1.0f,1.0f,
+	-0.5f, 0.5f,-0.5f,   0.0f,0.0f,-1.0f,   0.0f,1.0f,
+	-0.5f,-0.5f,-0.5f,   0.0f,0.0f,-1.0f,   0.0f,0.0f,
+
+	// =========================
+	// Front face (Z+)
+	// =========================
+	-0.5f,-0.5f, 0.5f,   0.0f,0.0f, 1.0f,   0.0f,0.0f,
+	 0.5f,-0.5f, 0.5f,   0.0f,0.0f, 1.0f,   1.0f,0.0f,
+	 0.5f, 0.5f, 0.5f,   0.0f,0.0f, 1.0f,   1.0f,1.0f,
+	 0.5f, 0.5f, 0.5f,   0.0f,0.0f, 1.0f,   1.0f,1.0f,
+	-0.5f, 0.5f, 0.5f,   0.0f,0.0f, 1.0f,   0.0f,1.0f,
+	-0.5f,-0.5f, 0.5f,   0.0f,0.0f, 1.0f,   0.0f,0.0f,
+
+	// =========================
+	// Left face (X-)
+	// =========================
+	-0.5f, 0.5f, 0.5f,  -1.0f,0.0f,0.0f,   1.0f,0.0f,
+	-0.5f, 0.5f,-0.5f,  -1.0f,0.0f,0.0f,   1.0f,1.0f,
+	-0.5f,-0.5f,-0.5f,  -1.0f,0.0f,0.0f,   0.0f,1.0f,
+	-0.5f,-0.5f,-0.5f,  -1.0f,0.0f,0.0f,   0.0f,1.0f,
+	-0.5f,-0.5f, 0.5f,  -1.0f,0.0f,0.0f,   0.0f,0.0f,
+	-0.5f, 0.5f, 0.5f,  -1.0f,0.0f,0.0f,   1.0f,0.0f,
+
+	// =========================
+	// Right face (X+)
+	// =========================
+	 0.5f, 0.5f, 0.5f,   1.0f,0.0f,0.0f,   1.0f,0.0f,
+	 0.5f, 0.5f,-0.5f,   1.0f,0.0f,0.0f,   1.0f,1.0f,
+	 0.5f,-0.5f,-0.5f,   1.0f,0.0f,0.0f,   0.0f,1.0f,
+	 0.5f,-0.5f,-0.5f,   1.0f,0.0f,0.0f,   0.0f,1.0f,
+	 0.5f,-0.5f, 0.5f,   1.0f,0.0f,0.0f,   0.0f,0.0f,
+	 0.5f, 0.5f, 0.5f,   1.0f,0.0f,0.0f,   1.0f,0.0f,
+
+	 // =========================
+	 // Bottom face (Y-)
+	 // =========================
+	 -0.5f,-0.5f,-0.5f,   0.0f,-1.0f,0.0f,   0.0f,1.0f,
+	  0.5f,-0.5f,-0.5f,   0.0f,-1.0f,0.0f,   1.0f,1.0f,
+	  0.5f,-0.5f, 0.5f,   0.0f,-1.0f,0.0f,   1.0f,0.0f,
+	  0.5f,-0.5f, 0.5f,   0.0f,-1.0f,0.0f,   1.0f,0.0f,
+	 -0.5f,-0.5f, 0.5f,   0.0f,-1.0f,0.0f,   0.0f,0.0f,
+	 -0.5f,-0.5f,-0.5f,   0.0f,-1.0f,0.0f,   0.0f,1.0f,
+
+	 // =========================
+	 // Top face (Y+)
+	 // =========================
+	 -0.5f, 0.5f,-0.5f,   0.0f,1.0f,0.0f,   0.0f,1.0f,
+	  0.5f, 0.5f,-0.5f,   0.0f,1.0f,0.0f,   1.0f,1.0f,
+	  0.5f, 0.5f, 0.5f,   0.0f,1.0f,0.0f,   1.0f,0.0f,
+	  0.5f, 0.5f, 0.5f,   0.0f,1.0f,0.0f,   1.0f,0.0f,
+	 -0.5f, 0.5f, 0.5f,   0.0f,1.0f,0.0f,   0.0f,0.0f,
+	 -0.5f, 0.5f,-0.5f,   0.0f,1.0f,0.0f,   0.0f,1.0f
+};
+
 //--- PUBLIC ---//
 Light::Light(const glm::vec3& pos, const glm::vec3& color)
-	: position_(pos), color_(color)
+	: position_(pos)
 {
+	setColor(color);
 } // end of constructor
 
 Light::~Light()
 {
-	if (vao_)
-	{
-		glDeleteVertexArrays(1, &vao_);
-		vao_ = 0;
-	}
-	if (vbo_)
-	{
-		glDeleteBuffers(1, &vbo_);
-		vbo_ = 0;
-	}
+	destroyGL();
 } // end of destructor
 
 void Light::init()
 {
-	shader_.emplace("light/light.vert", "light/light.frag");
+	destroyGL();
+
+	shader_ = std::make_unique<Shader>("light/light.vert", "light/light.frag");
 
 	// vao + vbo
 	glCreateVertexArrays(1, &vao_);
 	glCreateBuffers(1, &vbo_);
 
 	// upload data to buffer
-	glNamedBufferData(vbo_, sizeof(CUBE_VERTICES), CUBE_VERTICES.data(), GL_STATIC_DRAW);
+	glNamedBufferData(vbo_, CUBE_VERTICES.size() * sizeof(float), CUBE_VERTICES.data(), GL_STATIC_DRAW);
 
 	// attach buffers to vao
 	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, sizeof(VertexLight));
@@ -39,10 +111,10 @@ void Light::init()
 	glVertexArrayAttribFormat(vao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(VertexLight, pos));
 	glVertexArrayAttribBinding(vao_, 0, 0);
 
-	// normal
-	glEnableVertexArrayAttrib(vao_, 1);
-	glVertexArrayAttribFormat(vao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(VertexLight, normal));
-	glVertexArrayAttribBinding(vao_, 1, 0);
+	//// normal
+	//glEnableVertexArrayAttrib(vao_, 1);
+	//glVertexArrayAttribFormat(vao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(VertexLight, normal));
+	//glVertexArrayAttribBinding(vao_, 1, 0);
 
 	//// uv
 	//glEnableVertexArrayAttrib(vao_, 2);
@@ -52,14 +124,15 @@ void Light::init()
 
 void Light::render(const glm::mat4& view, const glm::mat4& proj)
 {
+	if (!shader_ || vao_ == 0) 
+		return;
+
 	shader_->use();
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, position_);
-	glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
 	
 	shader_->setVec3("u_color", color_);
 	shader_->setMat4("u_model", model);
-	shader_->setMat3("u_normalMatrix", normalMatrix);
 	shader_->setMat4("u_view", view);
 	shader_->setMat4("u_proj", proj);
 
@@ -100,3 +173,19 @@ void Light::setColor(const glm::vec3& color)
 		std::clamp(color.z, MIN_COLOR, MAX_COLOR)
 	};
 } // end of setColor()
+
+
+//--- PRIVATE ---//
+void Light::destroyGL()
+{
+	if (vao_)
+	{
+		glDeleteVertexArrays(1, &vao_);
+		vao_ = 0;
+	}
+	if (vbo_)
+	{
+		glDeleteBuffers(1, &vbo_);
+		vbo_ = 0;
+	}
+} // end of destroyGL()

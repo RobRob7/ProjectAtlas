@@ -1,5 +1,7 @@
 #include "waterpass.h"
 
+#include "shader.h"
+
 //--- PUBLIC ---//
 WaterPass::~WaterPass()
 {
