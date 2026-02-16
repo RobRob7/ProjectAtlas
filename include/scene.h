@@ -1,15 +1,16 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "camera.h"
-#include "cubemap.h"
-#include "crosshair.h"
-#include "chunkmanager.h"
-#include "light.h"
+class Camera;
+class CubeMap;
+class Crosshair;
+class ChunkManager;
+class Light;
 
-#include "renderer.h"
+class Renderer;
+struct RenderInputs;
 
-#include <optional>
+#include <memory>
 
 struct InputState
 {
@@ -34,6 +35,7 @@ class Scene
 {
 public:
 	Scene(int w, int h);
+	~Scene();
 
 	// setup scene with renderer
 	void init(Renderer& renderer);
@@ -65,11 +67,11 @@ private:
 	int height_;
 
 	// objects
-	std::optional<Camera> camera_;
-	std::optional<CubeMap> skybox_;
-	std::optional<Crosshair> crosshair_;
-	std::optional<ChunkManager> world_;
-	std::optional<Light> light_;
+	std::unique_ptr<Camera> camera_;
+	std::unique_ptr<CubeMap> skybox_;
+	std::unique_ptr<Crosshair> crosshair_;
+	std::unique_ptr<ChunkManager> world_;
+	std::unique_ptr<Light> light_;
 };
 
 #endif
