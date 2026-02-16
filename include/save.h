@@ -4,11 +4,8 @@
 #include "chunkdata.h"
 
 #include <cstdint>
-#include <string>
+#include <string_view>
 #include <memory>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
 
 struct ChunkFileHeader
 {
@@ -25,8 +22,8 @@ class Save
 public:
 	Save() = default;
 
-	void saveChunkToFile(const ChunkData& chunk, const std::string& worldPath);
-	std::unique_ptr<ChunkData> loadChunkFromFile(int cx, int cz, const std::string& worldPath);
+	void saveChunkToFile(const ChunkData& chunk, const std::string_view& worldPath);
+	std::unique_ptr<ChunkData> loadChunkFromFile(int cx, int cz, const std::string_view& worldPath);
 };
 
 #endif
