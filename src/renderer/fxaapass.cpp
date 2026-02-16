@@ -8,6 +8,8 @@
 #include <stdexcept>
 
 //--- PUBLIC ---//
+FXAAPass::FXAAPass() = default;
+
 FXAAPass::~FXAAPass()
 {
 	destroyGL();
@@ -27,8 +29,12 @@ void FXAAPass::init()
 
 void FXAAPass::resize(int w, int h)
 {
-	if (w <= 0 || h <= 0) return;
-	if (w == width_ && h == height_) return;
+	if (!shader_)
+		return;
+	if (w <= 0 || h <= 0) 
+		return;
+	if (w == width_ && h == height_) 
+		return;
 
 	destroyTargets();
 	width_ = w;
@@ -41,7 +47,7 @@ void FXAAPass::resize(int w, int h)
 
 void FXAAPass::render(uint32_t sceneColorTex)
 {
-	if (!shader_ || !sceneColorTex || width_ <= 0 || height_ <= 0)
+	if (!shader_ || !sceneColorTex || width_ <= 0 || height_ <= 0 || fsVao_ == 0 || fxaaFBO_ == 0)
 		return;
 
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);

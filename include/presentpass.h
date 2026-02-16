@@ -9,6 +9,7 @@ class Shader;
 class PresentPass
 {
 public:
+	PresentPass();
 	~PresentPass();
 
 	void init();

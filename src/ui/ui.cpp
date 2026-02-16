@@ -4,6 +4,10 @@
 #include "scene.h"
 #include "renderer.h"
 
+#include "chunkmanager.h"
+#include "camera.h"
+#include "light.h"
+
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>

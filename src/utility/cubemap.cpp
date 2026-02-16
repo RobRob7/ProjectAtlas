@@ -3,6 +3,7 @@
 #include "texture.h"
 #include "shader.h"
 
+#include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
@@ -65,8 +66,8 @@ const std::array<std::string_view, 6> DEFAULT_FACES = { {
 
 //--- PUBLIC ---//
 CubeMap::CubeMap(const std::array<std::string_view, 6>& textures)
+	: faces_(textures)
 {
-	faces_ = textures;
 } // end of constructor
 
 // destructor
@@ -77,6 +78,8 @@ CubeMap::~CubeMap()
 
 void CubeMap::init()
 {
+	destroyGL();
+
 	shader_ = std::make_unique<Shader>("cubemap/cubemap.vert", "cubemap/cubemap.frag");
 	texture_ = std::make_unique<Texture>(faces_);
 
@@ -85,7 +88,7 @@ void CubeMap::init()
 	glCreateBuffers(1, &vbo_);
 
 	// upload vertex data
-	glNamedBufferData(vbo_, sizeof(SkyboxVertices), SkyboxVertices.data(), GL_STATIC_DRAW);
+	glNamedBufferData(vbo_, SkyboxVertices.size() * sizeof(float), SkyboxVertices.data(), GL_STATIC_DRAW);
 
 	// attach vbo to vao
 	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, 3 * sizeof(float));
@@ -102,6 +105,9 @@ void CubeMap::init()
 // render cubemap
 void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const float time) const
 {
+	if (!shader_ || !texture_ || vao_ == 0)
+		return;
+
 	// remove translation from camera view
 	glm::mat4 viewStrippedTranslation = glm::mat4(glm::mat3(view));
 
@@ -115,6 +121,10 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 		viewStrippedTranslation = glm::mat4(glm::mat3(skyRot)) * viewStrippedTranslation;
 	}
 
+	GLint prevFunc;
+	glGetIntegerv(GL_DEPTH_FUNC, &prevFunc);
+	GLboolean prevMask;
+	glGetBooleanv(GL_DEPTH_WRITEMASK, &prevMask);
 	glDepthFunc(GL_LEQUAL);
 	glDepthMask(GL_FALSE);
 
@@ -127,8 +137,10 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 
-	glDepthMask(GL_TRUE);
-	glDepthFunc(GL_LESS);
+	//glDepthMask(GL_TRUE);
+	//glDepthFunc(GL_LESS);
+	glDepthMask(prevMask);
+	glDepthFunc(prevFunc);
 } // end of render()
 
 

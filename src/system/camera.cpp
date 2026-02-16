@@ -32,6 +32,8 @@ Camera::Camera(int width, int height, float posX, float posY, float posZ, float 
 	updateCameraVectors();
 } // end constructor
 
+Camera::~Camera() = default;
+
 // setters
 void Camera::setLastX(float lastX)
 {

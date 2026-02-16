@@ -34,6 +34,8 @@ public:
 	// constructor with scalar values
 	Camera(int width, int height, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
 
+	~Camera();
+
 	// setters
 	void setLastX(float lastX);
 	void setLastY(float lastY);

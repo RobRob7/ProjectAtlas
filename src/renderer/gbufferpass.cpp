@@ -8,6 +8,8 @@
 #include <stdexcept>
 
 //--- PUBLIC ---//
+GBufferPass::GBufferPass() = default;
+
 GBufferPass::~GBufferPass()
 {
 	destroyGL();

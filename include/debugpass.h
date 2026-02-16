@@ -9,7 +9,7 @@ class Shader;
 class DebugPass
 {
 public:
-	DebugPass() = default;
+	DebugPass();
 	~DebugPass();
 
 	DebugPass(const DebugPass&) = delete;

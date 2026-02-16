@@ -12,7 +12,9 @@ class ChunkManager;
 class GBufferPass
 {
 public:
+	GBufferPass();
 	~GBufferPass();
+
 	void init();
 	void resize(int w, int h);
 

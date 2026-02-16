@@ -13,6 +13,7 @@ class UI
 public:
 	UI(GLFWwindow* window, RenderSettings& rs);
 	~UI();
+
 	void init();
 	void drawFullUI(float dt, Scene& scene);
 	void setUIInputEnabled(bool enabled);

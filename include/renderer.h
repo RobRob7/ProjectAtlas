@@ -7,19 +7,20 @@ class Light;
 class CubeMap;
 class Crosshair;
 
-#include "renderinputs.h"
+class GBufferPass;
+class DebugPass;
+class SSAOPass;
+class FXAAPass;
+class PresentPass;
+class WaterPass;
+class FogPass;
 
-#include "gbufferpass.h"
-#include "debugpass.h"
-#include "ssaopass.h"
-#include "fxaapass.h"
-#include "presentpass.h"
-#include "waterpass.h"
-#include "fogpass.h"
+#include "renderinputs.h"
 
 #include <glm/glm.hpp>
 
 #include <cstdint>
+#include <memory>
 
 enum class DebugMode : int
 {
@@ -56,6 +57,7 @@ struct RenderSettings
 class Renderer
 {
 public:
+	Renderer();
 	~Renderer();
 
 	void init();
@@ -71,16 +73,16 @@ private:
 	int width_{};
 	int height_{};
 
-	RenderSettings renderSettings_;
+	std::unique_ptr<RenderSettings> renderSettings_;
 
 	// passes
-	GBufferPass gbuffer_;
-	DebugPass debugPass_;
-	SSAOPass ssaoPass_;
-	FXAAPass fxaaPass_;
-	FogPass fogPass_;
-	PresentPass presentPass_;
-	WaterPass waterPass_;
+	std::unique_ptr<GBufferPass> gbuffer_;
+	std::unique_ptr<DebugPass> debugPass_;
+	std::unique_ptr<SSAOPass> ssaoPass_;
+	std::unique_ptr<FXAAPass> fxaaPass_;
+	std::unique_ptr<FogPass> fogPass_;
+	std::unique_ptr<PresentPass> presentPass_;
+	std::unique_ptr<WaterPass> waterPass_;
 
 	uint32_t forwardFBO_{};
 	uint32_t forwardColorTex_{};

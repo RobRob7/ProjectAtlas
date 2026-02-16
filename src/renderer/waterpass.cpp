@@ -1,8 +1,21 @@
 #include "waterpass.h"
 
 #include "shader.h"
+#include "chunkmanager.h"
+#include "camera.h"
+#include "light.h"
+#include "cubemap.h"
+#include "texture.h"
+
+#include <glad/glad.h>
+#include <glm/glm.hpp>
+
+#include <stdexcept>
+#include <algorithm>
 
 //--- PUBLIC ---//
+WaterPass::WaterPass() = default;
+
 WaterPass::~WaterPass()
 {
 	destroyGL();
@@ -10,9 +23,9 @@ WaterPass::~WaterPass()
 
 void WaterPass::init()
 {
-    dudvTex_.emplace("dudv.png");
+    dudvTex_ = std::make_unique<Texture>("dudv.png");
     dudvTex_->setWrapRepeat();
-    normalTex_.emplace("waternormal.png");
+    normalTex_ = std::make_unique<Texture>("waternormal.png");
     normalTex_->setWrapRepeat();
 } // end of init()
 

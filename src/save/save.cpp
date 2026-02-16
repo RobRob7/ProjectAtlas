@@ -5,6 +5,10 @@
 #include <iostream>
 
 //--- PUBLIC ---//
+Save::Save() = default;
+
+Save::~Save() = default;
+
 void Save::saveChunkToFile(const ChunkData& chunk, const std::string_view& worldPath)
 {
 	// full world dir path
