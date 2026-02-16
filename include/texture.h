@@ -27,6 +27,9 @@ public:
 	void setWrapRepeat() const;
 	void setNoMipmapsLinear() const;
 
+	int32_t getWidth() const;
+	int32_t getHeight() const;
+
 private:
 	uint32_t id_{};
 	std::string filePath_;
