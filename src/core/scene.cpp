@@ -1,10 +1,23 @@
 #include "scene.h"
 
+#include "renderer.h"
+#include "renderinputs.h"
+
+#include "camera.h"
+#include "cubemap.h"
+#include "crosshair.h"
+#include "chunkmanager.h"
+#include "light.h"
+
+#include <glm/glm.hpp>
+
 //--- PUBLIC ---//
 Scene::Scene(int w, int h)
 	: width_(w), height_(h)
 {
 } // end of constuctor
+
+Scene::~Scene() = default;
 
 void Scene::init(Renderer& renderer)
 {
@@ -12,18 +25,18 @@ void Scene::init(Renderer& renderer)
 	renderer.init();
 	renderer.resize(width_, height_);
 
-	camera_.emplace(width_, height_, glm::vec3(0.0f, 75.0f, 3.0f));
+	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 75.0f, 3.0f));
 
-	skybox_.emplace();
+	skybox_ = std::make_unique<CubeMap>();
 	skybox_->init();
 
-	world_.emplace();
+	world_ = std::make_unique<ChunkManager>();
 	world_->init();
 
-	crosshair_.emplace();
+	crosshair_ = std::make_unique<Crosshair>();
 	crosshair_->init();
 
-	light_.emplace(camera_->getCameraPosition() + glm::vec3(0.0f, 25.0f, 0.0f));
+	light_ = std::make_unique<Light>(camera_->getCameraPosition() + glm::vec3(0.0f, 25.0f, 0.0f));
 	light_->init();
 } // end of init
 
@@ -31,11 +44,11 @@ void Scene::render(Renderer& renderer, RenderInputs& in)
 {
 	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
-	in.world = &*world_;
-	in.camera = &*camera_;
-	in.light = &*light_;
-	in.skybox = &*skybox_;
-	in.crosshair = &*crosshair_;
+	in.world = world_.get();
+	in.camera = camera_.get();
+	in.light = light_.get();
+	in.skybox = skybox_.get();
+	in.crosshair = crosshair_.get();
 
 	renderer.renderFrame(in);
 } // end of render()
