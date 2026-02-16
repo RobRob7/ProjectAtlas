@@ -1,7 +1,11 @@
 #include "save.h"
 
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+
 //--- PUBLIC ---//
-void Save::saveChunkToFile(const ChunkData& chunk, const std::string& worldPath)
+void Save::saveChunkToFile(const ChunkData& chunk, const std::string_view& worldPath)
 {
 	// full world dir path
 	std::filesystem::path worldDir = std::filesystem::path(SAVE_PATH) / worldPath;
@@ -39,7 +43,7 @@ void Save::saveChunkToFile(const ChunkData& chunk, const std::string& worldPath)
 	#endif
 } // end of saveChunkToFile()
 
-std::unique_ptr<ChunkData> Save::loadChunkFromFile(int cx, int cz, const std::string& worldPath)
+std::unique_ptr<ChunkData> Save::loadChunkFromFile(int cx, int cz, const std::string_view& worldPath)
 {
 	// full world dir path
 	std::filesystem::path worldDir = std::filesystem::path(SAVE_PATH) / worldPath;
