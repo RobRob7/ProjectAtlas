@@ -1,21 +1,11 @@
 #ifndef SAVE_H
 #define SAVE_H
 
-#include "chunkdata.h"
-
-#include <cstdint>
 #include <string_view>
 #include <memory>
 
-struct ChunkFileHeader
-{
-	int32_t version = 1;
-	int32_t cx;
-	int32_t cz;
-	int32_t sizeX = CHUNK_SIZE;
-	int32_t sizeY = CHUNK_SIZE_Y;
-	int32_t sizeZ = CHUNK_SIZE;
-};
+class ChunkData;
+struct ChunkFileHeader;
 
 class Save
 {

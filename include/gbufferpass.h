@@ -1,13 +1,13 @@
 #ifndef GBUFFERPASS_H
 #define GBUFFERPASS_H
 
-class Shader;
-class ChunkManager;
-
 #include <glm/glm.hpp>
 
 #include <cstdint>
 #include <memory>
+
+class Shader;
+class ChunkManager;
 
 class GBufferPass
 {

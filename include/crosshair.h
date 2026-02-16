@@ -1,10 +1,10 @@
 #ifndef CROSSHAIR_H
 #define CROSSHAIR_H
 
-class Shader;
-
 #include <cstdint>
 #include <memory>
+
+class Shader;
 
 class Crosshair
 {

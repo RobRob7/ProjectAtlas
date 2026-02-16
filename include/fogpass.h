@@ -1,12 +1,12 @@
 #ifndef FOGPASS_H
 #define FOGPASS_H
 
-class Shader;
-
 #include <glm/glm.hpp>
 
 #include <cstdint>
 #include <memory>
+
+class Shader;
 
 class FogPass
 {

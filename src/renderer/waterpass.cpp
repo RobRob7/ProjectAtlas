@@ -1,5 +1,6 @@
 #include "waterpass.h"
 
+#include "renderinputs.h"
 #include "shader.h"
 #include "chunkmanager.h"
 #include "camera.h"
@@ -55,29 +56,29 @@ void WaterPass::render(const RenderInputs& in)
     waterPass(in);
 } // end of render()
 
-const uint32_t& WaterPass::getReflColorTex() const
+uint32_t WaterPass::getReflColorTex() const
 {
     return reflColorTex_;
 } // end of getReflColorTex()
 
-const uint32_t& WaterPass::getRefrColorTex() const
+uint32_t WaterPass::getRefrColorTex() const
 {
     return refrColorTex_;
 } // end of getRefrColorTex()
 
-const uint32_t& WaterPass::getRefrDepthTex() const
+uint32_t WaterPass::getRefrDepthTex() const
 {
     return refrDepthTex_;
 } // end of getRefrDepthTex()
 
-const uint32_t& WaterPass::getDuDVTex() const
+uint32_t WaterPass::getDuDVTex() const
 {
-    return dudvTex_->m_ID;
+    return dudvTex_->ID();
 } // end of getDuDVTex()
 
-const uint32_t& WaterPass::getNormalTex() const
+uint32_t WaterPass::getNormalTex() const
 {
-    return normalTex_->m_ID;
+    return normalTex_->ID();
 } // end of getNormalTex()
 
 

@@ -1,11 +1,8 @@
 #ifndef CHUNKMANAGER_H
 #define CHUNKMANAGER_H
 
-#include "chunkmesh.h"
 #include "save.h"
-
-class Shader;
-class Texture;
+#include "chunkmesh.h"
 
 #include <glm/glm.hpp>
 
@@ -14,6 +11,9 @@ class Texture;
 #include <queue>
 #include <memory>
 #include <cstdint>
+
+class Shader;
+class Texture;
 
 struct BlockHit
 {

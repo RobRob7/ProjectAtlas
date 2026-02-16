@@ -1,10 +1,10 @@
 #ifndef FXAAPASS_H
 #define FXAAPASS_H
 
-class Shader;
-
 #include <cstdint>
 #include <memory>
+
+class Shader;
 
 class FXAAPass
 {
