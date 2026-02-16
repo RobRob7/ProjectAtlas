@@ -1,5 +1,12 @@
 #include "shader.h"
 
+#include <glad/glad.h>
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <utility>
+
 //--- PUBLIC ---//
 Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath)
 {
@@ -112,6 +119,8 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
 	glDeleteShader(fragment);
 	if (geometryPath != nullptr)
 		glDeleteShader(geometry);
+
+	uniformLocationCache_.clear();
 } // end of constructor
 
 Shader::~Shader()
@@ -124,7 +133,7 @@ Shader::~Shader()
 } // end of destructor
 
 Shader::Shader(Shader&& other) noexcept
-: ID_(other.ID_)
+: ID_(other.ID_), uniformLocationCache_(std::move(other.uniformLocationCache_))
 {
 	other.ID_ = 0;
 } // end of move constructor
@@ -134,7 +143,10 @@ Shader& Shader::operator=(Shader&& other) noexcept
 	if (this != &other)
 	{
 		if (ID_ != 0) glDeleteProgram(ID_);
+
 		ID_ = other.ID_;
+		uniformLocationCache_ = std::move(other.uniformLocationCache_);
+
 		other.ID_ = 0;
 	}
 	return *this;
@@ -147,66 +159,88 @@ void Shader::use() const
 
 void Shader::setBool(const std::string& name, bool value) const
 {
-	glUniform1i(glGetUniformLocation(ID_, name.c_str()), (int)value);
+	glUniform1i(getUniformLocation(name), (int)value);
 } // end of setBool()
 
 void Shader::setInt(const std::string& name, int value) const
 {
-	glUniform1i(glGetUniformLocation(ID_, name.c_str()), value);
+	glUniform1i(getUniformLocation(name), value);
 } // end of setInt()
 
 void Shader::setFloat(const std::string& name, float value) const
 {
-	glUniform1f(glGetUniformLocation(ID_, name.c_str()), value);
+	glUniform1f(getUniformLocation(name), value);
 } // end of setFloat()
 
 void Shader::setVec2(const std::string& name, const glm::vec2& value) const
 {
-	glUniform2fv(glGetUniformLocation(ID_, name.c_str()), 1, &value[0]);
+	glUniform2fv(getUniformLocation(name), 1, &value[0]);
 } // end of setVec2()
 
 void Shader::setVec2(const std::string& name, float x, float y) const
 {
-	glUniform2f(glGetUniformLocation(ID_, name.c_str()), x, y);
+	glUniform2f(getUniformLocation(name), x, y);
 } // end of setVec2()
 
 void Shader::setVec3(const std::string& name, const glm::vec3& value) const
 {
-	glUniform3fv(glGetUniformLocation(ID_, name.c_str()), 1, &value[0]);
+	glUniform3fv(getUniformLocation(name), 1, &value[0]);
 } // end of setvec3
 
 void Shader::setVec3(const std::string& name, float x, float y, float z) const
 {
-	glUniform3f(glGetUniformLocation(ID_, name.c_str()), x, y, z);
+	glUniform3f(getUniformLocation(name), x, y, z);
 } // end of setVec3s()
 
 void Shader::setVec4(const std::string& name, const glm::vec4& value) const
 {
-	glUniform4fv(glGetUniformLocation(ID_, name.c_str()), 1, &value[0]);
+	glUniform4fv(getUniformLocation(name), 1, &value[0]);
 } // end of setVec4()
 
 void Shader::setVec4(const std::string& name, float x, float y, float z, float w) const
 {
-	glUniform4f(glGetUniformLocation(ID_, name.c_str()), x, y, z, w);
+	glUniform4f(getUniformLocation(name), x, y, z, w);
 } // end of setVec4()
 
 void Shader::setMat2(const std::string& name, const glm::mat2& mat) const
 {
-	glUniformMatrix2fv(glGetUniformLocation(ID_, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+	glUniformMatrix2fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
 } // end of setMat2()
 
 void Shader::setMat3(const std::string& name, const glm::mat3& mat) const
 {
-	glUniformMatrix3fv(glGetUniformLocation(ID_, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+	glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
 } // end of setMat3()
 
 void Shader::setMat4(const std::string& name, const glm::mat4& mat) const
 {
-	glUniformMatrix4fv(glGetUniformLocation(ID_, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+	glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
 } // end of setMat4()
 
 //--- PRIVATE ---//
-void Shader::checkCompileErrors(GLuint shader, std::string type, std::string path)
+int32_t Shader::getUniformLocation(std::string_view name) const
+{
+	std::string key(name);
+
+	auto it = uniformLocationCache_.find(key);
+	if (it != uniformLocationCache_.end())
+	{
+		return it->second;
+	}
+
+	int32_t location = glGetUniformLocation(ID_, key.c_str());
+
+#ifdef _DEBUG
+	if (location == -1) {
+		std::cout << "WARNING::UNIFORM '" << name << "' not found in shader!\n";
+	}
+#endif
+	
+	uniformLocationCache_.emplace(std::move(key), location);
+	return location;
+} // end of getUniformLocation()
+
+void Shader::checkCompileErrors(uint32_t shader, std::string_view type, std::string_view path)
 {
 	GLint success;
 	GLchar infoLog[1024];

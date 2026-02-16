@@ -1,13 +1,12 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include <glad/glad.h>
 #include <glm/glm.hpp>
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <cstdint>
+#include <string>
+#include <string_view>
+#include <unordered_map>
 
 class Shader
 {
@@ -44,9 +43,11 @@ public:
 private:
 	// shader ID
 	uint32_t ID_{};
+
+	mutable std::unordered_map<std::string, int32_t> uniformLocationCache_;
 private: 
-	// this function check for shader compilation/linking errors
-	void checkCompileErrors(GLuint shader, std::string type, std::string path);
+	int32_t getUniformLocation(std::string_view name) const;
+	void checkCompileErrors(uint32_t shader, std::string_view type, std::string_view path);
 };
 
 #endif
