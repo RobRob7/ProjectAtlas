@@ -226,7 +226,6 @@ void ChunkManager::renderOpaque(Shader& shader, const glm::mat4& view, const glm
 {
 	shader.use();
 	glBindTextureUnit(0, atlas_->m_ID);
-	shader.setInt("u_atlas", 0);
 	shader.setMat4("u_view", view);
 	shader.setMat4("u_proj", proj);
 
@@ -282,7 +281,6 @@ void ChunkManager::renderWater(const glm::mat4& view, const glm::mat4& proj)
 			glm::vec3(chunk->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->getChunk().m_chunkZ * CHUNK_SIZE));
 		glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
 		waterShader_->setMat4("u_model", model);
-		waterShader_->setMat3("u_normalMatrix", normalMatrix);
 
 		chunk->renderChunkWater();
 	} // end for
