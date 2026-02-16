@@ -105,11 +105,8 @@ ChunkManager::~ChunkManager() = default;
 
 void ChunkManager::init()
 {
-	//opaqueShader_.emplace("chunk/chunk.vert", "chunk/chunk.frag");
 	opaqueShader_ = std::make_unique<Shader>("chunk/chunk.vert", "chunk/chunk.frag");
-	//waterShader_.emplace("water/water.vert", "water/water.frag");
 	waterShader_ = std::make_unique<Shader>("water/water.vert", "water/water.frag");
-	//atlas_.emplace("blocks.png", true);
 	atlas_ = std::make_unique<Texture>("blocks.png", true);
 } // end of initShaderTexture()
 
@@ -282,7 +279,6 @@ void ChunkManager::renderWater(const glm::mat4& view, const glm::mat4& proj)
 		glm::mat4 model = glm::translate(
 			glm::mat4(1.0f),
 			glm::vec3(chunk->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->getChunk().m_chunkZ * CHUNK_SIZE));
-		glm::mat3 normalMatrix = glm::transpose(glm::inverse(model));
 		waterShader_->setMat4("u_model", model);
 
 		chunk->renderChunkWater();

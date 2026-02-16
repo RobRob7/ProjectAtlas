@@ -23,8 +23,9 @@ public:
 	// move assignment operator
 	Texture& operator=(Texture&& other) noexcept;
 
-	void setWrapRepeat();
 	uint32_t ID() const;
+	void setWrapRepeat() const;
+	void setNoMipmapsLinear() const;
 
 private:
 	uint32_t id_{};

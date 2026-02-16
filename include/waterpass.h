@@ -26,7 +26,7 @@ public:
 	uint32_t getNormalTex() const;
 
 private:
-	int factor_{ 2 };
+	int factor_{ 1 };
 	int width_{0};
 	int height_{0};
 	int fullW_{ 0 };
@@ -46,8 +46,8 @@ private:
 	void createTargets();
 	void destroyTargets();
 	void waterPass(const RenderInputs& in);
-	void waterReflectionPass(const RenderInputs& in);
-	void waterRefractionPass(const RenderInputs& in);
+	void waterReflectionPass(const RenderInputs& in) const;
+	void waterRefractionPass(const RenderInputs& in) const;
 };
 
 #endif
