@@ -169,13 +169,24 @@ Texture& Texture::operator=(Texture&& other) noexcept
 	return *this;
 } // end of move assignment
 
-void Texture::setWrapRepeat()
+uint32_t Texture::ID() const
+{
+	return id_;
+} // end of getID
+
+void Texture::setWrapRepeat() const
 {
 	glTextureParameteri(id_, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTextureParameteri(id_, GL_TEXTURE_WRAP_T, GL_REPEAT);
 } // end of setWrapRepeat()
 
-uint32_t Texture::ID() const
+void Texture::setNoMipmapsLinear() const
 {
-	return id_;
-} // end of getID
+	// disable mipmaps
+	glTextureParameteri(id_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(id_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// prevent mipmap sampling
+	glTextureParameteri(id_, GL_TEXTURE_BASE_LEVEL, 0);
+	glTextureParameteri(id_, GL_TEXTURE_MAX_LEVEL, 0);
+} // end of setNoMipmapsLinear()

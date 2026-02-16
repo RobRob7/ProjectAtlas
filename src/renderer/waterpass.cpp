@@ -26,8 +26,11 @@ void WaterPass::init()
 {
     dudvTex_ = std::make_unique<Texture>("dudv.png");
     dudvTex_->setWrapRepeat();
+    dudvTex_->setNoMipmapsLinear();
+
     normalTex_ = std::make_unique<Texture>("waternormal.png");
     normalTex_->setWrapRepeat();
+    normalTex_->setNoMipmapsLinear();
 } // end of init()
 
 void WaterPass::resize(int w, int h)
@@ -187,7 +190,7 @@ void WaterPass::waterPass(const RenderInputs& in)
     glDisable(GL_CLIP_DISTANCE0);
 } // end of waterPass()
 
-void WaterPass::waterReflectionPass(const RenderInputs& in)
+void WaterPass::waterReflectionPass(const RenderInputs& in) const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, reflFBO_);
     glViewport(0, 0, width_, height_);
@@ -228,7 +231,7 @@ void WaterPass::waterReflectionPass(const RenderInputs& in)
     camera.invertPitch();
 } // end of waterReflectionPass()
 
-void WaterPass::waterRefractionPass(const RenderInputs& in)
+void WaterPass::waterRefractionPass(const RenderInputs& in) const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, refrFBO_);
     glViewport(0, 0, width_, height_);
