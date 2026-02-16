@@ -1,5 +1,9 @@
 #include "presentpass.h"
 
+#include "shader.h"
+
+#include <glad/glad.h>
+
 //--- PUBLIC ---//
 PresentPass::~PresentPass()
 {
@@ -8,23 +12,19 @@ PresentPass::~PresentPass()
 
 void PresentPass::init()
 {
-	shader_.emplace("presentpass/present.vert", "presentpass/present.frag");
+	destroyGL();
+
+	shader_ = std::make_unique<Shader>("presentpass/present.vert", "presentpass/present.frag");
 
 	glCreateVertexArrays(1, &fsVao_);
 } // end of init()
 
-void PresentPass::destroyGL()
-{
-	if (fsVao_)
-	{
-		glDeleteVertexArrays(1, &fsVao_);
-		fsVao_ = 0;
-	}
-} // end of destroyGL()
-
 void PresentPass::render(uint32_t sceneColorTex, int w, int h)
 {
-	if (!shader_ || !sceneColorTex || w <= 0 || h <= 0) return;
+	if (!shader_ || !sceneColorTex || w <= 0 || h <= 0) 
+		return;
+
+	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, w, h);
@@ -40,4 +40,17 @@ void PresentPass::render(uint32_t sceneColorTex, int w, int h)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	glBindVertexArray(0);
+
+	if (prevDepth) glEnable(GL_DEPTH_TEST);
 } // end of render()
+
+
+//--- PRIVATE ---//
+void PresentPass::destroyGL()
+{
+	if (fsVao_)
+	{
+		glDeleteVertexArrays(1, &fsVao_);
+		fsVao_ = 0;
+	}
+} // end of destroyGL()
