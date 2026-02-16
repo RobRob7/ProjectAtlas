@@ -79,49 +79,77 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 
 Texture::Texture(const std::array<std::string_view, 6>& textures, const bool needToFlip)
 {
-	// flip image vertically
 	stbi_set_flip_vertically_on_load(needToFlip);
 
-	// generate texture
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+	glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &id_);
 
-	// load texture
-	int w, h, nrChannels;
+	int w = 0, h = 0, n = 0;
 
-	for (size_t i = 0; i < textures.size(); ++i)
+	// load first face to determine size/format
 	{
-		std::string path = std::string(RESOURCES_PATH);
-		path += textures[i];
+		std::string path = std::string(RESOURCES_PATH) + std::string(textures[0]);
+		unsigned char* data = stbi_load(path.c_str(), &w, &h, &n, 0);
+		if (!data)
+		{
+			std::cerr << "Cubemap face 0 failed to load: " << textures[0] << "\n";
+			return;
+		}
 
-		unsigned char* data = stbi_load(path.c_str(), &w, &h, &nrChannels, 0);
 		width_ = w;
 		height_ = h;
-		colorChannels_ = nrChannels;
-		if (data)
-		{
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-				0, GL_RGB, width_, height_, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-			);
-			// free image
-			stbi_image_free(data);
-		}
-		else
-		{
-			std::cerr << "Cubemap texture failed to load at path: " << textures[i] << "\n";
-			// free image
-			stbi_image_free(data);
-		}
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		colorChannels_ = n;
 
-	// set texture ID
-	id_ = texture;
+		stbi_image_free(data);
+	}
+
+	GLenum srcFormat = (colorChannels_ == 4) ? GL_RGBA : GL_RGB;
+	GLenum internalFormat = (colorChannels_ == 4) ? GL_RGBA8 : GL_RGB8;
+
+	glTextureStorage2D(id_, 1, internalFormat, width_, height_);
+
+	for (int i = 0; i < 6; ++i)
+	{
+		std::string path = std::string(RESOURCES_PATH) + std::string(textures[i]);
+
+		int fw = 0, fh = 0, fn = 0;
+		unsigned char* data = stbi_load(path.c_str(), &fw, &fh, &fn, 0);
+		if (!data)
+		{
+			std::cerr << "Cubemap texture failed to load: " << textures[i] << "\n";
+			continue;
+		}
+
+		if (fw != width_ || fh != height_ || fn != colorChannels_)
+		{
+			std::cerr << "Cubemap face mismatch (size/format) at: " << textures[i] << "\n";
+			stbi_image_free(data);
+			continue;
+		}
+
+		// avoid row alignment issues for non-4-byte row sizes
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+		glTextureSubImage3D(
+			id_,
+			0,
+			0, 0, i,
+			width_, height_, 1,
+			srcFormat,
+			GL_UNSIGNED_BYTE,
+			data
+		);
+
+		stbi_image_free(data);
+	}
+
+	glTextureParameteri(id_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(id_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(id_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(id_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(id_, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	// restore default alignment
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 } // end of cubemap texture constructor
 
 Texture::~Texture()
