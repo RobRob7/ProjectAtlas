@@ -1,16 +1,27 @@
 #include "renderer.h"
 
+#include "shader.h"
 #include "chunkmanager.h"
 #include "camera.h"
 #include "light.h"
 #include "cubemap.h"
 #include "crosshair.h"
 
+#include "gbufferpass.h"
+#include "debugpass.h"
+#include "ssaopass.h"
+#include "fxaapass.h"
+#include "presentpass.h"
+#include "waterpass.h"
+#include "fogpass.h"
+
 #include <glad/glad.h>
 
 #include <stdexcept>
 
 //--- PUBLIC ---//
+Renderer::Renderer() = default;
+
 Renderer::~Renderer()
 {
     destroyGL();
@@ -20,18 +31,28 @@ void Renderer::init()
 {
     destroyGL();
 
-	gbuffer_.init();
-	debugPass_.init();
-    ssaoPass_.init();
+    if (!renderSettings_) renderSettings_ = std::make_unique<RenderSettings>();
+
+    if (!gbuffer_)     gbuffer_ = std::make_unique<GBufferPass>();
+    if (!debugPass_)   debugPass_ = std::make_unique<DebugPass>();
+    if (!ssaoPass_)    ssaoPass_ = std::make_unique<SSAOPass>();
+    if (!fxaaPass_)    fxaaPass_ = std::make_unique<FXAAPass>();
+    if (!fogPass_)     fogPass_ = std::make_unique<FogPass>();
+    if (!presentPass_) presentPass_ = std::make_unique<PresentPass>();
+    if (!waterPass_)   waterPass_ = std::make_unique<WaterPass>();
+
+	gbuffer_->init();
+	debugPass_->init();
+    ssaoPass_->init();
 
     glCreateFramebuffers(1, &forwardFBO_);
     glCreateTextures(GL_TEXTURE_2D, 1, &forwardColorTex_);
     glCreateTextures(GL_TEXTURE_2D, 1, &forwardDepthTex_);
 
-    waterPass_.init();
-    fxaaPass_.init();
-    fogPass_.init();
-    presentPass_.init();
+    waterPass_->init();
+    fxaaPass_->init();
+    fogPass_->init();
+    presentPass_->init();
 } // end of init()
 
 void Renderer::resize(int w, int h)
@@ -42,11 +63,11 @@ void Renderer::resize(int w, int h)
     width_ = w;
     height_ = h;
 
-    gbuffer_.resize(width_, height_);
-    ssaoPass_.resize(width_, height_);
-    fxaaPass_.resize(width_, height_);
-    waterPass_.resize(width_, height_);
-    presentPass_.resize(width_, height_);
+    gbuffer_->resize(width_, height_);
+    ssaoPass_->resize(width_, height_);
+    fxaaPass_->resize(width_, height_);
+    waterPass_->resize(width_, height_);
+    presentPass_->resize(width_, height_);
 
     resizeForwardTargets();
 } // end of resize()
@@ -64,29 +85,29 @@ void Renderer::renderFrame(const RenderInputs& in)
 
     // --------------- PASSES --------------- //
     // gbuffer pass
-    gbuffer_.render(*in.world, view, proj);
+    gbuffer_->render(*in.world, view, proj);
 
     // ssao pass
-    if (renderSettings_.useSSAO)
+    if (renderSettings_->useSSAO)
     {
         glm::mat4 invProj = glm::inverse(proj);
-        ssaoPass_.render(gbuffer_.getNormalTexture(), gbuffer_.getDepthTexture(), proj, invProj);
+        ssaoPass_->render(gbuffer_->getNormalTexture(), gbuffer_->getDepthTexture(), proj, invProj);
     }
 
     // debug pass
-    if (renderSettings_.debugMode == DebugMode::Normals || renderSettings_.debugMode == DebugMode::Depth)
+    if (renderSettings_->debugMode == DebugMode::Normals || renderSettings_->debugMode == DebugMode::Depth)
     {
-        debugPass_.render(
-            gbuffer_.getNormalTexture(),
-            gbuffer_.getDepthTexture(),
+        debugPass_->render(
+            gbuffer_->getNormalTexture(),
+            gbuffer_->getDepthTexture(),
             in.camera->getNearPlane(),
             in.camera->getFarPlane(),
-            (renderSettings_.debugMode == DebugMode::Normals) ? 1 : 2);
+            (renderSettings_->debugMode == DebugMode::Normals) ? 1 : 2);
         return;
     }
 
     // water pass
-    waterPass_.render(in);
+    waterPass_->render(in);
     // --------------- END PASSES --------------- //
 
 
@@ -110,11 +131,11 @@ void Renderer::renderFrame(const RenderInputs& in)
 
     // ssao
     worldShader->setVec2("u_screenSize", glm::vec2{ width_, height_ });
-    worldShader->setBool("u_useSSAO", renderSettings_.useSSAO);
+    worldShader->setBool("u_useSSAO", renderSettings_->useSSAO);
     worldShader->setInt("u_ssao", 3);
-    if (renderSettings_.useSSAO)
+    if (renderSettings_->useSSAO)
     {
-        glBindTextureUnit(3, ssaoPass_.aoBlurTexture());
+        glBindTextureUnit(3, ssaoPass_->aoBlurTexture());
     }
     else
     {
@@ -140,11 +161,11 @@ void Renderer::renderFrame(const RenderInputs& in)
     waterShader->setFloat("u_time", in.time);
 
     // bind textures
-    glBindTextureUnit(4, waterPass_.getReflColorTex());
-    glBindTextureUnit(5, waterPass_.getRefrColorTex());
-    glBindTextureUnit(6, waterPass_.getRefrDepthTex());
-    glBindTextureUnit(7, waterPass_.getDuDVTex());
-    glBindTextureUnit(8, waterPass_.getNormalTex());
+    glBindTextureUnit(4, waterPass_->getReflColorTex());
+    glBindTextureUnit(5, waterPass_->getRefrColorTex());
+    glBindTextureUnit(6, waterPass_->getRefrDepthTex());
+    glBindTextureUnit(7, waterPass_->getDuDVTex());
+    glBindTextureUnit(8, waterPass_->getNormalTex());
 
     // render objects (non-UI)
     in.world->renderOpaque(view, proj);
@@ -161,24 +182,24 @@ void Renderer::renderFrame(const RenderInputs& in)
 
     // FXAA
     uint32_t finalColorTex = forwardColorTex_;
-    if (renderSettings_.useFXAA)
+    if (renderSettings_->useFXAA)
     {
-        fxaaPass_.render(forwardColorTex_);
-        finalColorTex = fxaaPass_.getOutputTex();
+        fxaaPass_->render(forwardColorTex_);
+        finalColorTex = fxaaPass_->getOutputTex();
     }
 
     // FOG
-    fogPass_.setFogColor(renderSettings_.fogSettings.color);
-    fogPass_.setFogStart(renderSettings_.fogSettings.start);
-    fogPass_.setFogEnd(renderSettings_.fogSettings.end);
-    if (renderSettings_.useFog)
+    fogPass_->setFogColor(renderSettings_->fogSettings.color);
+    fogPass_->setFogStart(renderSettings_->fogSettings.start);
+    fogPass_->setFogEnd(renderSettings_->fogSettings.end);
+    if (renderSettings_->useFog)
     {
-        fogPass_.render(finalColorTex, forwardDepthTex_,
+        fogPass_->render(finalColorTex, forwardDepthTex_,
             in.camera->getNearPlane(), in.camera->getFarPlane(), in.world->getAmbientStrength());
     }
     else
     {
-        presentPass_.render(finalColorTex);
+        presentPass_->render(finalColorTex);
     }
     // --------------- END POST-PROCESSING --------------- //
 
@@ -190,7 +211,7 @@ void Renderer::renderFrame(const RenderInputs& in)
 
 RenderSettings& Renderer::settings()
 {
-    return renderSettings_;
+    return *renderSettings_;
 } // end of settings()
 
 

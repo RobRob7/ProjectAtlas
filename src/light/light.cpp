@@ -118,7 +118,7 @@ void Light::init()
 
 	//// uv
 	//glEnableVertexArrayAttrib(vao_, 2);
-	//glVertexArrayAttribFormat(vao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+	//glVertexArrayAttribFormat(vao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(VertexLight, uv));
 	//glVertexArrayAttribBinding(vao_, 2, 0);
 } // end of init()
 

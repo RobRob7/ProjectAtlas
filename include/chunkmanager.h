@@ -31,6 +31,7 @@ public:
 	static constexpr float MAX_AMBSTR = 0.5f;
 public:
 	ChunkManager(int viewRadiusInChunks = 15);
+	~ChunkManager();
 
 	void init();
 

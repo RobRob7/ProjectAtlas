@@ -5,6 +5,8 @@
 #include <glad/glad.h>
 
 //--- PUBLIC ---//
+DebugPass::DebugPass() = default;
+
 DebugPass::~DebugPass()
 {
 	destroyGL();

@@ -1,24 +1,17 @@
 #ifndef WATERPASS_H
 #define WATERPASS_H
 
+class Texture;
+
 #include "renderinputs.h"
-#include "chunkmanager.h"
-#include "camera.h"
-#include "light.h"
-#include "cubemap.h"
-
-#include "texture.h"
-
-#include <glad/glad.h>
-#include <glm/glm.hpp>
 
 #include <cstdint>
-#include <stdexcept>
-#include <optional>
+#include <memory>
 
 class WaterPass
 {
 public:
+	WaterPass();
 	~WaterPass();
 
 	void init();
@@ -48,8 +41,8 @@ private:
 	uint32_t refrColorTex_{};
 	uint32_t refrDepthTex_{};
 
-	std::optional<Texture> dudvTex_;
-	std::optional<Texture> normalTex_;
+	std::unique_ptr<Texture> dudvTex_;
+	std::unique_ptr<Texture> normalTex_;
 private:
 	void createTargets();
 	void destroyTargets();

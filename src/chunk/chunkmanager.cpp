@@ -100,6 +100,8 @@ ChunkManager::ChunkManager(int viewRadiusInChunks)
 {
 } // end of constructor
 
+ChunkManager::~ChunkManager() = default;
+
 void ChunkManager::init()
 {
 	//opaqueShader_.emplace("chunk/chunk.vert", "chunk/chunk.frag");

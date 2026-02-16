@@ -5,6 +5,8 @@
 #include <glad/glad.h>
 
 //--- PUBLIC ---//
+FogPass::FogPass() = default;
+
 FogPass::~FogPass()
 {
 	destroyGL();
@@ -26,7 +28,7 @@ void FogPass::init()
 void FogPass::render(uint32_t sceneColorTex, uint32_t sceneDepthTex, 
 	float nearPlane, float farPlane, float ambStr)
 {
-	if (!shader_ || !sceneColorTex || !sceneDepthTex)
+	if (!shader_ || !sceneColorTex || !sceneDepthTex || fsVao_ == 0)
 		return;
 
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);

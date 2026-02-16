@@ -1,22 +1,17 @@
 #ifndef SSAOPASS_H
 #define SSAOPASS_H
 
-#include "shader.h"
+class Shader;
 
 #include <glm/glm.hpp>
-#include <glad/glad.h>
 
-#include <cstdlib>
-#include <optional>
-#include <vector>
+#include <memory>
 #include <array>
-#include <stdexcept>
-#include <random>
-#include <algorithm>
 
 class SSAOPass
 {
 public:
+	SSAOPass();
 	~SSAOPass();
 
 	void init();
@@ -43,8 +38,8 @@ private:
 	
 	uint32_t fsVao_{};
 
-	std::optional<Shader> ssaoShader_;
-	std::optional<Shader> blurShader_;
+	std::unique_ptr<Shader> ssaoShader_;
+	std::unique_ptr<Shader> blurShader_;
 
 	static constexpr int kNoiseSize_ = 4;
 	float radius_ = 5.0f;

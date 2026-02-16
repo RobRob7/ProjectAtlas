@@ -85,6 +85,8 @@ ChunkData::ChunkData(int cx, int cz)
 	} // end for
 } // end of constructor
 
+ChunkData::~ChunkData() = default;
+
 BlockID ChunkData::getBlockID(int x, int y, int z) const
 {
 	return blocks_[x + CHUNK_SIZE * (z + CHUNK_SIZE * y)];

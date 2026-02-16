@@ -3,6 +3,7 @@
 #include "shader.h"
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 //--- PUBLIC ---//
 Crosshair::Crosshair(float size)
@@ -17,6 +18,8 @@ Crosshair::~Crosshair()
 
 void Crosshair::init()
 {
+	destroyGL();
+
 	crosshairShader_ = std::make_unique<Shader>("crosshair/crosshair.vert", "crosshair/crosshair.frag");
 
 	glm::vec2 center{ 0.0f, 0.0f };
@@ -46,15 +49,20 @@ void Crosshair::init()
 
 void Crosshair::render()
 {
-	// Disable depth so crosshair draws on top
+	if (!crosshairShader_ || vao_ == 0)
+		return;
+
+	GLboolean wasDepth = glIsEnabled(GL_DEPTH_TEST);
 	glDisable(GL_DEPTH_TEST);
 
 	crosshairShader_->use();
 	glBindVertexArray(vao_);
 	glDrawArrays(GL_LINES, 0, 4);
 
-	// re-enable depth test after drawing
-	glEnable(GL_DEPTH_TEST);
+	if (wasDepth) 
+		glEnable(GL_DEPTH_TEST);
+	else 
+		glDisable(GL_DEPTH_TEST);
 } // end of render()
 
 
@@ -64,9 +72,11 @@ void Crosshair::destroyGL()
 	if (vao_)
 	{
 		glDeleteVertexArrays(1, &vao_);
+		vao_ = 0;
 	}
 	if (vbo_)
 	{
 		glDeleteBuffers(1, &vbo_);
+		vbo_ = 0;
 	}
 } // end of destroyGL()

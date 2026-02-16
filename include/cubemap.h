@@ -11,16 +11,13 @@ class Shader;
 #include <cstdint>
 #include <memory>
 
-
 extern const std::array<float, 108> SkyboxVertices;
 extern const std::array<std::string_view, 6> DEFAULT_FACES;
 
 class CubeMap
 {
 public:
-	// constructor
     CubeMap(const std::array<std::string_view, 6>& textures = DEFAULT_FACES);
-    // destructor
     ~CubeMap();
 
     // disallow copy

@@ -1,6 +1,18 @@
 #include "ssaopass.h"
 
+#include "shader.h"
+
+#include <glad/glad.h>
+
+#include <cstdlib>
+#include <vector>
+#include <stdexcept>
+#include <random>
+#include <algorithm>
+
 //--- PUBLIC ---//
+SSAOPass::SSAOPass() = default;
+
 SSAOPass::~SSAOPass()
 {
 	destroyGL();
@@ -8,8 +20,8 @@ SSAOPass::~SSAOPass()
 
 void SSAOPass::init()
 {
-	ssaoShader_.emplace("ssaopass/ssao.vert", "ssaopass/ssao.frag");
-	blurShader_.emplace("ssaopass/ssaoblur.vert", "ssaopass/ssaoblur.frag");
+	ssaoShader_ = std::make_unique<Shader>("ssaopass/ssao.vert", "ssaopass/ssao.frag");
+	blurShader_ = std::make_unique<Shader>("ssaopass/ssaoblur.vert", "ssaopass/ssaoblur.frag");
 
 	glCreateVertexArrays(1, &fsVao_);
 

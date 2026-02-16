@@ -9,6 +9,7 @@ class Shader;
 class FXAAPass
 {
 public:
+    FXAAPass();
     ~FXAAPass();
 
     void init();

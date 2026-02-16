@@ -20,7 +20,8 @@ struct ChunkFileHeader
 class Save
 {
 public:
-	Save() = default;
+	Save();
+	~Save();
 
 	void saveChunkToFile(const ChunkData& chunk, const std::string_view& worldPath);
 	std::unique_ptr<ChunkData> loadChunkFromFile(int cx, int cz, const std::string_view& worldPath);

@@ -11,6 +11,7 @@ class Shader;
 class FogPass
 {
 public:
+    FogPass();
     ~FogPass();
 
     void init();

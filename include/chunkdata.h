@@ -36,6 +36,7 @@ public:
 	bool m_dirty = false;
 public:
 	ChunkData(int cx, int cz);
+	~ChunkData();
 
 	BlockID getBlockID(int x, int y, int z) const;
 	void setBlockID(int x, int y, int z, BlockID id);

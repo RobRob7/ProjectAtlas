@@ -5,6 +5,8 @@
 #include <glad/glad.h>
 
 //--- PUBLIC ---//
+PresentPass::PresentPass() = default;
+
 PresentPass::~PresentPass()
 {
 	destroyGL();
@@ -30,7 +32,7 @@ void PresentPass::resize(int w, int h)
 
 void PresentPass::render(uint32_t sceneColorTex)
 {
-	if (!shader_ || !sceneColorTex || width_ <= 0 || height_ <= 0) 
+	if (!shader_ || !sceneColorTex || width_ <= 0 || height_ <= 0 || fsVao_ == 0)
 		return;
 
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);

@@ -11,9 +11,7 @@
 class Shader
 {
 public:
-	// constructor
 	Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr);
-	// destructor
 	~Shader();
 
 	// disallow copy
