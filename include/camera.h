@@ -23,7 +23,7 @@ class Camera
 {
 public:
 	static constexpr float MIN_NEARPLANE = 0.1f;
-	static constexpr float MIN_MOVESPEED = 7.5f;
+	static constexpr float MIN_MOVESPEED = 5.0f;
 	static constexpr float MAX_MOVESPEED = 10.0f;
 	static constexpr float MIN_FARPLANE = 1000.0f;
 	static constexpr float MAX_FARPLANE = 4000.0f;
