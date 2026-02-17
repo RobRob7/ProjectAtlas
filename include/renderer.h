@@ -1,6 +1,8 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include "profiler.h"
+
 #include <glm/glm.hpp>
 
 #include <cstdint>
@@ -74,6 +76,7 @@ private:
 	int height_{};
 
 	std::unique_ptr<RenderSettings> renderSettings_;
+	CPUGPUCollection& cpugpuCollection_ = CPUGPUCollection::getInstance();
 
 	// passes
 	std::unique_ptr<GBufferPass> gbuffer_;

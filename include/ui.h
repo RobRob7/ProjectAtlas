@@ -7,6 +7,7 @@ class Texture;
 class Scene;
 struct GLFWwindow;
 struct RenderSettings;
+struct CPUGPUCollection;
 
 constexpr float TOP_BAR_HEIGHT = 36.0f;
 constexpr float INSPECTOR_WIDTH = 400.0f;
@@ -30,10 +31,10 @@ private:
 private:
 	GLFWwindow* window_;
 	RenderSettings& renderSettings_;
+	CPUGPUCollection& cpugpuCollection_;
 
 	// window top bar logo
 	std::unique_ptr<Texture> logoTex_;
-	//void* logoTex_;
 
 	bool enabled_;
 	bool cameraModeOn_;

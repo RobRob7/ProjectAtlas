@@ -78,137 +78,167 @@ void Renderer::renderFrame(const RenderInputs& in)
 {
     if (!in.world || !in.camera || !in.light || !in.skybox || !in.crosshair) return;
 
-    const glm::mat4 view = in.camera->getViewMatrix();
-    const float aspect = (height_ > 0)
-        ? (static_cast<float>(width_) / static_cast<float>(height_))
-        : 1.0f;
-    const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
+    // --------------- REFRESH PROFILER TIMERS --------------- //
+    cpugpuCollection_.flush();
 
+    auto& t = cpugpuCollection_.cpugpuTimeMap;
 
-    // --------------- PASSES --------------- //
-    // gbuffer pass
-    gbuffer_->render(*in.world, view, proj);
-
-    // ssao pass
-    if (renderSettings_->useSSAO)
+    // renderFrame timer
     {
-        glm::mat4 invProj = glm::inverse(proj);
-        ssaoPass_->render(gbuffer_->getNormalTexture(), gbuffer_->getDepthTexture(), proj, invProj);
+        CPUTimer timer(t.at("Render Time").first);
+        // view, proj
+        const glm::mat4 view = in.camera->getViewMatrix();
+        const float aspect = (height_ > 0)
+            ? (static_cast<float>(width_) / static_cast<float>(height_))
+            : 1.0f;
+        const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
+
+        // --------------- PASSES --------------- //
+        {
+            // gbuffer pass
+            CPUTimer timer(t.at("Gbuffer").first);
+            gbuffer_->render(*in.world, view, proj);
+        }
+
+        // ssao pass
+        if (renderSettings_->useSSAO)
+        {
+            glm::mat4 invProj = glm::inverse(proj);
+            {
+                CPUTimer timer(t.at("SSAO").first);
+                ssaoPass_->render(gbuffer_->getNormalTexture(), gbuffer_->getDepthTexture(), proj, invProj);
+            }
+        }
+
+        // debug pass
+        if (renderSettings_->debugMode == DebugMode::Normals || renderSettings_->debugMode == DebugMode::Depth)
+        {
+            {
+                CPUTimer timer(t.at("Debug").first);
+                debugPass_->render(
+                    gbuffer_->getNormalTexture(),
+                    gbuffer_->getDepthTexture(),
+                    in.camera->getNearPlane(),
+                    in.camera->getFarPlane(),
+                    (renderSettings_->debugMode == DebugMode::Normals) ? 1 : 2);
+                return;
+            }
+        }
+
+        // water pass
+        {
+            CPUTimer timer(t.at("Water").first);
+            waterPass_->render(in);
+        }
+        // --------------- END PASSES --------------- //
+
+
+        // --------------- FORWARD RENDER --------------- //
+        in.world->update(in.camera->getCameraPosition());
+
+        glBindFramebuffer(GL_FRAMEBUFFER, forwardFBO_);
+        glViewport(0, 0, width_, height_);
+        glEnable(GL_DEPTH_TEST);
+
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // update uniforms of world shader
+        auto& worldShader = in.world->getOpaqueShader();
+        worldShader->use();
+        worldShader->setFloat("u_ambientStrength", in.world->getAmbientStrength());
+        worldShader->setVec3("u_viewPos", in.camera->getCameraPosition());
+        worldShader->setVec3("u_lightPos", in.light->getPosition());
+        worldShader->setVec3("u_lightColor", in.light->getColor());
+
+        // ssao
+        worldShader->setVec2("u_screenSize", glm::vec2{ width_, height_ });
+        worldShader->setBool("u_useSSAO", renderSettings_->useSSAO);
+        worldShader->setInt("u_ssao", 3);
+        if (renderSettings_->useSSAO)
+        {
+            glBindTextureUnit(3, ssaoPass_->aoBlurTexture());
+        }
+        else
+        {
+            glBindTextureUnit(3, 0);
+        }
+
+        // update uniforms of water shader
+        auto& waterShader = in.world->getWaterShader();
+        waterShader->use();
+        waterShader->setFloat("u_ambientStrength", in.world->getAmbientStrength());
+        waterShader->setVec3("u_viewPos", in.camera->getCameraPosition());
+        waterShader->setVec3("u_lightPos", in.light->getPosition());
+        waterShader->setVec3("u_lightColor", in.light->getColor());
+        waterShader->setFloat("u_near", in.camera->getNearPlane());
+        waterShader->setFloat("u_far", in.camera->getFarPlane());
+        waterShader->setVec2("u_screenSize", glm::vec2{ width_, height_ });
+
+        waterShader->setInt("u_reflectionTex", 4);
+        waterShader->setInt("u_refractionTex", 5);
+        waterShader->setInt("u_refractionDepthTex", 6);
+        waterShader->setInt("u_dudvTex", 7);
+        waterShader->setInt("u_normalTex", 8);
+        waterShader->setFloat("u_time", in.time);
+
+        // bind textures
+        glBindTextureUnit(4, waterPass_->getReflColorTex());
+        glBindTextureUnit(5, waterPass_->getRefrColorTex());
+        glBindTextureUnit(6, waterPass_->getRefrDepthTex());
+        glBindTextureUnit(7, waterPass_->getDuDVTex());
+        glBindTextureUnit(8, waterPass_->getNormalTex());
+
+        // render objects (non-UI)
+        in.world->renderOpaque(view, proj);
+        in.world->renderWater(view, proj);
+        in.light->render(view, proj);
+        in.skybox->render(view, proj, in.time);
+        // --------------- END FORWARD RENDER --------------- //
+
+
+        // --------------- POST-PROCESSING --------------- //
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, width_, height_);
+        glDisable(GL_DEPTH_TEST);
+
+        // FXAA
+        uint32_t finalColorTex = forwardColorTex_;
+        if (renderSettings_->useFXAA)
+        {
+            {
+                CPUTimer timer(t.at("FXAA").first);
+                fxaaPass_->render(forwardColorTex_);
+            }
+            finalColorTex = fxaaPass_->getOutputTex();
+        }
+
+        // FOG
+        fogPass_->setFogColor(renderSettings_->fogSettings.color);
+        fogPass_->setFogStart(renderSettings_->fogSettings.start);
+        fogPass_->setFogEnd(renderSettings_->fogSettings.end);
+        if (renderSettings_->useFog)
+        {
+            {
+                CPUTimer timer(t.at("Fog").first);
+                fogPass_->render(finalColorTex, forwardDepthTex_,
+                    in.camera->getNearPlane(), in.camera->getFarPlane(), in.world->getAmbientStrength());
+            }
+        }
+        else
+        {
+            {
+                CPUTimer timer(t.at("Present").first);
+                presentPass_->render(finalColorTex);
+            }
+        }
+        // --------------- END POST-PROCESSING --------------- //
+
+
+        // --------------- UI ELEMENTS --------------- //
+        in.crosshair->render();
+        // --------------- END UI ELEMENTS --------------- //
     }
-
-    // debug pass
-    if (renderSettings_->debugMode == DebugMode::Normals || renderSettings_->debugMode == DebugMode::Depth)
-    {
-        debugPass_->render(
-            gbuffer_->getNormalTexture(),
-            gbuffer_->getDepthTexture(),
-            in.camera->getNearPlane(),
-            in.camera->getFarPlane(),
-            (renderSettings_->debugMode == DebugMode::Normals) ? 1 : 2);
-        return;
-    }
-
-    // water pass
-    waterPass_->render(in);
-    // --------------- END PASSES --------------- //
-
-
-    // --------------- FORWARD RENDER --------------- //
-    in.world->update(in.camera->getCameraPosition());
-
-    glBindFramebuffer(GL_FRAMEBUFFER, forwardFBO_);
-    glViewport(0, 0, width_, height_);
-    glEnable(GL_DEPTH_TEST);
-
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // update uniforms of world shader
-    auto& worldShader = in.world->getOpaqueShader();
-    worldShader->use();
-    worldShader->setFloat("u_ambientStrength", in.world->getAmbientStrength());
-    worldShader->setVec3("u_viewPos", in.camera->getCameraPosition());
-    worldShader->setVec3("u_lightPos", in.light->getPosition());
-    worldShader->setVec3("u_lightColor", in.light->getColor());
-
-    // ssao
-    worldShader->setVec2("u_screenSize", glm::vec2{ width_, height_ });
-    worldShader->setBool("u_useSSAO", renderSettings_->useSSAO);
-    worldShader->setInt("u_ssao", 3);
-    if (renderSettings_->useSSAO)
-    {
-        glBindTextureUnit(3, ssaoPass_->aoBlurTexture());
-    }
-    else
-    {
-        glBindTextureUnit(3, 0);
-    }
-
-    // update uniforms of water shader
-    auto& waterShader = in.world->getWaterShader();
-    waterShader->use();
-    waterShader->setFloat("u_ambientStrength", in.world->getAmbientStrength());
-    waterShader->setVec3("u_viewPos", in.camera->getCameraPosition());
-    waterShader->setVec3("u_lightPos", in.light->getPosition());
-    waterShader->setVec3("u_lightColor", in.light->getColor());
-    waterShader->setFloat("u_near", in.camera->getNearPlane());
-    waterShader->setFloat("u_far", in.camera->getFarPlane());
-    waterShader->setVec2("u_screenSize", glm::vec2{ width_, height_ });
-
-    waterShader->setInt("u_reflectionTex", 4);
-    waterShader->setInt("u_refractionTex", 5);
-    waterShader->setInt("u_refractionDepthTex", 6);
-    waterShader->setInt("u_dudvTex", 7);
-    waterShader->setInt("u_normalTex", 8);
-    waterShader->setFloat("u_time", in.time);
-
-    // bind textures
-    glBindTextureUnit(4, waterPass_->getReflColorTex());
-    glBindTextureUnit(5, waterPass_->getRefrColorTex());
-    glBindTextureUnit(6, waterPass_->getRefrDepthTex());
-    glBindTextureUnit(7, waterPass_->getDuDVTex());
-    glBindTextureUnit(8, waterPass_->getNormalTex());
-
-    // render objects (non-UI)
-    in.world->renderOpaque(view, proj);
-    in.world->renderWater(view, proj);
-    in.light->render(view, proj);
-    in.skybox->render(view, proj, in.time);
-    // --------------- END FORWARD RENDER --------------- //
-
-
-    // --------------- POST-PROCESSING --------------- //
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, width_, height_);
-    glDisable(GL_DEPTH_TEST);
-
-    // FXAA
-    uint32_t finalColorTex = forwardColorTex_;
-    if (renderSettings_->useFXAA)
-    {
-        fxaaPass_->render(forwardColorTex_);
-        finalColorTex = fxaaPass_->getOutputTex();
-    }
-
-    // FOG
-    fogPass_->setFogColor(renderSettings_->fogSettings.color);
-    fogPass_->setFogStart(renderSettings_->fogSettings.start);
-    fogPass_->setFogEnd(renderSettings_->fogSettings.end);
-    if (renderSettings_->useFog)
-    {
-        fogPass_->render(finalColorTex, forwardDepthTex_,
-            in.camera->getNearPlane(), in.camera->getFarPlane(), in.world->getAmbientStrength());
-    }
-    else
-    {
-        presentPass_->render(finalColorTex);
-    }
-    // --------------- END POST-PROCESSING --------------- //
-
-
-    // --------------- UI ELEMENTS --------------- //
-    in.crosshair->render();
-    // --------------- END UI ELEMENTS --------------- //
 } // end of renderFrame()
 
 RenderSettings& Renderer::settings()

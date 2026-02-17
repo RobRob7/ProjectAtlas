@@ -8,6 +8,8 @@
 #include "camera.h"
 #include "light.h"
 
+#include "profiler.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -19,6 +21,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <psapi.h>
+#include <string>
 
 //--- HELPER ---//
 static size_t GetProcessMemoryMB()
@@ -37,10 +40,9 @@ static size_t GetProcessMemoryMB()
 //--- PUBLIC ---//
 UI::UI(GLFWwindow* window, RenderSettings& rs)
 	: window_(window), renderSettings_(rs),
-	enabled_(true), cameraModeOn_(true)
+	enabled_(true), cameraModeOn_(true), cpugpuCollection_(CPUGPUCollection::getInstance())
 {
 	// window top nav bar logo
-	//logoTex_ = (void*)(intptr_t)Texture("blocks.png").ID();
 	logoTex_ = std::make_unique<Texture>("blocks.png");
 
 	// ------ imgui init ------ //
@@ -232,6 +234,79 @@ void UI::drawStatsFPS(float dt)
 		ImGui::Separator();
 		ImGui::Text("Vendor: %s", glGetString(GL_VENDOR));
 		ImGui::Text("Device: %s", glGetString(GL_RENDERER));
+
+		// CPU-GPU frametime
+		ImGui::Separator();
+		if (ImGui::BeginTable("RenderTime", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+		{
+			ImGui::TableSetupColumn("");
+			ImGui::TableSetupColumn("CPU (ms)");
+			ImGui::TableSetupColumn("GPU (ms)");
+			ImGui::TableHeadersRow();
+
+			ImGui::TableNextRow();
+
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("Render Time");
+
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%.4f", cpugpuCollection_.cpugpuTimeMap.at("Render Time").first);
+
+			ImGui::TableSetColumnIndex(2);
+			ImGui::Text("%.4f", cpugpuCollection_.cpugpuTimeMap.at("Render Time").second);
+
+			ImGui::EndTable();
+		}
+
+		// CPU-GPU pass timing
+		ImGui::Separator();
+		if (ImGui::BeginTable("Pass Frametime", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+		{
+			ImGui::TableSetupColumn("Pass");
+			ImGui::TableSetupColumn("CPU (ms)");
+			ImGui::TableSetupColumn("GPU (ms)");
+			ImGui::TableHeadersRow();
+
+			double totalCPUTime = 0.0;
+			double totalGPUTime = 0.0;
+
+			for (const auto& pair : cpugpuCollection_.cpugpuTimeMap)
+			{
+				if (pair.first == "Render Time") continue;
+
+#ifndef _DEBUG
+				if (pair.first == "Debug") continue;
+#endif
+
+
+				std::string passName = pair.first;
+				double cpuTime = pair.second.first;
+				totalCPUTime += cpuTime;
+				double gpuTime = pair.second.second;
+				totalGPUTime += gpuTime;
+
+				ImGui::TableNextRow();
+
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text("%s", passName.c_str());
+
+				ImGui::TableSetColumnIndex(1);
+				ImGui::Text("%.4f", cpuTime);
+
+				ImGui::TableSetColumnIndex(2);
+				ImGui::Text("%.4f", gpuTime);
+			}
+
+			// totals row
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("%.4f", totalCPUTime);
+
+			ImGui::TableSetColumnIndex(2);
+			ImGui::Text("%.4f", totalGPUTime);
+
+			ImGui::EndTable();
+		}
 	}
 	ImGui::End();
 } // end of drawStatsFPS()
