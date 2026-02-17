@@ -37,7 +37,7 @@ Features:
 Preview
 </h2>
 
-![Project Demo](./milestones/demo/demo2.gif)
+![Project Demo](./milestones/demo/demo3.gif)
 
 <!--  -->
 <h2>
