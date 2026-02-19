@@ -1,5 +1,9 @@
 #include "ui.h"
 
+#include <imgui_impl_vulkan.h>
+
+
+
 #include "texture.h"
 #include "scene.h"
 #include "renderer.h"
@@ -35,12 +39,11 @@ static size_t GetProcessMemoryMB()
 } // end of GetProcessMemoryMB()
 
 //--- PUBLIC ---//
-UI::UI(GLFWwindow* window, RenderSettings& rs)
-	: window_(window), renderSettings_(rs),
+UI::UI(GLFWwindow* window)
+	: window_(window),
 	enabled_(true), cameraModeOn_(true)
 {
 	// window top nav bar logo
-	//logoTex_ = (void*)(intptr_t)Texture("blocks.png").ID();
 	logoTex_ = std::make_unique<Texture>("blocks.png");
 
 	// ------ imgui init ------ //
@@ -53,17 +56,35 @@ UI::UI(GLFWwindow* window, RenderSettings& rs)
 
 	ImGui::StyleColorsDark();
 
-	ImGui_ImplGlfw_InitForOpenGL(window_, true);
-	ImGui_ImplOpenGL3_Init("#version 460 core");
+
+		ImGui_ImplGlfw_InitForOpenGL(window_, true);
+		ImGui_ImplOpenGL3_Init("#version 460 core");
 } // end of constructor
 
 UI::~UI()
 {
-	// imgui shutdown
-	ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplOpenGL3_Shutdown();
+
+
+
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 } // end of destructor
+
+void UI::initVulkan(
+	VkInstance instance,
+	VkPhysicalDevice physDev,
+	VkDevice device,
+	uint32_t graphicsQueueFamily,
+	VkQueue graphicsQueue,
+	VkRenderPass renderPass,
+	uint32_t swapchainImageCount,
+	VkCommandPool commandPool,
+	VkDescriptorPool imguiPool
+)
+{
+
+}
 
 void UI::init()
 {
@@ -72,14 +93,14 @@ void UI::init()
 	ImGui::NewFrame();
 } // end of init()
 
-void UI::drawFullUI(float dt, Scene& scene)
+void UI::drawFullUI(float dt, Scene& scene, RenderSettings& rs)
 {
 	drawTopBar();
 
 	if (enabled_)
 	{
 		drawStatsFPS(dt);
-		drawInspector(scene);
+		drawInspector(scene, rs);
 	}
 
 	ImGui::Render();
@@ -191,6 +212,18 @@ void UI::drawTopBar()
 	}
 
 	ImGui::End();
+
+
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		GLFWwindow* backup = glfwGetCurrentContext();
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+		glfwMakeContextCurrent(backup);
+	}
 } // end of drawTopBar()
 
 void UI::drawStatsFPS(float dt)
@@ -236,7 +269,7 @@ void UI::drawStatsFPS(float dt)
 	ImGui::End();
 } // end of drawStatsFPS()
 
-void UI::drawInspector(Scene& scene)
+void UI::drawInspector(Scene& scene, RenderSettings& rs)
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 
@@ -263,7 +296,7 @@ void UI::drawInspector(Scene& scene)
 		// render mode
 		std::string_view mode = "ERROR!";
 
-		switch (renderSettings_.debugMode)
+		switch (rs.debugMode)
 		{
 		case DebugMode::None:
 			mode = "Default";
@@ -300,21 +333,21 @@ void UI::drawInspector(Scene& scene)
 		// DISPLAY OPTIONS
 		ImGui::Text("Display Options:");
 		// VSync toggle
-		if (ImGui::Checkbox("VSync##render", &renderSettings_.enableVsync))
+		if (ImGui::Checkbox("VSync##render", &rs.enableVsync))
 		{
-			glfwSwapInterval(renderSettings_.enableVsync);
+			glfwSwapInterval(rs.enableVsync);
 		}
 
 		// GRAPHICS OPTIONS
 		ImGui::Text("Graphics Options:");
 		// SSAO toggle
-		ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
+		ImGui::Checkbox("SSAO##render", &rs.useSSAO);
 
 		// FXAA toggle
-		ImGui::Checkbox("FXAA##render", &renderSettings_.useFXAA);
+		ImGui::Checkbox("FXAA##render", &rs.useFXAA);
 
 		// Fog toggle
-		ImGui::Checkbox("Fog##render", &renderSettings_.useFog);
+		ImGui::Checkbox("Fog##render", &rs.useFog);
 
 		ImGui::Separator();
 	}
@@ -324,20 +357,20 @@ void UI::drawInspector(Scene& scene)
 	{
 		bool changed = false;
 
-		changed |= ImGui::DragFloat3("Color##fog", glm::value_ptr(renderSettings_.fogSettings.color), 0.1f, 0.0f, 1.0f);
+		changed |= ImGui::DragFloat3("Color##fog", glm::value_ptr(rs.fogSettings.color), 0.1f, 0.0f, 1.0f);
 		if (ImGui::Button("Reset##fog_color"))
 		{
-			renderSettings_.fogSettings.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+			rs.fogSettings.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
 		}
-		changed |= ImGui::DragFloat("Start Pos##fog", &renderSettings_.fogSettings.start, 0.1f, 0.0f, renderSettings_.fogSettings.end);
+		changed |= ImGui::DragFloat("Start Pos##fog", &rs.fogSettings.start, 0.1f, 0.0f, rs.fogSettings.end);
 		if (ImGui::Button("Reset##fog_start"))
 		{
-			renderSettings_.fogSettings.start = 50.0f;
+			rs.fogSettings.start = 50.0f;
 		}
-		changed |= ImGui::DragFloat("End Pos##fog", &renderSettings_.fogSettings.end, 0.1f, renderSettings_.fogSettings.start, 2000.0f);
+		changed |= ImGui::DragFloat("End Pos##fog", &rs.fogSettings.end, 0.1f, rs.fogSettings.start, 2000.0f);
 		if (ImGui::Button("Reset##fog_end"))
 		{
-			renderSettings_.fogSettings.end = 200.0f;
+			rs.fogSettings.end = 200.0f;
 		}
 
 		// ensure start + kMinGap <= end ALWAYS
@@ -345,13 +378,13 @@ void UI::drawInspector(Scene& scene)
 		{
 			const float kMinGap = 100.0f;
 			const float minFogStart = 25.0f;
-			if (renderSettings_.fogSettings.start < minFogStart)
-				renderSettings_.fogSettings.start = minFogStart;
+			if (rs.fogSettings.start < minFogStart)
+				rs.fogSettings.start = minFogStart;
 
-			if (renderSettings_.fogSettings.start > renderSettings_.fogSettings.end - kMinGap)
+			if (rs.fogSettings.start > rs.fogSettings.end - kMinGap)
 			{
-				renderSettings_.fogSettings.start = std::max(minFogStart, renderSettings_.fogSettings.end - kMinGap);
-				renderSettings_.fogSettings.end = renderSettings_.fogSettings.start + kMinGap;
+				rs.fogSettings.start = std::max(minFogStart, rs.fogSettings.end - kMinGap);
+				rs.fogSettings.end = rs.fogSettings.start + kMinGap;
 			}
 		}
 		ImGui::Separator();

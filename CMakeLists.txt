@@ -8,9 +8,12 @@ if(MSVC)
 endif()
 
 # project (using C++)
-project(Atlas LANGUAGES CXX)
+project(AtlasVk LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# find Vulkan SDK
+find_package(Vulkan REQUIRED)
 
 # GLFW no build, install
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -50,4 +53,4 @@ target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC RESOURCES_PATH="${CMAK
 target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC SAVE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/world/") 
 
 # link libs
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE glm glfw glad freetype stb imgui libnoise)
+target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE Vulkan::Vulkan glm glfw glad freetype stb imgui libnoise)

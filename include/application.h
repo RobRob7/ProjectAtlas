@@ -21,6 +21,7 @@ public:
 	void run();
 
 private:
+	void initWindow();
 	InputState buildInputState();
 private:
 	RenderInputs in_;
@@ -43,8 +44,8 @@ private:
 	// auto save time threshold (in min)
 	float autoSaveTime_ = 5;
 
-	std::unique_ptr<Scene> scene_;
-	std::unique_ptr<Renderer> renderer_;
+	//std::unique_ptr<Scene> scene_;
+	//std::unique_ptr<Renderer> renderer_;
 	std::unique_ptr<UI> ui_;
 };
 #endif

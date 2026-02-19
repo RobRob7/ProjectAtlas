@@ -14,18 +14,109 @@
 Application::Application(int width, int height)
 	: width_(width), height_(height)
 {
-	// intialize GLFW
+	initWindow();
+	
+	//// setup scene + renderer
+	//scene_ = std::make_unique<Scene>(width_, height_);
+	//renderer_ = std::make_unique<Renderer>();
+	//scene_->init(*renderer_);
+
+	// setup UI
+	ui_ = std::make_unique<UI>(window_);
+} // end of constructor
+
+Application::~Application()
+{
+	if (window_)
+	{
+		glfwDestroyWindow(window_);
+	}
+	glfwTerminate();
+} // end of destructor
+
+void Application::run()
+{
+	while (!glfwWindowShouldClose(window_))
+	{
+		///////// BEFORE RENDER ///////////
+		// per-frame time logic
+		float currentFrame = static_cast<float>(glfwGetTime());
+		deltaTime_ = currentFrame - lastFrame_;
+		lastFrame_ = currentFrame;
+
+		// update save timer
+		saveTimer_ += deltaTime_;
+
+		// auto saving
+		if (saveTimer_ >= (autoSaveTime_ * 60.0f))
+		{
+			//scene_->requestSave();
+			saveTimer_ = 0.0f;
+		}
+
+		// poll user input events
+		glfwPollEvents();
+
+		// UI init
+		ui_->init();
+
+		// process user input
+		InputState input = buildInputState();
+		//scene_->update(deltaTime_, input);
+
+		// process window close request
+		if (input.quitRequested)
+		{
+			glfwSetWindowShouldClose(window_, true);
+		}
+
+		// process UI display
+		if (input.enableImguiPressed)
+		{
+			ui_->setUIDisplayEnabled(true);
+		}
+		if (input.disableImguiPressed)
+		{
+			ui_->setUIDisplayEnabled(false);
+		}
+
+		// process camera active/inactive mouse cursor
+		if (input.enableCameraPressed)
+		{
+			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			ui_->setCameraModeUIEnabled(true);
+			ui_->setUIInputEnabled(false);
+		}
+		if (input.disableCameraPressed)
+		{
+			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			ui_->setCameraModeUIEnabled(false);
+			ui_->setUIInputEnabled(true);
+		}
+		/////////////////////////////////
+
+		// render scene
+		in_.time = static_cast<float>(glfwGetTime());
+		//scene_->render(*renderer_, in_);
+
+		// draw UI
+		//ui_->drawFullUI(deltaTime_, *scene_, renderer_->settings());
+		ui_->drawTopBar();
+
+		// swap buffers
+		glfwSwapBuffers(window_);
+	} // end while
+} // end of run()
+
+//--- PRIVATE ---//
+void Application::initWindow()
+{
 	if (!glfwInit())
 	{
 		throw std::runtime_error("GLFW initialization error!");
 	}
 
-	// specify major OpenGL version
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	// specify minor OpenGL version
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	// specify OpenGL core-profile
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 	// disable top bar
 	glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
@@ -57,9 +148,9 @@ Application::Application(int width, int height)
 	glfwSetFramebufferSizeCallback(window_, [](GLFWwindow* window, int width, int height)
 		{
 			// resize check
-			#ifdef _DEBUG
+#ifdef _DEBUG
 			printf("[RESIZE] fb = %d x %d\n", width, height);
-			#endif
+#endif
 
 			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
 			if (!self) return;
@@ -69,158 +160,68 @@ Application::Application(int width, int height)
 
 			glViewport(0, 0, self->width_, self->height_);
 
-			if (self->scene_)
-			{
-				self->scene_->onResize(self->width_, self->height_);
-			}
-			if (self->renderer_)
-			{
-				self->renderer_->resize(self->width_, self->height_);
-			}
+			//if (self->scene_)
+			//{
+			//	self->scene_->onResize(self->width_, self->height_);
+			//}
+			//if (self->renderer_)
+			//{
+			//	self->renderer_->resize(self->width_, self->height_);
+			//}
 		});
 	glfwSetCursorPosCallback(window_, [](GLFWwindow* window, double xposIn, double yposIn)
 		{
 			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
-			if (!self || !self->scene_) return;
+			if (!self) return;
+			//if (!self || !self->scene_) return;
 
-			self->scene_->onMouseMove(static_cast<float>(xposIn),
-				static_cast<float>(yposIn));
+			//self->scene_->onMouseMove(static_cast<float>(xposIn),
+			//	static_cast<float>(yposIn));
 		});
 	glfwSetScrollCallback(window_, [](GLFWwindow* window, double xoffset, double yoffset)
 		{
 			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
-			if (!self || !self->scene_) return;
+			if (!self) return;
+			//if (!self || !self->scene_) return;
 
 
-			self->scene_->onScroll(static_cast<float>(yoffset));
+			//self->scene_->onScroll(static_cast<float>(yoffset));
 		});
+} // end of initWindow()
 
-	// enable depth test
-	glEnable(GL_DEPTH_TEST);
-	
-	// setup scene + renderer
-	scene_ = std::make_unique<Scene>(width_, height_);
-	renderer_ = std::make_unique<Renderer>();
-	scene_->init(*renderer_);
-
-	// setup UI
-	ui_ = std::make_unique<UI>(window_, renderer_->settings());
-} // end of constructor
-
-Application::~Application()
-{
-	// destroy window if still active
-	if (window_) glfwDestroyWindow(window_);
-	glfwTerminate();
-} // end of destructor
-
-void Application::run()
-{
-	while (!glfwWindowShouldClose(window_))
-	{
-		///////// BEFORE RENDER ///////////
-		// per-frame time logic
-		float currentFrame = static_cast<float>(glfwGetTime());
-		deltaTime_ = currentFrame - lastFrame_;
-		lastFrame_ = currentFrame;
-
-		// update save timer
-		saveTimer_ += deltaTime_;
-
-		// auto saving
-		if (saveTimer_ >= (autoSaveTime_ * 60.0f))
-		{
-			scene_->requestSave();
-			saveTimer_ = 0.0f;
-		}
-
-		// poll user input events
-		glfwPollEvents();
-
-		// UI init
-		ui_->init();
-
-		// process user input
-		InputState input = buildInputState();
-		scene_->update(deltaTime_, input);
-
-		// process window close request
-		if (input.quitRequested)
-		{
-			glfwSetWindowShouldClose(window_, true);
-		}
-
-		// process UI display
-		if (input.enableImguiPressed)
-		{
-			ui_->setUIDisplayEnabled(true);
-		}
-		if (input.disableImguiPressed)
-		{
-			ui_->setUIDisplayEnabled(false);
-		}
-
-		// process camera active/inactive mouse cursor
-		if (input.enableCameraPressed)
-		{
-			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-			ui_->setCameraModeUIEnabled(true);
-			ui_->setUIInputEnabled(false);
-		}
-		if (input.disableCameraPressed)
-		{
-			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-			ui_->setCameraModeUIEnabled(false);
-			ui_->setUIInputEnabled(true);
-		}
-		///////////////////////////////////
-
-		// render scene
-		in_.time = static_cast<float>(glfwGetTime());
-		scene_->render(*renderer_, in_);
-
-		// draw UI
-		ui_->drawFullUI(deltaTime_, *scene_);
-
-		// swap buffers
-		glfwSwapBuffers(window_);
-	} // end while
-} // end of run()
-
-//--- PRIVATE ---//
 InputState Application::buildInputState()
 {
 	// TEMP: allows keyboard inputs to change state
 	// of view mode and SSAO
 	// Debug view is not a feature to be used for release
 	// SSAO toggle should be mainly controlled through UI
-	RenderSettings& settings = renderer_->settings();
-
-#ifdef _DEBUG
-	// ------- graphics options -------
-	// SSAO
-	static bool spaceWasDown = false;
-	bool spaceDown = glfwGetKey(window_, GLFW_KEY_SPACE) == GLFW_PRESS;
-	if (spaceDown && !spaceWasDown)
-	{
-		settings.useSSAO = !settings.useSSAO;
-	}
-	spaceWasDown = spaceDown;
-
-	// debug
-	if (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS)
-	{
-		settings.debugMode = DebugMode::None;
-	}
-	if (glfwGetKey(window_, GLFW_KEY_2) == GLFW_PRESS)
-	{
-		settings.debugMode = DebugMode::Normals;
-	}
-	if (glfwGetKey(window_, GLFW_KEY_3) == GLFW_PRESS)
-	{
-		settings.debugMode = DebugMode::Depth;
-	}
-#endif
+//	RenderSettings& settings = renderer_->settings();
+//
+//#ifdef _DEBUG
+//	// ------- graphics options -------
+//	// SSAO
+//	static bool spaceWasDown = false;
+//	bool spaceDown = glfwGetKey(window_, GLFW_KEY_SPACE) == GLFW_PRESS;
+//	if (spaceDown && !spaceWasDown)
+//	{
+//		settings.useSSAO = !settings.useSSAO;
+//	}
+//	spaceWasDown = spaceDown;
+//
+//	// debug
+//	if (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS)
+//	{
+//		settings.debugMode = DebugMode::None;
+//	}
+//	if (glfwGetKey(window_, GLFW_KEY_2) == GLFW_PRESS)
+//	{
+//		settings.debugMode = DebugMode::Normals;
+//	}
+//	if (glfwGetKey(window_, GLFW_KEY_3) == GLFW_PRESS)
+//	{
+//		settings.debugMode = DebugMode::Depth;
+//	}
+//#endif
 
 	InputState in{};
 
