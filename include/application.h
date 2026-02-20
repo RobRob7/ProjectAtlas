@@ -1,7 +1,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "renderinputs.h"
+#include "render_inputs.h"
 
 #include <memory>
 
@@ -21,13 +21,12 @@ public:
 	void run();
 
 private:
-	void initWindow();
 	InputState buildInputState();
 private:
 	RenderInputs in_;
 
 	// place/delete block limit
-	bool leftMouseDown_  = false;
+	bool leftMouseDown_ = false;
 	bool rightMouseDown_ = false;
 
 	int width_;
@@ -44,8 +43,8 @@ private:
 	// auto save time threshold (in min)
 	float autoSaveTime_ = 5;
 
-	//std::unique_ptr<Scene> scene_;
-	//std::unique_ptr<Renderer> renderer_;
+	std::unique_ptr<Scene> scene_;
+	std::unique_ptr<Renderer> renderer_;
 	std::unique_ptr<UI> ui_;
 };
 #endif

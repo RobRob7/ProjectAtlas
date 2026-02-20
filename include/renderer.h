@@ -1,6 +1,8 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include "i_renderer.h"
+
 #include <glm/glm.hpp>
 
 #include <cstdint>
@@ -54,7 +56,7 @@ struct RenderSettings
 	FogSettings fogSettings;
 };
 
-class Renderer
+class Renderer : public IRenderer
 {
 public:
 	Renderer();

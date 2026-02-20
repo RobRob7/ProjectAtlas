@@ -1,4 +1,4 @@
-#include "fxaapass.h"
+#include "fxaa_pass.h"
 
 #include "shader.h"
 

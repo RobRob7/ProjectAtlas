@@ -1,6 +1,4 @@
-#include "chunkmesh.h"
-
-#include <glad/glad.h>
+#include "chunk_mesh.h"
 
 #include <cstddef>
 
@@ -43,129 +41,13 @@ static inline uint32_t PackVertexU32(
 ChunkMesh::ChunkMesh(int chunkX, int chunkY)
 	: chunkData_(chunkX, chunkY)
 {
-	// OPAQUE
-	// create VAO + buffers
-	glCreateVertexArrays(1, &opaqueVao_);
-	glCreateBuffers(1, &opaqueVbo_);
-	glCreateBuffers(1, &opaqueEbo_);
-
-	// attach buffers to vao
-	glVertexArrayVertexBuffer(opaqueVao_, 0, opaqueVbo_, 0, sizeof(Vertex));
-	glVertexArrayElementBuffer(opaqueVao_, opaqueEbo_);
-
-	// combined data packed in int
-	glEnableVertexArrayAttrib(opaqueVao_, 0);
-	glVertexArrayAttribIFormat(opaqueVao_, 0, 1, GL_UNSIGNED_INT, offsetof(Vertex, sample));
-	glVertexArrayAttribBinding(opaqueVao_, 0, 0);
-
-
-	// WATER
-	// create VAO + buffers
-	glCreateVertexArrays(1, &waterVao_);
-	glCreateBuffers(1, &waterVbo_);
-	glCreateBuffers(1, &waterEbo_);
-
-	// attach buffers to vao
-	glVertexArrayVertexBuffer(waterVao_, 0, waterVbo_, 0, sizeof(VertexWater));
-	glVertexArrayElementBuffer(waterVao_, waterEbo_);
-
-	// position
-	glEnableVertexArrayAttrib(waterVao_, 0);
-	glVertexArrayAttribFormat(waterVao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(VertexWater, pos));
-	glVertexArrayAttribBinding(waterVao_, 0, 0);
-
 	buildChunkMesh();
-	uploadChunkMesh();
+	//uploadChunkMesh();
 } // end of other constructor
 
 ChunkMesh::~ChunkMesh()
 {
-	if (opaqueVao_)
-	{
-		glDeleteVertexArrays(1, &opaqueVao_);
-		opaqueVao_ = 0;
-	}
-	if (opaqueVbo_)
-	{
-		glDeleteBuffers(1, &opaqueVbo_);
-		opaqueVbo_ = 0;
-	}
-	if (opaqueEbo_)
-	{
-		glDeleteBuffers(1, &opaqueEbo_);
-		opaqueEbo_ = 0;
-	}
-
-	if (waterVao_)
-	{
-		glDeleteVertexArrays(1, &waterVao_);
-		waterVao_ = 0;
-	}
-	if (waterVbo_)
-	{
-		glDeleteBuffers(1, &waterVbo_);
-		waterVbo_ = 0;
-	}
-	if (waterEbo_)
-	{
-		glDeleteBuffers(1, &waterEbo_);
-		waterEbo_ = 0;
-	}
 } // end of destructor
-
-void ChunkMesh::uploadChunkMesh()
-{
-	// OPAQUE reupload into vbo
-	glNamedBufferData(
-		opaqueVbo_,
-		opaqueVertices_.size() * sizeof(Vertex),
-		opaqueVertices_.empty() ? nullptr : opaqueVertices_.data(),
-		GL_STATIC_DRAW
-	);
-
-	// reupload into ebo
-	glNamedBufferData(
-		opaqueEbo_,
-		opaqueIndices_.size() * sizeof(uint32_t),
-		opaqueIndices_.empty() ? nullptr : opaqueIndices_.data(),
-		GL_STATIC_DRAW
-	);
-
-	opaqueIndexCount_ = static_cast<int32_t>(opaqueIndices_.size());
-
-
-	// WATER reupload into vbo
-	glNamedBufferData(
-		waterVbo_,
-		waterVertices_.size() * sizeof(VertexWater),
-		waterVertices_.empty() ? nullptr : waterVertices_.data(),
-		GL_STATIC_DRAW
-	);
-
-	// reupload into ebo
-	glNamedBufferData(
-		waterEbo_,
-		waterIndices_.size() * sizeof(uint32_t),
-		waterIndices_.empty() ? nullptr : waterIndices_.data(),
-		GL_STATIC_DRAW
-	);
-
-	waterIndexCount_ = static_cast<int32_t>(waterIndices_.size());
-} // end of uploadChunkMesh()
-
-void ChunkMesh::renderChunkOpaque()
-{
-	glBindVertexArray(opaqueVao_);
-	glDrawElements(GL_TRIANGLES, opaqueIndexCount_, GL_UNSIGNED_INT, nullptr);
-} // end of render()
-
-void ChunkMesh::renderChunkWater()
-{
-	if (waterIndexCount_ <= 0) return;
-
-	glBindVertexArray(waterVao_);
-	glDrawElements(GL_TRIANGLES, waterIndexCount_, GL_UNSIGNED_INT, nullptr);
-} // end of renderWater()
 
 void ChunkMesh::setBlock(int x, int y, int z, BlockID id)
 {
@@ -185,22 +67,17 @@ ChunkData& ChunkMesh::getChunk()
 void ChunkMesh::rebuild()
 {
 	buildChunkMesh();
-	uploadChunkMesh();
+	//uploadChunkMesh();
 } // end of rebuild()
-
-uint32_t ChunkMesh::getRenderedBlockCount() const
-{
-	return renderedBlockCount_;
-} // end of getRenderedBlockCount()
 
 
 //--- PRIVATE ---//
 void ChunkMesh::buildChunkMesh()
 {
-	renderedBlockCount_ = 0;
+	//renderedBlockCount_ = 0;
 
-	opaqueVertices_.clear();
-	opaqueIndices_.clear();
+	data_.opaqueVertices.clear();
+	data_.opaqueIndices.clear();
 
 	// check if block is opaque
 	auto isOpaque = [&](BlockID id) {
@@ -221,7 +98,7 @@ void ChunkMesh::buildChunkMesh()
 		FaceDir dir, int tileX, int tileY)
 		{
 			// base vertex index for quad
-			uint32_t start = static_cast<uint32_t>(opaqueVertices_.size());
+			uint32_t start = static_cast<uint32_t>(data_.opaqueVertices.size());
 
 			// vert pos order
 			glm::ivec3 corners[4] = { p0, p1, p2, p3 };
@@ -237,15 +114,15 @@ void ChunkMesh::buildChunkMesh()
 					static_cast<uint32_t>(corners[c].y),
 					static_cast<uint32_t>(corners[c].z)
 				);
-				opaqueVertices_.push_back(v);
+				data_.opaqueVertices.push_back(v);
 			}
 
-			opaqueIndices_.push_back(start + 0);
-			opaqueIndices_.push_back(start + 1);
-			opaqueIndices_.push_back(start + 2);
-			opaqueIndices_.push_back(start + 0);
-			opaqueIndices_.push_back(start + 2);
-			opaqueIndices_.push_back(start + 3);
+			data_.opaqueIndices.push_back(start + 0);
+			data_.opaqueIndices.push_back(start + 1);
+			data_.opaqueIndices.push_back(start + 2);
+			data_.opaqueIndices.push_back(start + 0);
+			data_.opaqueIndices.push_back(start + 2);
+			data_.opaqueIndices.push_back(start + 3);
 		};
 
 	// chunk size x, y, z
@@ -395,8 +272,8 @@ void ChunkMesh::buildChunkMesh()
 	} // end for
 
 	// water
-	waterVertices_.clear();
-	waterIndices_.clear();
+	data_.waterVertices.clear();
+	data_.waterIndices.clear();
 
 	auto addWaterQuad = [&](int x0, int y, int z0, int w, int h)
 		{
@@ -414,25 +291,25 @@ void ChunkMesh::buildChunkMesh()
 			int tileY;
 			getBlockTile(BlockID::Water, tileX, tileY, std::nullopt);
 
-			uint32_t start = static_cast<uint32_t>(waterVertices_.size());
+			uint32_t start = static_cast<uint32_t>(data_.waterVertices.size());
 
 			VertexWater v0; v0.pos = p0;
 			VertexWater v1; v1.pos = p1;
 			VertexWater v2; v2.pos = p2;
 			VertexWater v3; v3.pos = p3;
 
-			waterVertices_.push_back(v0);
-			waterVertices_.push_back(v1);
-			waterVertices_.push_back(v2);
-			waterVertices_.push_back(v3);
+			data_.waterVertices.push_back(v0);
+			data_.waterVertices.push_back(v1);
+			data_.waterVertices.push_back(v2);
+			data_.waterVertices.push_back(v3);
 
 			// two triangles
-			waterIndices_.push_back(start + 0);
-			waterIndices_.push_back(start + 1);
-			waterIndices_.push_back(start + 2);
-			waterIndices_.push_back(start + 0);
-			waterIndices_.push_back(start + 2);
-			waterIndices_.push_back(start + 3);
+			data_.waterIndices.push_back(start + 0);
+			data_.waterIndices.push_back(start + 1);
+			data_.waterIndices.push_back(start + 2);
+			data_.waterIndices.push_back(start + 0);
+			data_.waterIndices.push_back(start + 2);
+			data_.waterIndices.push_back(start + 3);
 		};
 
 	for (int y = 0; y < CHUNK_SIZE_Y; ++y)
@@ -506,8 +383,10 @@ void ChunkMesh::buildChunkMesh()
 		} // end for
 	} // end for
 
-	// update rendered block count
-	renderedBlockCount_ = computeRenderedBlockCount();
+	// update counts
+	data_.opaqueIndexCount = static_cast<int32_t>(data_.opaqueIndices.size());
+	data_.waterIndexCount = static_cast<int32_t>(data_.waterIndices.size());
+	data_.renderedBlockCount = computeRenderedBlockCount();
 } // end of buildChunkMesh()
 
 bool ChunkMesh::isTransparent(int x, int y, int z)

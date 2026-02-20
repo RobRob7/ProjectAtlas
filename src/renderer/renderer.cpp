@@ -1,21 +1,21 @@
 #include "renderer.h"
 
 #include "shader.h"
-#include "chunkmanager.h"
+#include "chunk_manager.h"
 #include "camera.h"
 #include "light.h"
-#include "cubemap.h"
+#include "cubeMap.h"
 #include "crosshair.h"
 
-#include "gbufferpass.h"
-#include "debugpass.h"
-#include "ssaopass.h"
-#include "fxaapass.h"
-#include "presentpass.h"
-#include "waterpass.h"
-#include "fogpass.h"
+#include "gbuffer_pass.h"
+#include "debug_pass.h"
+#include "ssao_pass.h"
+#include "fxaa_pass.h"
+#include "present_pass.h"
+#include "water_pass.h"
+#include "fog_pass.h"
 
-#include "renderinputs.h"
+#include "render_inputs.h"
 
 #include <glad/glad.h>
 
