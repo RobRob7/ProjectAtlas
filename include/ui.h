@@ -1,13 +1,6 @@
 #ifndef UI_H
 #define UI_H
 
-#include <vulkan/vulkan.h>
-
-#include <cstdint>
-
-
-
-
 #include <memory>
 
 class Texture;
@@ -21,43 +14,29 @@ constexpr float INSPECTOR_WIDTH = 400.0f;
 class UI
 {
 public:
-	UI(GLFWwindow* window);
+	UI(GLFWwindow* window, RenderSettings& rs);
 	~UI();
 
-	void initVulkan(
-		VkInstance instance,
-		VkPhysicalDevice physDev,
-		VkDevice device,
-		uint32_t graphicsQueueFamily,
-		VkQueue graphicsQueue,
-		VkRenderPass renderPass,
-		uint32_t swapchainImageCount,
-		VkCommandPool commandPool,
-		VkDescriptorPool imguiPool
-		);
-
 	void init();
-	void drawFullUI(float dt, Scene& scene, RenderSettings& rs);
+	void drawFullUI(float dt, Scene& scene);
 	void setUIInputEnabled(bool enabled);
 	void setUIDisplayEnabled(bool enabled);
 	void setCameraModeUIEnabled(bool enabled);
 
-	void drawTopBar();
 private:
-	//void drawTopBar();
+	void drawTopBar();
 	void drawStatsFPS(float dt);
-	void drawInspector(Scene& scene, RenderSettings& rs);
+	void drawInspector(Scene& scene);
 private:
 	GLFWwindow* window_;
-
-	VkDevice device_{ VK_NULL_HANDLE };
-	VkDescriptorPool imguiPool_{ VK_NULL_HANDLE };
+	RenderSettings& renderSettings_;
 
 	// window top bar logo
 	std::unique_ptr<Texture> logoTex_;
+	//void* logoTex_;
 
-	bool enabled_{ true };
-	bool cameraModeOn_{ true };
+	bool enabled_;
+	bool cameraModeOn_;
 };
 
 #endif

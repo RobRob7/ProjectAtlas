@@ -2,11 +2,7 @@
 #define VULKANMAIN_H
 
 #include <vulkan/vulkan.h>
-
-#include <vulkan/vulkan_core.h>
-#include <vulkan/vk_platform.h>
-
-#define GLFW_INCLUDE_VULKAN
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #include <vector>
@@ -44,6 +40,37 @@ public:
 	~VulkanMain();
 
 	void init();
+	void drawFrame();
+
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
+	void createBuffer(
+		VkDeviceSize size,
+		VkBufferUsageFlags usage,
+		VkMemoryPropertyFlags properties,
+		VkBuffer& buffer,
+		VkDeviceMemory& bufferMemory) const;
+
+	VkCommandBuffer beginSingleTimeCommands() const;
+	void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
+
+	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
+
+
+
+
+	VkDevice device() const { return device_; }
+	VkPhysicalDevice physicalDevice() const { return physicalDevice_; }
+
+	VkQueue graphicsQueue() const { return graphicsQueue_; }
+	VkQueue presentQueue() const { return presentQueue_; }
+
+	VkSwapchainKHR swapChain() const { return swapChain_; }
+	VkFormat swapChainImageFormat() const { return swapChainImageFormat_; }
+	VkExtent2D swapChainExtent() const { return swapChainExtent_; }
+	const std::vector<VkImageView>& swapChainImageViews() const { return swapChainImageViews_; }
+
+	VkCommandPool commandPool() const { return commandPool_; }
+	VkSurfaceKHR surface() const { return surface_; }
 
 private:
 	void createInstance();
@@ -54,8 +81,6 @@ private:
 	void createSwapChain();
 	void createImageViews();
 	void createCommandPool();
-	void createColorResources();
-	void createDepthResources();
 
 	void cleanup();
 	void cleanupSwapChain();

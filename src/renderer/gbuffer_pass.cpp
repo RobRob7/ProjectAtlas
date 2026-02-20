@@ -1,7 +1,7 @@
-#include "gbufferpass.h"
+#include "gbuffer_pass.h"
 
 #include "shader.h"
-#include "chunkmanager.h"
+#include "chunk_manager.h"
 
 #include <glad/glad.h>
 

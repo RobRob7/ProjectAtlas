@@ -1,4 +1,4 @@
-#include "fogpass.h"
+#include "fog_pass.h"
 
 #include "shader.h"
 

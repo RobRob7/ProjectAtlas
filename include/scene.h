@@ -9,7 +9,7 @@ class Crosshair;
 class ChunkManager;
 class Light;
 
-class Renderer;
+class IRenderer;
 struct RenderInputs;
 
 struct InputState
@@ -38,10 +38,10 @@ public:
 	~Scene();
 
 	// setup scene with renderer
-	void init(Renderer& renderer);
+	void init(IRenderer& renderer);
 
 	// render scene
-	void render(Renderer& renderer, RenderInputs& in);
+	void render(IRenderer& renderer, RenderInputs& in);
 
 	// handle user inputs
 	void update(float dt, const InputState& in);

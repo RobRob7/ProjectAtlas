@@ -1,7 +1,8 @@
 #ifndef CHUNKMESH_H
 #define CHUNKMESH_H
 
-#include "chunkdata.h"
+#include "chunk_data.h"
+#include "chunk_mesh_data.h"
 
 #include <glm/glm.hpp>
 
@@ -10,25 +11,6 @@
 #include <cstdint>
 #include <optional>
 #include <functional>
-
-// world opaque vertices
-// LAYOUT (32u bits)
-// 0  - 1   : UV corner index
-// 2  - 6   : tileY
-// 7  - 11  : tileX
-// 12 - 14  : normal index
-// 15 - 18  : x pos
-// 19 - 27  : y pos
-// 28 - 31  : z pos
-struct Vertex
-{
-    uint32_t sample;
-};
-
-struct VertexWater
-{
-    glm::vec3 pos;
-};
 
 inline constexpr std::array<uint32_t, 6> FACE_INDICES = { 0, 1, 2, 0, 2, 3 };
 
@@ -120,38 +102,16 @@ public:
     ChunkMesh(int chunkX, int chunkY);
     ~ChunkMesh();
 
-    void uploadChunkMesh();
-
-    void renderChunkOpaque();
-    void renderChunkWater();
-
     void setBlock(int x, int y, int z, BlockID id);
     BlockID getBlock(int x, int y, int z) const;
     ChunkData& getChunk();
     void rebuild();
 
-    uint32_t getRenderedBlockCount() const;
-
+    const ChunkMeshData& data() const { return data_; }
+    uint32_t getRenderedBlockCount() const { return data_.renderedBlockCount; }
 private:
-    // water
-    std::vector<VertexWater> waterVertices_;
-    std::vector<uint32_t> waterIndices_;
-    uint32_t waterVao_{};
-    uint32_t waterVbo_{};
-    uint32_t waterEbo_{};
-    int32_t waterIndexCount_{};
-
-    // opaque
-	std::vector<Vertex> opaqueVertices_;
-	std::vector<uint32_t> opaqueIndices_;
-    uint32_t opaqueVao_{};
-    uint32_t opaqueVbo_{};
-    uint32_t opaqueEbo_{};
-    int32_t opaqueIndexCount_{};
-
     ChunkData chunkData_;
-
-    uint32_t renderedBlockCount_ = 0;
+    ChunkMeshData data_;
 private:
 	void buildChunkMesh();
 	bool isTransparent(int x, int y, int z);

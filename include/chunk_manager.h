@@ -2,7 +2,9 @@
 #define CHUNKMANAGER_H
 
 #include "save.h"
-#include "chunkmesh.h"
+#include "chunk_mesh.h"
+#include "chunk_entry.h"
+#include "vulkan_main.h"
 
 #include <glm/glm.hpp>
 
@@ -33,7 +35,7 @@ public:
 	ChunkManager(int viewRadiusInChunks = 15);
 	~ChunkManager();
 
-	void init();
+	void init(VulkanMain* vk);
 
 	void update(const glm::vec3& cameraPos);
 	void renderOpaque(const glm::mat4& view, const glm::mat4& proj);
@@ -85,9 +87,11 @@ private:
 	glm::vec3 lastCameraPos_{};
 
 	int viewRadius_;
-	std::unordered_map<ChunkCoord, std::unique_ptr<ChunkMesh>, ChunkCoordHash> chunks_;
+	std::unordered_map<ChunkCoord, std::unique_ptr<ChunkEntry>, ChunkCoordHash> chunks_;
 	std::queue<ChunkCoord> pendingChunks_;
 	std::unordered_set<ChunkCoord, ChunkCoordHash> queuedChunks_;
+
+	VulkanMain* vk_ = nullptr;
 
 	// raycast data
 	BlockID lastBlockUsed_;

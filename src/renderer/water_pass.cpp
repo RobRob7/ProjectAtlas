@@ -1,8 +1,8 @@
-#include "waterpass.h"
+#include "water_pass.h"
 
-#include "renderinputs.h"
+#include "render_inputs.h"
 #include "shader.h"
-#include "chunkmanager.h"
+#include "chunk_manager.h"
 #include "camera.h"
 #include "light.h"
 #include "cubemap.h"

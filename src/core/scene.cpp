@@ -1,12 +1,12 @@
 #include "scene.h"
 
-#include "renderer.h"
-#include "renderinputs.h"
+#include "i_renderer.h"
+#include "render_inputs.h"
 
 #include "camera.h"
-#include "cubemap.h"
+#include "cubeMap.h"
 #include "crosshair.h"
-#include "chunkmanager.h"
+#include "chunk_manager.h"
 #include "light.h"
 
 #include <glm/glm.hpp>
@@ -19,7 +19,7 @@ Scene::Scene(int w, int h)
 
 Scene::~Scene() = default;
 
-void Scene::init(Renderer& renderer)
+void Scene::init(IRenderer& renderer)
 {
 	// init renderer
 	renderer.init();
@@ -31,7 +31,7 @@ void Scene::init(Renderer& renderer)
 	skybox_->init();
 
 	world_ = std::make_unique<ChunkManager>();
-	world_->init();
+	world_->init(nullptr);
 
 	crosshair_ = std::make_unique<Crosshair>();
 	crosshair_->init();
@@ -40,7 +40,7 @@ void Scene::init(Renderer& renderer)
 	light_->init();
 } // end of init
 
-void Scene::render(Renderer& renderer, RenderInputs& in)
+void Scene::render(IRenderer& renderer, RenderInputs& in)
 {
 	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
