@@ -1,5 +1,6 @@
 #include "chunk_mesh_gpu_vk.h"
 
+#include "vulkan_main.h"
 #include "chunk_mesh_data.h"
 
 #include <cstring>
@@ -12,11 +13,12 @@ ChunkMeshGPUVk::ChunkMeshGPUVk(VulkanMain& vk)
 
 ChunkMeshGPUVk::~ChunkMeshGPUVk()
 {
-
+	destroyBuffers();
 } // end of destructor
 
 void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 {
+	vk_.waitIdle();
 	destroyBuffers();
 
 	VkDevice device = vk_.device();
@@ -52,7 +54,7 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 			stagingIB, stagingIBMem);
 
 		vkMapMemory(device, stagingIBMem, 0, ibSize, 0, &mapped);
-		std::memcpy(mapped, data.opaqueVertices.data(), static_cast<size_t>(ibSize));
+		std::memcpy(mapped, data.opaqueIndices.data(), static_cast<size_t>(ibSize));
 		vkUnmapMemory(device, stagingIBMem);
 
 		// device local VB/IB
@@ -115,7 +117,7 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 			stagingIB, stagingIBMem);
 
 		vkMapMemory(device, stagingIBMem, 0, ibSize, 0, &mapped);
-		std::memcpy(mapped, data.waterVertices.data(), static_cast<size_t>(ibSize));
+		std::memcpy(mapped, data.waterIndices.data(), static_cast<size_t>(ibSize));
 		vkUnmapMemory(device, stagingIBMem);
 
 		// device local VB/IB
@@ -148,14 +150,28 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 
 } // end of upload()
 
-void ChunkMeshGPUVk::drawOpaque()
+void ChunkMeshGPUVk::drawOpaque(const DrawContext& ctx)
 {
+	auto cmd = static_cast<VkCommandBuffer>(ctx.backendCmd);
 
+	if (!cmd || opaqueIndexCount_ == 0) return;
+
+	VkDeviceSize offset = 0;
+	vkCmdBindVertexBuffers(cmd, 0, 1, &opaqueVB_, &offset);
+	vkCmdBindIndexBuffer(cmd, opaqueIB_, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdDrawIndexed(cmd, opaqueIndexCount_, 1, 0, 0, 0);
 } // end of drawOpaque()
 
-void ChunkMeshGPUVk::drawWater()
+void ChunkMeshGPUVk::drawWater(const DrawContext& ctx)
 {
+	auto cmd = static_cast<VkCommandBuffer>(ctx.backendCmd);
 
+	if (!cmd || waterIndexCount_ == 0) return;
+
+	VkDeviceSize offset = 0;
+	vkCmdBindVertexBuffers(cmd, 0, 1, &waterVB_, &offset);
+	vkCmdBindIndexBuffer(cmd, waterIB_, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdDrawIndexed(cmd, waterIndexCount_, 1, 0, 0, 0);
 } // end of drawWater()
 
 

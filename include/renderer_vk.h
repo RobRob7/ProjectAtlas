@@ -6,6 +6,8 @@
 
 #include <memory>
 
+class ChunkOpaquePassVk;
+
 class ChunkManager;
 class Camera;
 class VulkanMain;
@@ -34,6 +36,8 @@ private:
 	VulkanMain& vk_;
 
 	std::unique_ptr<RenderSettings> renderSettings_;
+
+	std::unique_ptr<ChunkOpaquePassVk> chunkOpaque_;
 };
 
 #endif

@@ -37,8 +37,7 @@ public:
 	Scene(int w, int h);
 	~Scene();
 
-	// setup scene with renderer
-	void init(IRenderer& renderer);
+	void init();
 
 	// render scene
 	void render(IRenderer& renderer, RenderInputs& in);

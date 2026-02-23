@@ -2,12 +2,10 @@
 #define CHUNK_MESH_GPU_VK_H
 
 #include "i_chunk_mesh_gpu.h"
-#include "vulkan_main.h"
-
-#include <vulkan/vulkan.h>
 
 #include <cstdint>
 
+class VulkanMain;
 struct ChunkMeshData;
 
 class ChunkMeshGPUVk final : public IChunkMeshGPU
@@ -17,8 +15,8 @@ public:
 	~ChunkMeshGPUVk() override;
 
 	void upload(const ChunkMeshData& data) override;
-	void drawOpaque() override;
-	void drawWater() override;
+	void drawOpaque(const DrawContext& ctx) override;
+	void drawWater(const DrawContext& ctx) override;
 
 private:
 	VulkanMain& vk_;

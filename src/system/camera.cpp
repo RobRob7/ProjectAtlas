@@ -139,6 +139,12 @@ void Camera::invertPitch()
 	isEnabled_ = wasEnabled;
 } // end of invertPitch()
 
+void Camera::onResize(int w, int h)
+{
+	width_ = w;
+	height_ = h;
+} // end of onResize()
+
 // mouse handlers
 void Camera::handleMousePosition(float xpos, float ypos, bool constrainPitch)
 {

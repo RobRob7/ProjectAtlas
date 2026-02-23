@@ -1,17 +1,49 @@
-﻿#include "Application.h"
+﻿#include "application_vk.h"
 
 #include "scene.h"
-#include "renderer.h"
-#include "ui.h"
+#include "renderer_vk.h"
+#include "vulkan_main.h"
 
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <cstdlib>
+
+#include <iostream>
+#include <filesystem>
+
+//--- HELPER ---//
+static void RunShaderCompilerScript()
+{
+	namespace fs = std::filesystem;
+
+	fs::path buildDir = fs::current_path();
+
+	fs::path scriptPath = buildDir / "res" / "convert_spv.py";
+	fs::path shaderRoot = buildDir / "res" / "shader";
+
+	if (!fs::exists(scriptPath))
+		throw std::runtime_error("Missing script: " + scriptPath.string());
+	if (!fs::exists(shaderRoot))
+		throw std::runtime_error("Missing shader folder: " + shaderRoot.string());
+
+	const std::string pythonExe = "python";
+
+	std::string cmd =
+		pythonExe + " \"" + scriptPath.string() + "\" \"" + shaderRoot.string() + "\"";
+
+	//std::cout << "Running: " << cmd << "\n";
+
+	int code = std::system(cmd.c_str());
+	if (code != 0)
+		throw std::runtime_error("Shader compilation script failed. Exit code: " + std::to_string(code));
+} // end of RunShaderCompilerScript()
+
 
 //--- PUBLIC ---//
-Application::Application(int width, int height)
+ApplicationVk::ApplicationVk(int width, int height)
 	: width_(width), height_(height)
 {
 	// intialize GLFW
@@ -20,37 +52,24 @@ Application::Application(int width, int height)
 		throw std::runtime_error("GLFW initialization error!");
 	}
 
-	// specify major OpenGL version
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	// specify minor OpenGL version
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	// specify OpenGL core-profile
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
 	// disable top bar
 	glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 	// allow resizing
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
+	// vulkan glfw
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
 	// WINDOW CREATION + CHECK
-	window_ = glfwCreateWindow(width_, height_, "", nullptr, nullptr);
+	window_ = glfwCreateWindow(width_, height_, "Atlas", nullptr, nullptr);
 	if (!window_)
 	{
 		glfwTerminate();
 		throw std::runtime_error("GLFW window creation failure!");
 	} // end if
 
-	// tell GLFW to make the context of our window the main context on the current thread
-	glfwMakeContextCurrent(window_);
-
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-	// INITIALIZE GLAD + CHECK
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		throw std::runtime_error("GLAD initialization failure!");
-	} // end if
 
 	// set callbacks
 	glfwSetWindowUserPointer(window_, this);
@@ -61,13 +80,11 @@ Application::Application(int width, int height)
 			printf("[RESIZE] fb = %d x %d\n", width, height);
 #endif
 
-			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
+			auto* self = static_cast<ApplicationVk*>(glfwGetWindowUserPointer(window));
 			if (!self) return;
 
 			self->width_ = width;
 			self->height_ = height;
-
-			glViewport(0, 0, self->width_, self->height_);
 
 			if (self->scene_)
 			{
@@ -77,10 +94,14 @@ Application::Application(int width, int height)
 			{
 				self->renderer_->resize(self->width_, self->height_);
 			}
+			if (self->vk_)
+			{
+				self->vk_->notifyFramebufferResized();
+			}
 		});
 	glfwSetCursorPosCallback(window_, [](GLFWwindow* window, double xposIn, double yposIn)
 		{
-			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
+			auto* self = static_cast<ApplicationVk*>(glfwGetWindowUserPointer(window));
 			if (!self || !self->scene_) return;
 
 			self->scene_->onMouseMove(static_cast<float>(xposIn),
@@ -88,33 +109,44 @@ Application::Application(int width, int height)
 		});
 	glfwSetScrollCallback(window_, [](GLFWwindow* window, double xoffset, double yoffset)
 		{
-			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
+			auto* self = static_cast<ApplicationVk*>(glfwGetWindowUserPointer(window));
 			if (!self || !self->scene_) return;
 
 
 			self->scene_->onScroll(static_cast<float>(yoffset));
 		});
 
-	// enable depth test
-	glEnable(GL_DEPTH_TEST);
+	// compile shaders to spv
+	RunShaderCompilerScript();
+
+	// vulkan setup
+	vk_ = std::make_unique<VulkanMain>(window_);
+	vk_->init();
 
 	// setup scene + renderer
 	scene_ = std::make_unique<Scene>(width_, height_);
-	renderer_ = std::make_unique<Renderer>();
-	scene_->init(*renderer_);
-
-	// setup UI
-	ui_ = std::make_unique<UI>(window_, renderer_->settings());
+	scene_->init();
+	renderer_ = std::make_unique<RendererVk>(*vk_);
+	renderer_->init();
+	renderer_->resize(width_, height_);
 } // end of constructor
 
-Application::~Application()
+ApplicationVk::~ApplicationVk()
 {
-	// destroy window if still active
-	if (window_) glfwDestroyWindow(window_);
+	if (vk_)
+	{
+		vk_->waitIdle();
+		vk_.reset();
+	}
+
+	if (window_)
+	{
+		glfwDestroyWindow(window_);
+	}
 	glfwTerminate();
 } // end of destructor
 
-void Application::run()
+void ApplicationVk::run()
 {
 	while (!glfwWindowShouldClose(window_))
 	{
@@ -137,9 +169,6 @@ void Application::run()
 		// poll user input events
 		glfwPollEvents();
 
-		// UI init
-		ui_->init();
-
 		// process user input
 		InputState input = buildInputState();
 		scene_->update(deltaTime_, input);
@@ -149,46 +178,16 @@ void Application::run()
 		{
 			glfwSetWindowShouldClose(window_, true);
 		}
-
-		// process UI display
-		if (input.enableImguiPressed)
-		{
-			ui_->setUIDisplayEnabled(true);
-		}
-		if (input.disableImguiPressed)
-		{
-			ui_->setUIDisplayEnabled(false);
-		}
-
-		// process camera active/inactive mouse cursor
-		if (input.enableCameraPressed)
-		{
-			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-			ui_->setCameraModeUIEnabled(true);
-			ui_->setUIInputEnabled(false);
-		}
-		if (input.disableCameraPressed)
-		{
-			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-			ui_->setCameraModeUIEnabled(false);
-			ui_->setUIInputEnabled(true);
-		}
 		///////////////////////////////////
 
 		// render scene
 		in_.time = static_cast<float>(glfwGetTime());
 		scene_->render(*renderer_, in_);
-
-		// draw UI
-		ui_->drawFullUI(deltaTime_, *scene_);
-
-		// swap buffers
-		glfwSwapBuffers(window_);
 	} // end while
 } // end of run()
 
 //--- PRIVATE ---//
-InputState Application::buildInputState()
+InputState ApplicationVk::buildInputState()
 {
 	// TEMP: allows keyboard inputs to change state
 	// of view mode and SSAO

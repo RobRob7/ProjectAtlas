@@ -79,11 +79,11 @@ void ChunkOpaquePassGL::renderOpaque(
     //opaqueShader_->setVec3("u_lightColor", in.light->getColor());
 
     opaqueShader_->setVec2("u_screenSize", glm::vec2{ width, height });
-
+    DrawContext ctx{};
     for (const auto& item : list.items)
     {
         opaqueShader_->setVec3("u_chunkOrigin", item.chunkOrigin);
-        item.gpu->drawOpaque();
+        item.gpu->drawOpaque(ctx);
     }
 } // end of renderOpaque()
 
@@ -101,10 +101,11 @@ void ChunkOpaquePassGL::renderOpaque(
     shader.setMat4("u_view", view);
     shader.setMat4("u_proj", proj);
 
+    DrawContext ctx{};
     for (const auto& item : list.items)
     {
         shader.setVec3("u_chunkOrigin", item.chunkOrigin);
-        item.gpu->drawOpaque();
+        item.gpu->drawOpaque(ctx);
     }
 } // end of renderOpaque()
 
@@ -126,13 +127,14 @@ void ChunkOpaquePassGL::renderWater(
     glDepthMask(GL_FALSE);
     glEnable(GL_DEPTH_TEST);
 
+    DrawContext ctx{};
     for (const auto& item : list.items)
     {
         glm::mat4 model = glm::translate(
             glm::mat4(1.0f),
             item.chunkOrigin);
         waterShader_->setMat4("u_model", model);
-        item.gpu->drawWater();
+        item.gpu->drawWater(ctx);
     }
 
     glDepthMask(GL_TRUE);

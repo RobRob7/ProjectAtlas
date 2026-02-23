@@ -116,7 +116,7 @@ void ChunkMeshGPUGL::upload(const ChunkMeshData& data)
 	waterIndexCount_ = static_cast<int32_t>(data.waterIndices.size());
 } // end of upload()
 
-void ChunkMeshGPUGL::drawOpaque()
+void ChunkMeshGPUGL::drawOpaque(const DrawContext&)
 {
 	if (opaqueIndexCount_ <= 0) return;
 
@@ -124,7 +124,7 @@ void ChunkMeshGPUGL::drawOpaque()
 	glDrawElements(GL_TRIANGLES, opaqueIndexCount_, GL_UNSIGNED_INT, nullptr);
 } // end of drawOpaque()
 
-void ChunkMeshGPUGL::drawWater()
+void ChunkMeshGPUGL::drawWater(const DrawContext&)
 {
 	if (waterIndexCount_ <= 0)
 	{
