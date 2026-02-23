@@ -126,6 +126,7 @@ bool VulkanMain::beginFrame(VkFrameContext& out)
 
 	// fill out frame context
 	out.cmd = cmd;
+	out.frameIndex = currentFrame_;
 	out.imageIndex = imageIndex;
 	out.swapchainImage = swapChainImages_[imageIndex];
 	out.swapchainImageView = swapChainImageViews_[imageIndex];
@@ -413,6 +414,7 @@ void VulkanMain::createLogicalDevice()
 	deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	deviceFeatures2.features.samplerAnisotropy = VK_TRUE;
 	deviceFeatures2.features.sampleRateShading = VK_TRUE;
+	deviceFeatures2.features.shaderClipDistance = VK_TRUE;
 	VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering{};
 	dynamicRendering.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
 	dynamicRendering.dynamicRendering = VK_TRUE;

@@ -12,6 +12,8 @@ struct GLFWwindow;
 struct VkFrameContext
 {
 	VkCommandBuffer cmd = VK_NULL_HANDLE;
+
+	uint32_t frameIndex = 0;
 	uint32_t imageIndex = 0;
 
 	VkImage swapchainImage = VK_NULL_HANDLE;
@@ -84,6 +86,8 @@ public:
 
 	VkImageLayout swapchainLayout(uint32_t imageIndex) const { return swapchainLayouts_[imageIndex]; }
 	void setSwapchainLayout(uint32_t imageIndex, VkImageLayout layout) { swapchainLayouts_[imageIndex] = layout; }
+
+	uint32_t maxFramesInFlight() const { return MAX_FRAMES_IN_FLIGHT; }
 
 private:
 	void createInstance();

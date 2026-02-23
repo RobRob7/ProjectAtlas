@@ -1,5 +1,10 @@
 #include "renderer_vk.h"
 
+#include "chunk_opaque_pass_vk.h"
+
+#include "chunk_manager.h"
+#include "camera.h"
+
 #include "vulkan_main.h"
 
 #include <glm/glm.hpp>
@@ -82,6 +87,9 @@ RendererVk::~RendererVk()
 void RendererVk::init()
 {
 	if (!renderSettings_) renderSettings_ = std::make_unique<RenderSettings>();
+	if (!chunkOpaque_) chunkOpaque_ = std::make_unique<ChunkOpaquePassVk>(vk_);
+
+	chunkOpaque_->init(vk_.swapChainImageFormat());
 } // end of init()
 
 void RendererVk::resize(int w, int h)
@@ -92,6 +100,14 @@ void RendererVk::resize(int w, int h)
 
 void RendererVk::renderFrame(const RenderInputs& in)
 {
+	in.world->update(in.camera->getCameraPosition());
+
+	const glm::mat4 view = in.camera->getViewMatrix();
+	const float aspect = (height_ > 0)
+		? (static_cast<float>(width_) / static_cast<float>(height_))
+		: 1.0f;
+	const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
+
 	VkFrameContext frame{};
 	if (!vk_.beginFrame(frame))
 	{
@@ -103,41 +119,43 @@ void RendererVk::renderFrame(const RenderInputs& in)
 		resize(frame.extent.width, frame.extent.height);
 	}
 
-	VkCommandBuffer cmd = frame.cmd;
+	//VkCommandBuffer cmd = frame.cmd;
 
-	VkImageLayout old = vk_.swapchainLayout(frame.imageIndex);
+	//VkImageLayout old = vk_.swapchainLayout(frame.imageIndex);
 
-	transitionSwapchainImage(cmd, frame.swapchainImage, old,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	//transitionSwapchainImage(cmd, frame.swapchainImage, old,
+	//	VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-	VkClearValue clear{};
-	clear.color.float32[0] = 0.1f;
-	clear.color.float32[1] = 0.2f;
-	clear.color.float32[2] = 0.4f;
-	clear.color.float32[3] = 1.0f;
+	//VkClearValue clear{};
+	//clear.color.float32[0] = 0.1f;
+	//clear.color.float32[1] = 0.2f;
+	//clear.color.float32[2] = 0.4f;
+	//clear.color.float32[3] = 1.0f;
 
-	VkRenderingAttachmentInfo colorAttach{ VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO };
-	colorAttach.imageView = frame.swapchainImageView;
-	colorAttach.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	colorAttach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttach.clearValue = clear;
+	//VkRenderingAttachmentInfo colorAttach{ VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO };
+	//colorAttach.imageView = frame.swapchainImageView;
+	//colorAttach.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	//colorAttach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	//colorAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	//colorAttach.clearValue = clear;
 
-	VkRenderingInfo renderingInfo{ VK_STRUCTURE_TYPE_RENDERING_INFO };
-	renderingInfo.renderArea.offset = { 0, 0 };
-	renderingInfo.renderArea.extent = frame.extent;
-	renderingInfo.layerCount = 1;
-	renderingInfo.colorAttachmentCount = 1;
-	renderingInfo.pColorAttachments = &colorAttach;
+	//VkRenderingInfo renderingInfo{ VK_STRUCTURE_TYPE_RENDERING_INFO };
+	//renderingInfo.renderArea.offset = { 0, 0 };
+	//renderingInfo.renderArea.extent = frame.extent;
+	//renderingInfo.layerCount = 1;
+	//renderingInfo.colorAttachmentCount = 1;
+	//renderingInfo.pColorAttachments = &colorAttach;
 
-	vkCmdBeginRendering(cmd, &renderingInfo);
-	vkCmdEndRendering(cmd);
+	//vkCmdBeginRendering(cmd, &renderingInfo);
+	//vkCmdEndRendering(cmd);
 
-	transitionSwapchainImage(cmd, frame.swapchainImage,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	//transitionSwapchainImage(cmd, frame.swapchainImage,
+	//	VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	//	VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-	vk_.setSwapchainLayout(frame.imageIndex, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	//vk_.setSwapchainLayout(frame.imageIndex, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+	chunkOpaque_->renderOpaque(in, frame, view, proj);
 
 	vk_.endFrame(frame);
 } // end of renderFrame()

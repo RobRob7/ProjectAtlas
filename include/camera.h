@@ -62,6 +62,8 @@ public:
 	// invert pitch
 	void invertPitch();
 
+	void onResize(int w, int h);
+
 	// mouse handlers
 	void handleMousePosition(float xpos, float ypos, bool constrainPitch = true);
 	void handleMouseScroll(float yoffset);

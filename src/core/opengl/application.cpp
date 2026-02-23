@@ -1,16 +1,17 @@
-﻿#include "application_vk.h"
+﻿#include "application.h"
 
 #include "scene.h"
-#include "renderer_vk.h"
-#include "vulkan_main.h"
+#include "renderer.h"
+#include "ui.h"
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <memory>
 #include <stdexcept>
 
 //--- PUBLIC ---//
-ApplicationVk::ApplicationVk(int width, int height)
+Application::Application(int width, int height)
 	: width_(width), height_(height)
 {
 	// intialize GLFW
@@ -19,24 +20,37 @@ ApplicationVk::ApplicationVk(int width, int height)
 		throw std::runtime_error("GLFW initialization error!");
 	}
 
+	// specify major OpenGL version
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	// specify minor OpenGL version
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	// specify OpenGL core-profile
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 	// disable top bar
 	glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 	// allow resizing
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-	// vulkan glfw
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
 	// WINDOW CREATION + CHECK
-	window_ = glfwCreateWindow(width_, height_, "Atlas", nullptr, nullptr);
+	window_ = glfwCreateWindow(width_, height_, "", nullptr, nullptr);
 	if (!window_)
 	{
 		glfwTerminate();
 		throw std::runtime_error("GLFW window creation failure!");
 	} // end if
 
+	// tell GLFW to make the context of our window the main context on the current thread
+	glfwMakeContextCurrent(window_);
+
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	// INITIALIZE GLAD + CHECK
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		throw std::runtime_error("GLAD initialization failure!");
+	} // end if
 
 	// set callbacks
 	glfwSetWindowUserPointer(window_, this);
@@ -47,11 +61,13 @@ ApplicationVk::ApplicationVk(int width, int height)
 			printf("[RESIZE] fb = %d x %d\n", width, height);
 #endif
 
-			auto* self = static_cast<ApplicationVk*>(glfwGetWindowUserPointer(window));
+			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
 			if (!self) return;
 
 			self->width_ = width;
 			self->height_ = height;
+
+			glViewport(0, 0, self->width_, self->height_);
 
 			if (self->scene_)
 			{
@@ -61,14 +77,10 @@ ApplicationVk::ApplicationVk(int width, int height)
 			{
 				self->renderer_->resize(self->width_, self->height_);
 			}
-			if (self->vk_)
-			{
-				self->vk_->notifyFramebufferResized();
-			}
 		});
 	glfwSetCursorPosCallback(window_, [](GLFWwindow* window, double xposIn, double yposIn)
 		{
-			auto* self = static_cast<ApplicationVk*>(glfwGetWindowUserPointer(window));
+			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
 			if (!self || !self->scene_) return;
 
 			self->scene_->onMouseMove(static_cast<float>(xposIn),
@@ -76,39 +88,35 @@ ApplicationVk::ApplicationVk(int width, int height)
 		});
 	glfwSetScrollCallback(window_, [](GLFWwindow* window, double xoffset, double yoffset)
 		{
-			auto* self = static_cast<ApplicationVk*>(glfwGetWindowUserPointer(window));
+			auto* self = static_cast<Application*>(glfwGetWindowUserPointer(window));
 			if (!self || !self->scene_) return;
 
 
 			self->scene_->onScroll(static_cast<float>(yoffset));
 		});
 
-	// vulkan setup
-	vk_ = std::make_unique<VulkanMain>(window_);
-	vk_->init();
+	// enable depth test
+	glEnable(GL_DEPTH_TEST);
 
 	// setup scene + renderer
 	scene_ = std::make_unique<Scene>(width_, height_);
-	renderer_ = std::make_unique<RendererVk>(*vk_);
-	scene_->init(*renderer_);
+	scene_->init();
+	renderer_ = std::make_unique<Renderer>();
+	renderer_->init();
+	renderer_->resize(width_, height_);
+
+	// setup UI
+	ui_ = std::make_unique<UI>(window_, renderer_->settings());
 } // end of constructor
 
-ApplicationVk::~ApplicationVk()
+Application::~Application()
 {
-	if (vk_)
-	{
-		vk_->waitIdle();
-		vk_.reset();
-	}
-
-	if (window_)
-	{
-		glfwDestroyWindow(window_);
-	}
+	// destroy window if still active
+	if (window_) glfwDestroyWindow(window_);
 	glfwTerminate();
 } // end of destructor
 
-void ApplicationVk::run()
+void Application::run()
 {
 	while (!glfwWindowShouldClose(window_))
 	{
@@ -131,6 +139,9 @@ void ApplicationVk::run()
 		// poll user input events
 		glfwPollEvents();
 
+		// UI init
+		ui_->init();
+
 		// process user input
 		InputState input = buildInputState();
 		scene_->update(deltaTime_, input);
@@ -140,16 +151,46 @@ void ApplicationVk::run()
 		{
 			glfwSetWindowShouldClose(window_, true);
 		}
+
+		// process UI display
+		if (input.enableImguiPressed)
+		{
+			ui_->setUIDisplayEnabled(true);
+		}
+		if (input.disableImguiPressed)
+		{
+			ui_->setUIDisplayEnabled(false);
+		}
+
+		// process camera active/inactive mouse cursor
+		if (input.enableCameraPressed)
+		{
+			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			ui_->setCameraModeUIEnabled(true);
+			ui_->setUIInputEnabled(false);
+		}
+		if (input.disableCameraPressed)
+		{
+			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			ui_->setCameraModeUIEnabled(false);
+			ui_->setUIInputEnabled(true);
+		}
 		///////////////////////////////////
 
 		// render scene
 		in_.time = static_cast<float>(glfwGetTime());
 		scene_->render(*renderer_, in_);
+
+		// draw UI
+		ui_->drawFullUI(deltaTime_, *scene_);
+
+		// swap buffers
+		glfwSwapBuffers(window_);
 	} // end while
 } // end of run()
 
 //--- PRIVATE ---//
-InputState ApplicationVk::buildInputState()
+InputState Application::buildInputState()
 {
 	// TEMP: allows keyboard inputs to change state
 	// of view mode and SSAO
