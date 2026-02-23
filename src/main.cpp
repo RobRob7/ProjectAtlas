@@ -1,4 +1,4 @@
-#include "Application.h"
+#include "application_vk.h"
 
  #include <iostream>
 
@@ -11,7 +11,7 @@ int main()
 {
 	try
 	{
-		Application app(width, height);
+		ApplicationVk app(width, height);
 		app.run();
 	}
 	catch (const std::exception& e)

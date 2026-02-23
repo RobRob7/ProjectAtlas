@@ -2,8 +2,7 @@
 #define RENDERER_H
 
 #include "i_renderer.h"
-
-#include <glm/glm.hpp>
+#include "render_settings.h"
 
 #include <cstdint>
 #include <memory>
@@ -26,49 +25,17 @@ class FogPass;
 
 struct RenderInputs;
 
-enum class DebugMode : int
-{
-	None	= 0, // '1' key
-	Normals = 1, // '2' key
-	Depth	= 2, // '3' key
-};
-
-struct FogSettings
-{
-	glm::vec3 color{ 1.0f, 1.0f, 1.0f };
-
-	float start = 50.0f;
-	float end = 500.0f;
-};
-
-struct RenderSettings
-{
-	// debug view mode
-	DebugMode debugMode = DebugMode::None;
-
-	// display options
-	bool enableVsync = true;
-
-	// graphics options
-	bool useSSAO = false;
-	bool useFXAA = false;
-	bool useFog = false;
-
-	// fog controls
-	FogSettings fogSettings;
-};
-
 class Renderer : public IRenderer
 {
 public:
 	Renderer();
-	~Renderer();
+	~Renderer() override;
 
-	void init();
-	void resize(int w, int h);
-	void renderFrame(const RenderInputs& in);
+	void init() override;
+	void resize(int w, int h) override;
+	void renderFrame(const RenderInputs& in) override;
 
-	RenderSettings& settings();
+	RenderSettings& settings() override;
 
 private:
 	void destroyGL();

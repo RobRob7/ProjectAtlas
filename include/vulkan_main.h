@@ -1,19 +1,24 @@
-#ifndef VULKANMAIN_H
-#define VULKANMAIN_H
+#ifndef VULKAN_MAIN_H
+#define VULKAN_MAIN_H
 
 #include <vulkan/vulkan.h>
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
 
 #include <vector>
 #include <cstdint>
-#include <stdexcept>
-#include <iostream>
 #include <optional>
-#include <set>
-#include<string>
-#include <algorithm>
-#include <limits>
+
+struct GLFWwindow;
+
+struct VkFrameContext
+{
+	VkCommandBuffer cmd = VK_NULL_HANDLE;
+	uint32_t imageIndex = 0;
+
+	VkImage swapchainImage = VK_NULL_HANDLE;
+	VkImageView swapchainImageView = VK_NULL_HANDLE;
+	VkExtent2D extent{};
+	VkFormat format{};
+};
 
 struct QueueFamilyIndices 
 {
@@ -40,7 +45,12 @@ public:
 	~VulkanMain();
 
 	void init();
-	void drawFrame();
+	void waitIdle() const;
+
+	bool beginFrame(VkFrameContext& out);
+	bool endFrame(const VkFrameContext& frame);
+
+	void notifyFramebufferResized() { framebufferResized_ = true; }
 
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 	void createBuffer(
@@ -57,20 +67,23 @@ public:
 
 
 
-
 	VkDevice device() const { return device_; }
 	VkPhysicalDevice physicalDevice() const { return physicalDevice_; }
-
 	VkQueue graphicsQueue() const { return graphicsQueue_; }
 	VkQueue presentQueue() const { return presentQueue_; }
+	VkCommandPool commandPool() const { return commandPool_; }
 
-	VkSwapchainKHR swapChain() const { return swapChain_; }
 	VkFormat swapChainImageFormat() const { return swapChainImageFormat_; }
 	VkExtent2D swapChainExtent() const { return swapChainExtent_; }
 	const std::vector<VkImageView>& swapChainImageViews() const { return swapChainImageViews_; }
+	const std::vector<VkImage>& swapChainImages() const { return swapChainImages_; }
 
-	VkCommandPool commandPool() const { return commandPool_; }
+	VkSwapchainKHR swapChain() const { return swapChain_; }
+
 	VkSurfaceKHR surface() const { return surface_; }
+
+	VkImageLayout swapchainLayout(uint32_t imageIndex) const { return swapchainLayouts_[imageIndex]; }
+	void setSwapchainLayout(uint32_t imageIndex, VkImageLayout layout) { swapchainLayouts_[imageIndex] = layout; }
 
 private:
 	void createInstance();
@@ -82,8 +95,12 @@ private:
 	void createImageViews();
 	void createCommandPool();
 
+	void createCommandBuffers();
+	void createSyncObjects();
+
 	void cleanup();
 	void cleanupSwapChain();
+	void recreateSwapChain();
 
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 	VkResult CreateDebugUtilsMessengerEXT(
@@ -104,6 +121,8 @@ private:
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilites);
 
+	void createPerImageSync();
+
 
 private:
 	const std::vector<const char*> validationLayers_ = {
@@ -113,6 +132,14 @@ private:
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 	bool enableValidationLayers_{ false };
+
+	bool initialized_{ false };
+
+	static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
+	bool framebufferResized_{ false };
+
+	uint32_t currentFrame_ = 0;
 
 	VkSampleCountFlagBits msaaSamples_ = VK_SAMPLE_COUNT_1_BIT;
 
@@ -133,8 +160,16 @@ private:
 	VkFormat swapChainImageFormat_;
 	VkExtent2D swapChainExtent_;
 	std::vector<VkImageView> swapChainImageViews_;
+	std::vector<VkImageLayout> swapchainLayouts_;
 
 	VkCommandPool commandPool_;
+
+	std::vector<VkCommandBuffer> commandBuffers_;
+	std::vector<VkSemaphore> imageAvailableSemaphores_;
+	std::vector<VkFence> inFlightFences_;
+
+	std::vector<VkSemaphore> renderFinishedPerImage_;
+	std::vector<VkFence> imagesInFlight_;
 };
 
 #endif

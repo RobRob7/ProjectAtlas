@@ -29,30 +29,30 @@ void Scene::init(IRenderer& renderer)
 	renderer.init();
 	renderer.resize(width_, height_);
 
-	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, CHUNK_SIZE_Y, 3.0f));
+	//camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, CHUNK_SIZE_Y, 3.0f));
 
-	skybox_ = std::make_unique<CubeMap>();
-	skybox_->init();
+	//skybox_ = std::make_unique<CubeMap>();
+	//skybox_->init();
 
-	world_ = std::make_unique<ChunkManager>();
-	world_->init(nullptr);
+	//world_ = std::make_unique<ChunkManager>();
+	//world_->init(nullptr);
 
-	crosshair_ = std::make_unique<Crosshair>();
-	crosshair_->init();
+	//crosshair_ = std::make_unique<Crosshair>();
+	//crosshair_->init();
 
-	light_ = std::make_unique<Light>(camera_->getCameraPosition() + glm::vec3(0.0f, -10.0f, 0.0f));
-	light_->init();
+	//light_ = std::make_unique<Light>(camera_->getCameraPosition() + glm::vec3(0.0f, -10.0f, 0.0f));
+	//light_->init();
 } // end of init
 
 void Scene::render(IRenderer& renderer, RenderInputs& in)
 {
-	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
+	//if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
-	in.world = world_.get();
-	in.camera = camera_.get();
-	in.light = light_.get();
-	in.skybox = skybox_.get();
-	in.crosshair = crosshair_.get();
+	//in.world = world_.get();
+	//in.camera = camera_.get();
+	//in.light = light_.get();
+	//in.skybox = skybox_.get();
+	//in.crosshair = crosshair_.get();
 
 	renderer.renderFrame(in);
 } // end of render()
