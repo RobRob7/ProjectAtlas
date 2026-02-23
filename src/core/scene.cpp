@@ -1,5 +1,7 @@
 #include "scene.h"
 
+#include "constants.h"
+
 #include "i_renderer.h"
 #include "render_inputs.h"
 
@@ -10,6 +12,8 @@
 #include "light.h"
 
 #include <glm/glm.hpp>
+
+using namespace World;
 
 //--- PUBLIC ---//
 Scene::Scene(int w, int h)
@@ -25,7 +29,7 @@ void Scene::init(IRenderer& renderer)
 	renderer.init();
 	renderer.resize(width_, height_);
 
-	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, 75.0f, 3.0f));
+	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, CHUNK_SIZE_Y, 3.0f));
 
 	skybox_ = std::make_unique<CubeMap>();
 	skybox_->init();
@@ -36,7 +40,7 @@ void Scene::init(IRenderer& renderer)
 	crosshair_ = std::make_unique<Crosshair>();
 	crosshair_->init();
 
-	light_ = std::make_unique<Light>(camera_->getCameraPosition() + glm::vec3(0.0f, 25.0f, 0.0f));
+	light_ = std::make_unique<Light>(camera_->getCameraPosition() + glm::vec3(0.0f, -10.0f, 0.0f));
 	light_->init();
 } // end of init
 

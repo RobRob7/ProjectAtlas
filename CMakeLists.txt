@@ -8,7 +8,7 @@ if(MSVC)
 endif()
 
 # project (using C++)
-project(AtlasVk LANGUAGES CXX)
+project(Atlas LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

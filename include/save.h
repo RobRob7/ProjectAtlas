@@ -10,11 +10,11 @@ struct ChunkFileHeader;
 class Save
 {
 public:
-	Save();
+	Save() = default;
 	~Save();
 
 	void saveChunkToFile(const ChunkData& chunk, const std::string_view& worldPath);
-	std::unique_ptr<ChunkData> loadChunkFromFile(int cx, int cz, const std::string_view& worldPath);
+	bool loadChunkFromFile(ChunkData& dst, int cx, int cz, const std::string_view& worldPath);
 };
 
 #endif

@@ -1,6 +1,7 @@
 #include "renderer.h"
 
-#include "shader.h"
+#include "chunk_opaque_pass_gl.h"
+
 #include "chunk_manager.h"
 #include "camera.h"
 #include "light.h"
@@ -43,6 +44,9 @@ void Renderer::init()
     if (!presentPass_) presentPass_ = std::make_unique<PresentPass>();
     if (!waterPass_)   waterPass_ = std::make_unique<WaterPass>();
 
+    if (!chunkOpaque_) chunkOpaque_ = std::make_unique<ChunkOpaquePassGL>();
+    chunkOpaque_->init();
+
 	gbuffer_->init();
 	debugPass_->init();
     ssaoPass_->init();
@@ -78,6 +82,8 @@ void Renderer::renderFrame(const RenderInputs& in)
 {
     if (!in.world || !in.camera || !in.light || !in.skybox || !in.crosshair) return;
 
+    in.world->update(in.camera->getCameraPosition());
+
     const glm::mat4 view = in.camera->getViewMatrix();
     const float aspect = (height_ > 0)
         ? (static_cast<float>(width_) / static_cast<float>(height_))
@@ -87,7 +93,7 @@ void Renderer::renderFrame(const RenderInputs& in)
 
     // --------------- PASSES --------------- //
     // gbuffer pass
-    gbuffer_->render(*in.world, view, proj);
+    gbuffer_->render(*chunkOpaque_, in, view, proj);
 
     // ssao pass
     if (renderSettings_->useSSAO)
@@ -109,13 +115,11 @@ void Renderer::renderFrame(const RenderInputs& in)
     }
 
     // water pass
-    waterPass_->render(in);
+    waterPass_->render(*chunkOpaque_, in);
     // --------------- END PASSES --------------- //
 
 
     // --------------- FORWARD RENDER --------------- //
-    in.world->update(in.camera->getCameraPosition());
-
     glBindFramebuffer(GL_FRAMEBUFFER, forwardFBO_);
     glViewport(0, 0, width_, height_);
     glEnable(GL_DEPTH_TEST);
@@ -123,18 +127,6 @@ void Renderer::renderFrame(const RenderInputs& in)
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // update uniforms of world shader
-    auto& worldShader = in.world->getOpaqueShader();
-    worldShader->use();
-    worldShader->setFloat("u_ambientStrength", in.world->getAmbientStrength());
-    worldShader->setVec3("u_viewPos", in.camera->getCameraPosition());
-    worldShader->setVec3("u_lightPos", in.light->getPosition());
-    worldShader->setVec3("u_lightColor", in.light->getColor());
-
-    // ssao
-    worldShader->setVec2("u_screenSize", glm::vec2{ width_, height_ });
-    worldShader->setBool("u_useSSAO", renderSettings_->useSSAO);
-    worldShader->setInt("u_ssao", 3);
     if (renderSettings_->useSSAO)
     {
         glBindTextureUnit(3, ssaoPass_->aoBlurTexture());
@@ -144,24 +136,6 @@ void Renderer::renderFrame(const RenderInputs& in)
         glBindTextureUnit(3, 0);
     }
 
-    // update uniforms of water shader
-    auto& waterShader = in.world->getWaterShader();
-    waterShader->use();
-    waterShader->setFloat("u_ambientStrength", in.world->getAmbientStrength());
-    waterShader->setVec3("u_viewPos", in.camera->getCameraPosition());
-    waterShader->setVec3("u_lightPos", in.light->getPosition());
-    waterShader->setVec3("u_lightColor", in.light->getColor());
-    waterShader->setFloat("u_near", in.camera->getNearPlane());
-    waterShader->setFloat("u_far", in.camera->getFarPlane());
-    waterShader->setVec2("u_screenSize", glm::vec2{ width_, height_ });
-
-    waterShader->setInt("u_reflectionTex", 4);
-    waterShader->setInt("u_refractionTex", 5);
-    waterShader->setInt("u_refractionDepthTex", 6);
-    waterShader->setInt("u_dudvTex", 7);
-    waterShader->setInt("u_normalTex", 8);
-    waterShader->setFloat("u_time", in.time);
-
     // bind textures
     glBindTextureUnit(4, waterPass_->getReflColorTex());
     glBindTextureUnit(5, waterPass_->getRefrColorTex());
@@ -169,9 +143,12 @@ void Renderer::renderFrame(const RenderInputs& in)
     glBindTextureUnit(7, waterPass_->getDuDVTex());
     glBindTextureUnit(8, waterPass_->getNormalTex());
 
+    // update opaque + water shader
+    chunkOpaque_->updateShader(in, *renderSettings_, width_, height_);
+
     // render objects (non-UI)
-    in.world->renderOpaque(view, proj);
-    in.world->renderWater(view, proj);
+    chunkOpaque_->renderOpaque(in, view, proj, width_, height_);
+    chunkOpaque_->renderWater(in, view, proj, width_, height_);
     in.light->render(view, proj);
     in.skybox->render(view, proj, in.time);
     // --------------- END FORWARD RENDER --------------- //

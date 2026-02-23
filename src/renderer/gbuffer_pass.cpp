@@ -1,7 +1,8 @@
 #include "gbuffer_pass.h"
 
+#include "chunk_opaque_pass_gl.h"
 #include "shader.h"
-#include "chunk_manager.h"
+#include "render_inputs.h"
 
 #include <glad/glad.h>
 
@@ -33,7 +34,11 @@ void GBufferPass::resize(int w, int h)
 	createTargets();
 } // end of resize()
 
-void GBufferPass::render(ChunkManager& world, const glm::mat4& view, const glm::mat4& proj)
+void GBufferPass::render(
+	ChunkOpaquePassGL& chunk,
+	const RenderInputs& in,
+	const glm::mat4& view,
+	const glm::mat4& proj)
 {
 	if (!gBufferShader_ || !fbo_ || width_ <= 0 || height_ <= 0) return;
 
@@ -44,7 +49,7 @@ void GBufferPass::render(ChunkManager& world, const glm::mat4& view, const glm::
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	world.renderOpaque(*gBufferShader_, view, proj);
+	chunk.renderOpaque(*gBufferShader_, in, view, proj, width_, height_);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 } // end of render()

@@ -10,11 +10,11 @@
 
 struct ChunkMeshData;
 
-class ChunkMeshGpuVk final : public IChunkMeshGPU
+class ChunkMeshGPUVk final : public IChunkMeshGPU
 {
 public:
-	explicit ChunkMeshGpuVk(VulkanMain& vk);
-	~ChunkMeshGpuVk() override;
+	explicit ChunkMeshGPUVk(VulkanMain& vk);
+	~ChunkMeshGPUVk() override;
 
 	void upload(const ChunkMeshData& data) override;
 	void drawOpaque() override;

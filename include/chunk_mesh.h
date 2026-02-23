@@ -12,6 +12,8 @@
 #include <optional>
 #include <functional>
 
+class IChunkMeshGPU;
+
 inline constexpr std::array<uint32_t, 6> FACE_INDICES = { 0, 1, 2, 0, 2, 3 };
 
 inline constexpr std::array<glm::vec3, 4> FACE_POS_X = { {
@@ -99,7 +101,7 @@ struct ChunkCoordHash
 class ChunkMesh
 {
 public:
-    ChunkMesh(int chunkX, int chunkY);
+    ChunkMesh(int chunkX, int chunkZ);
     ~ChunkMesh();
 
     void setBlock(int x, int y, int z, BlockID id);
@@ -109,6 +111,8 @@ public:
 
     const ChunkMeshData& data() const { return data_; }
     uint32_t getRenderedBlockCount() const { return data_.renderedBlockCount; }
+    int32_t opaqueIndexCount() const { return data_.opaqueIndexCount; }
+    int32_t waterIndexCount() const { return data_.waterIndexCount; }
 private:
     ChunkData chunkData_;
     ChunkMeshData data_;

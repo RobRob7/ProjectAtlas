@@ -1,16 +1,13 @@
 #include "chunk_manager.h"
 
-#include "shader.h"
-#include "texture.h"
-
-#include <glad/glad.h>
-#include <glm/gtc/matrix_transform.hpp>
+#include "chunk_mesh.h"
+#include "chunk_entry.h"
+#include "vulkan_main.h"
 
 #include <algorithm>
 #include <limits>
 #include <cmath>
 #include <utility>
-
 
 //--- HELPER ---//
 struct Plane
@@ -106,11 +103,7 @@ ChunkManager::~ChunkManager() = default;
 void ChunkManager::init(VulkanMain* vk)
 {
 	vk_ = vk;
-
-	opaqueShader_ = std::make_unique<Shader>("chunk/chunk.vert", "chunk/chunk.frag");
-	waterShader_ = std::make_unique<Shader>("water/water.vert", "water/water.frag");
-	atlas_ = std::make_unique<Texture>("blocks.png", true);
-} // end of initShaderTexture()
+} // end of init()
 
 void ChunkManager::update(const glm::vec3& cameraPos)
 {
@@ -178,39 +171,39 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 
 		// create chunk and upload
 		std::unique_ptr<ChunkEntry> entry = std::make_unique<ChunkEntry>(coord.x, coord.z, vk_);
-		std::unique_ptr<ChunkData> loaded = saveWorld_.loadChunkFromFile(coord.x, coord.z, "HelloWorld");
+
+		auto& chunk = entry->cpu->getChunk();
+		bool loaded = saveWorld_.loadChunkFromFile(chunk, coord.x, coord.z, "HelloWorld");
 		if (loaded)
 		{
-			//chunk->getChunk() = *loaded;
-			//chunk->rebuild();
-
-			entry->cpu->getChunk() = *loaded;
-			entry->rebuildAndUpload();
 		}
 
+		entry->rebuildAndUpload();
 		chunks_.emplace(coord, std::move(entry));
 		++built;
 	} // end while
 
 } // end of update()
 
-void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
+void ChunkManager::buildOpaqueDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out)
 {
-	opaqueShader_->use();
-	glBindTextureUnit(0, atlas_->ID());
-	opaqueShader_->setInt("u_atlas", 0);
-	opaqueShader_->setMat4("u_view", view);
-	opaqueShader_->setMat4("u_proj", proj);
+	out.clear();
+
+	frameBlocksRendered_ = 0;
+	frameChunksRendered_ = 0;
 
 	// get frustum planes
 	Frustum fr = ExtractFrustumPlanes(proj * view);
-	frameBlocksRendered_ = 0;
-	frameChunksRendered_ = 0;
-	for (auto& [coord, chunk] : chunks_)
+	for (auto& [coord, entry] : chunks_)
 	{
+		ChunkMesh* cpu = entry->cpu.get();
+
+		// skip empty meshes
+		if (cpu->opaqueIndexCount() <= 0) continue;
+
 		// chunkX, chunkZ
-		int chunkX = chunk->cpu->getChunk().m_chunkX;
-		int chunkZ = chunk->cpu->getChunk().m_chunkZ;
+		int chunkX = cpu->getChunk().m_chunkX;
+		int chunkZ = cpu->getChunk().m_chunkZ;
 		// set AABB
 		AABB box = ChunkWorldAABB(chunkX, chunkZ);
 		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
@@ -218,79 +211,52 @@ void ChunkManager::renderOpaque(const glm::mat4& view, const glm::mat4& proj)
 			continue;
 		}
 
-		// update count
-		++frameChunksRendered_;
-		frameBlocksRendered_ += chunk->cpu->getRenderedBlockCount();
+		// chunk/block count
+		frameChunksRendered_++;
+		frameBlocksRendered_ += cpu->getRenderedBlockCount();
 
-		opaqueShader_->setVec3("u_chunkOrigin", glm::vec3(chunkX * CHUNK_SIZE, 0, chunkZ * CHUNK_SIZE));
-		chunk->gpu->drawOpaque();
-	} // end for
-} // end of render()
+		ChunkDrawItem item;
+		item.chunkOrigin = glm::vec3(chunkX * CHUNK_SIZE, 0.0f, chunkZ * CHUNK_SIZE);
+		item.gpu = entry->gpu.get();
+		item.opaqueIndexCount = static_cast<uint32_t>(cpu->opaqueIndexCount());
+		item.waterIndexCount = static_cast<uint32_t>(std::max(0, cpu->waterIndexCount()));
+		item.renderedBlockCount = cpu->getRenderedBlockCount();
 
-void ChunkManager::renderOpaque(Shader& shader, const glm::mat4& view, const glm::mat4& proj)
-{
-	shader.use();
-	glBindTextureUnit(0, atlas_->ID());
-	shader.setMat4("u_view", view);
-	shader.setMat4("u_proj", proj);
+		out.items.push_back(item);
+	}
+} // end of buildOpaqueDrawList()
 
-	// get frustum planes
-	Frustum fr = ExtractFrustumPlanes(proj * view);
-	frameBlocksRendered_ = 0;
-	frameChunksRendered_ = 0;
-	for (auto& [coord, chunk] : chunks_)
+	void ChunkManager::buildWaterDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out)
 	{
-		// chunkX, chunkZ
-		int chunkX = chunk->cpu->getChunk().m_chunkX;
-		int chunkZ = chunk->cpu->getChunk().m_chunkZ;
-		// set AABB
-		AABB box = ChunkWorldAABB(chunkX, chunkZ);
-		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
+		out.clear();
+
+		// get frustum planes
+		Frustum fr = ExtractFrustumPlanes(proj * view);
+		for (auto& [coord, entry] : chunks_)
 		{
-			continue;
+			ChunkMesh* cpu = entry->cpu.get();
+
+			// skip empty meshes
+			if (cpu->waterIndexCount() <= 0) continue;
+
+			// chunkX, chunkZ
+			int chunkX = cpu->getChunk().m_chunkX;
+			int chunkZ = cpu->getChunk().m_chunkZ;
+			// set AABB
+			AABB box = ChunkWorldAABB(chunkX, chunkZ);
+			if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
+			{
+				continue;
+			}
+
+			ChunkDrawItem item;
+			item.chunkOrigin = glm::vec3(chunkX * CHUNK_SIZE, 0.0f, chunkZ * CHUNK_SIZE);
+			item.gpu = entry->gpu.get();
+			item.waterIndexCount = static_cast<uint32_t>(std::max(0, cpu->waterIndexCount()));
+
+			out.items.push_back(item);
 		}
-
-		// update count
-		++frameChunksRendered_;
-		frameBlocksRendered_ += chunk->cpu->getRenderedBlockCount();
-
-		shader.setVec3("u_chunkOrigin", glm::vec3(chunkX * CHUNK_SIZE, 0, chunkZ * CHUNK_SIZE));
-		chunk->gpu->drawOpaque();
-	} // end for
-} // end of render()
-
-void ChunkManager::renderWater(const glm::mat4& view, const glm::mat4& proj)
-{
-	waterShader_->use();
-	waterShader_->setMat4("u_view", view);
-	waterShader_->setMat4("u_proj", proj);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDepthMask(GL_FALSE);
-	glEnable(GL_DEPTH_TEST);
-
-	// get frustum planes
-	Frustum fr = ExtractFrustumPlanes(proj * view);
-	for (auto& [coord, chunk] : chunks_)
-	{
-		// set AABB
-		AABB box = ChunkWorldAABB(chunk->cpu->getChunk().m_chunkX, chunk->cpu->getChunk().m_chunkZ);
-		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
-		{
-			continue;
-		}
-
-		glm::mat4 model = glm::translate(
-			glm::mat4(1.0f),
-			glm::vec3(chunk->cpu->getChunk().m_chunkX * CHUNK_SIZE, 0.0f, chunk->cpu->getChunk().m_chunkZ * CHUNK_SIZE));
-		waterShader_->setMat4("u_model", model);
-
-		chunk->gpu->drawWater();
-	} // end for
-	glDepthMask(GL_TRUE);
-	glDisable(GL_BLEND);
-} // end of renderWater()
+	} // end of buildWaterDrawList()
 
 BlockID ChunkManager::getBlock(int wx, int wy, int wz) const
 {
@@ -360,16 +326,6 @@ void ChunkManager::setViewRadius(int r)
 {
 	viewRadius_ = std::clamp(r, MIN_RADIUS, MAX_RADIUS);
 } // end of setViewRadius()
-
-std::unique_ptr<Shader>& ChunkManager::getOpaqueShader()
-{
-	return opaqueShader_;
-} // end of getOpaqueShader()
-
-std::unique_ptr<Shader>& ChunkManager::getWaterShader()
-{
-	return waterShader_;
-} // end of getWaterShader()
 
 const glm::vec3& ChunkManager::getLastCameraPos() const
 {
