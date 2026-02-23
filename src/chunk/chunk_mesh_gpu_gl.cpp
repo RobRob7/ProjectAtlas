@@ -4,6 +4,8 @@
 
 #include <glad/glad.h>
 
+#include <iostream>
+
 //--- PUBLIC ---//
 ChunkMeshGPUGL::ChunkMeshGPUGL()
 {
@@ -124,7 +126,11 @@ void ChunkMeshGPUGL::drawOpaque()
 
 void ChunkMeshGPUGL::drawWater()
 {
-	if (waterIndexCount_ <= 0) return;
+	if (waterIndexCount_ <= 0)
+	{
+		std::cout << "NO WATER!\n";
+		return;
+	}
 	
 	glBindVertexArray(waterVao_);
 	glDrawElements(GL_TRIANGLES, waterIndexCount_, GL_UNSIGNED_INT, nullptr);

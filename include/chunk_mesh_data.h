@@ -37,6 +37,9 @@ struct ChunkMeshData
     std::vector<uint32_t> waterIndices;
     int32_t waterIndexCount = 0;
 
+    // sea level
+    int SEA_LEVEL;
+
     uint32_t renderedBlockCount = 0;
 };
 

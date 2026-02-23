@@ -1,5 +1,7 @@
 #include "chunk_data.h"
 
+#include "constants.h"
+
 #include <noise/noise.h>
  
 #include <random>
@@ -42,7 +44,7 @@ ChunkData::ChunkData(int cx, int cz)
 			{
 				if (y > height)
 				{
-					if (y <= SEA_LEVEL)
+					if (y <= World::SEA_LEVEL)
 					{
 						setBlocks(x, y, z, BlockID::Water);
 					}
@@ -53,7 +55,7 @@ ChunkData::ChunkData(int cx, int cz)
 				}
 				else if (y == height)
 				{
-					if (height < SEA_LEVEL + 2)
+					if (height < World::SEA_LEVEL + 2)
 					{
 						setBlocks(x, y, z, BlockID::Sand);
 					}
@@ -117,6 +119,7 @@ void ChunkData::loadData(std::istream& in)
 		);
 } // end of loadData()
 
+
 //--- PRIVATE ---//
 void ChunkData::setBlocks(int x, int y, int z, BlockID id)
 {
@@ -151,7 +154,7 @@ void ChunkData::setupHeightMap(int cx, int cz)
 void ChunkData::placeTree(int x, int groundY, int z)
 {
 	// should place above sea level
-	if (groundY <= SEA_LEVEL + 1)
+	if (groundY <= World::SEA_LEVEL + 1)
 	{
 		return;
 	}

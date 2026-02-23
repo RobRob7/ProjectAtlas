@@ -5,17 +5,17 @@
 #include <cstring>
 
 //--- PUBLIC ---//
-ChunkMeshGpuVk::ChunkMeshGpuVk(VulkanMain& vk)
+ChunkMeshGPUVk::ChunkMeshGPUVk(VulkanMain& vk)
 	: vk_(vk)
 {
 } // end of constructor
 
-ChunkMeshGpuVk::~ChunkMeshGpuVk()
+ChunkMeshGPUVk::~ChunkMeshGPUVk()
 {
 
 } // end of destructor
 
-void ChunkMeshGpuVk::upload(const ChunkMeshData& data)
+void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 {
 	destroyBuffers();
 
@@ -148,19 +148,19 @@ void ChunkMeshGpuVk::upload(const ChunkMeshData& data)
 
 } // end of upload()
 
-void ChunkMeshGpuVk::drawOpaque()
+void ChunkMeshGPUVk::drawOpaque()
 {
 
 } // end of drawOpaque()
 
-void ChunkMeshGpuVk::drawWater()
+void ChunkMeshGPUVk::drawWater()
 {
 
 } // end of drawWater()
 
 
 //--- PRIVATE ---//
-void ChunkMeshGpuVk::destroyBuffers()
+void ChunkMeshGPUVk::destroyBuffers()
 {
 	VkDevice device = vk_.device();
 

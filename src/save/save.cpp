@@ -18,8 +18,6 @@ struct ChunkFileHeader
 };
 
 //--- PUBLIC ---//
-Save::Save() = default;
-
 Save::~Save() = default;
 
 void Save::saveChunkToFile(const ChunkData& chunk, const std::string_view& worldPath)
@@ -60,7 +58,7 @@ void Save::saveChunkToFile(const ChunkData& chunk, const std::string_view& world
 	#endif
 } // end of saveChunkToFile()
 
-std::unique_ptr<ChunkData> Save::loadChunkFromFile(int cx, int cz, const std::string_view& worldPath)
+bool Save::loadChunkFromFile(ChunkData& dst, int cx, int cz, const std::string_view& worldPath)
 {
 	// full world dir path
 	std::filesystem::path worldDir = std::filesystem::path(SAVE_PATH) / worldPath;
@@ -72,25 +70,22 @@ std::unique_ptr<ChunkData> Save::loadChunkFromFile(int cx, int cz, const std::st
 
 	if (!std::filesystem::exists(chunkPath))
 	{
-		return nullptr;
+		return false;
 	}
 
 	std::ifstream in(chunkPath, std::ios::binary);
 	if (!in)
 	{
 		std::cerr << "Failed to open chunk file (r) at path: " << chunkPath << "\n";
-		return nullptr;
+		return false;
 	}
 
 	ChunkFileHeader header{};
 	in.read(reinterpret_cast<char*>(&header), sizeof(header));
 
-	// create chunk data
-	std::unique_ptr<ChunkData> chunk = std::make_unique<ChunkData>(cx, cz);
-
 	// load chunk from save
-	chunk->loadData(in);
+	dst.loadData(in);
 
-	chunk->m_dirty = false;
-	return chunk;
+	dst.m_dirty = false;
+	return true;
 } // end of loadChunkFromFile()

@@ -2,11 +2,12 @@
 #define CHUNKENTRY_H
 
 #include "chunk_mesh.h"
-#include "i_chunk_mesh_gpu.h"
-#include "chunk_mesh_gpu_gl.h"
 
+#include "chunk_mesh_gpu_gl.h"
 #include "chunk_mesh_gpu_vk.h"
-#include "vulkan_main.h"
+
+class IChunkMeshGPU;
+class VulkanMain;
 
 #include <memory>
 
@@ -21,7 +22,7 @@ struct ChunkEntry
 
 		if (vk)
 		{
-			gpu = std::make_unique<ChunkMeshGpuVk>(*vk);
+			gpu = std::make_unique<ChunkMeshGPUVk>(*vk);
 		}
 		else
 		{

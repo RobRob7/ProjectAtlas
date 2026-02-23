@@ -1,10 +1,11 @@
 #ifndef CHUNKMANAGER_H
 #define CHUNKMANAGER_H
 
+#include "constants.h"
+
 #include "save.h"
+#include "chunk_draw_list.h"
 #include "chunk_mesh.h"
-#include "chunk_entry.h"
-#include "vulkan_main.h"
 
 #include <glm/glm.hpp>
 
@@ -14,8 +15,10 @@
 #include <memory>
 #include <cstdint>
 
-class Shader;
-class Texture;
+struct ChunkEntry;
+class VulkanMain;
+
+using namespace World;
 
 struct BlockHit
 {
@@ -38,18 +41,15 @@ public:
 	void init(VulkanMain* vk);
 
 	void update(const glm::vec3& cameraPos);
-	void renderOpaque(const glm::mat4& view, const glm::mat4& proj);
-	void renderOpaque(Shader& shader, const glm::mat4& view, const glm::mat4& proj);
-	void renderWater(const glm::mat4& view, const glm::mat4& proj);
+
+	void buildOpaqueDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out);
+	void buildWaterDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out);
 
 	BlockID getBlock(int wx, int wy, int wz) const;
 	void setBlock(int wx, int wy, int wz, BlockID id);
 	void setLastBlockUsed(BlockID block);
 	int getViewRadius() const;
 	void setViewRadius(int r);
-
-	std::unique_ptr<Shader>& getOpaqueShader();
-	std::unique_ptr<Shader>& getWaterShader();
 
 	const glm::vec3& getLastCameraPos() const;
 
@@ -69,13 +69,6 @@ public:
 private:
 	float ambientStrength_{ 0.5f };
 	Save saveWorld_;
-
-	// opaque + water shader
-	std::unique_ptr<Shader> opaqueShader_;
-	std::unique_ptr<Shader> waterShader_;
-
-	// texture atlas
-	std::unique_ptr<Texture> atlas_;
 
 	// frustum culling toggle
 	bool enableFrustumCulling_ = true;

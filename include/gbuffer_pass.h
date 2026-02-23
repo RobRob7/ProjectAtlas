@@ -6,8 +6,11 @@
 #include <cstdint>
 #include <memory>
 
+class ChunkOpaquePassGL;
 class Shader;
 class ChunkManager;
+
+struct RenderInputs;
 
 class GBufferPass
 {
@@ -18,7 +21,11 @@ public:
 	void init();
 	void resize(int w, int h);
 
-	void render(ChunkManager& world, const glm::mat4& view, const glm::mat4& proj);
+	void render(
+		ChunkOpaquePassGL& chunk, 
+		const RenderInputs& in, 
+		const glm::mat4& view, 
+		const glm::mat4& proj);
 
 	uint32_t getNormalTexture() const;
 	uint32_t getDepthTexture() const;

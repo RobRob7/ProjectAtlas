@@ -1,7 +1,5 @@
 #include "chunk_mesh.h"
 
-#include <cstddef>
-
 //--- HELPER ---//
 // world opaque vertices
 // LAYOUT (32u bits)
@@ -38,16 +36,13 @@ static inline uint32_t PackVertexU32(
 
 
 //--- PUBLIC ---//
-ChunkMesh::ChunkMesh(int chunkX, int chunkY)
-	: chunkData_(chunkX, chunkY)
+ChunkMesh::ChunkMesh(int chunkX, int chunkZ)
+	: chunkData_(chunkX, chunkZ)
 {
 	buildChunkMesh();
-	//uploadChunkMesh();
 } // end of other constructor
 
-ChunkMesh::~ChunkMesh()
-{
-} // end of destructor
+ChunkMesh::~ChunkMesh() = default;
 
 void ChunkMesh::setBlock(int x, int y, int z, BlockID id)
 {
@@ -67,15 +62,12 @@ ChunkData& ChunkMesh::getChunk()
 void ChunkMesh::rebuild()
 {
 	buildChunkMesh();
-	//uploadChunkMesh();
 } // end of rebuild()
 
 
 //--- PRIVATE ---//
 void ChunkMesh::buildChunkMesh()
 {
-	//renderedBlockCount_ = 0;
-
 	data_.opaqueVertices.clear();
 	data_.opaqueIndices.clear();
 

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 
+class ChunkOpaquePassGL;
 class Texture;
 struct RenderInputs;
 
@@ -16,7 +17,7 @@ public:
 	void init();
 	void resize(int w, int h);
 	void destroyGL();
-	void render(const RenderInputs& in);
+	void render(ChunkOpaquePassGL& chunk, const RenderInputs& in);
 
 	uint32_t getReflColorTex() const;
 	uint32_t getRefrColorTex() const;
@@ -45,9 +46,9 @@ private:
 private:
 	void createTargets();
 	void destroyTargets();
-	void waterPass(const RenderInputs& in);
-	void waterReflectionPass(const RenderInputs& in) const;
-	void waterRefractionPass(const RenderInputs& in) const;
+	void waterPass(ChunkOpaquePassGL& chunk, const RenderInputs& in);
+	void waterReflectionPass(ChunkOpaquePassGL& chunk, const RenderInputs& in) const;
+	void waterRefractionPass(ChunkOpaquePassGL& chunk, const RenderInputs& in) const;
 };
 
 #endif
