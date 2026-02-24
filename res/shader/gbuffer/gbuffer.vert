@@ -2,9 +2,14 @@
 
 layout (location = 0) in uint combined;
 
-uniform vec3 u_chunkOrigin;
-uniform mat4 u_view;
-uniform mat4 u_proj;
+layout (std140, binding = 6) uniform UBO
+{
+	mat4 u_view;
+	mat4 u_proj;
+
+	vec3 u_chunkOrigin;
+	float _pad0;
+};
 
 // constants
 const vec3[6] normalSample =

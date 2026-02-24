@@ -21,6 +21,8 @@ void GBufferPass::init()
 	destroyGL();
 
 	gBufferShader_ = std::make_unique<Shader>("gbuffer/gbuffer.vert", "gbuffer/gbuffer.frag");
+
+	ubo_.init<sizeof(GbufferUBO)>();
 } // end of init()
 
 void GBufferPass::resize(int w, int h)
@@ -49,7 +51,13 @@ void GBufferPass::render(
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	chunk.renderOpaque(*gBufferShader_, in, view, proj, width_, height_);
+	gBufferShader_->use();
+	gbufferUBO_.u_view = view;
+	gbufferUBO_.u_proj = proj;
+	ubo_.update(&gbufferUBO_, sizeof(gbufferUBO_));
+
+	chunk.renderOpaque(*gBufferShader_, ubo_, &gbufferUBO_, sizeof(gbufferUBO_), gbufferUBO_.u_chunkOrigin,
+		in, view, proj, width_, height_);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 } // end of render()
