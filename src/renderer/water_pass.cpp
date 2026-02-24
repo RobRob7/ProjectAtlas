@@ -212,11 +212,10 @@ void WaterPass::waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) 
     glm::vec4 clipPlane{ 0, 1, 0, -(waterHeight)};
     auto& opaqueShader = chunk.getOpaqueShader();
     auto& chunkOpaqueUBO = chunk.getOpaqueUBO();
+    auto chunkOpaqueUBOCopy = chunkOpaqueUBO;
 
     opaqueShader.use();
     chunkOpaqueUBO.u_clipPlane = clipPlane;
-
-    // disable SSAO
     chunkOpaqueUBO.u_useSSAO = 0;
 
     const float aspect = (fullH_ > 0)
@@ -234,6 +233,9 @@ void WaterPass::waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) 
     // restore camera
     camera.getCameraPosition().y += distance;
     camera.invertPitch();
+
+    // restore opaque UBO
+    chunkOpaqueUBO = chunkOpaqueUBOCopy;
 } // end of waterReflectionPass()
 
 void WaterPass::waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) const
@@ -248,11 +250,10 @@ void WaterPass::waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) 
     glm::vec4 clipPlane{ 0, -1, 0, (waterHeight) };
     auto& opaqueShader = chunk.getOpaqueShader();
     auto& chunkOpaqueUBO = chunk.getOpaqueUBO();
+    auto chunkOpaqueUBOCopy = chunkOpaqueUBO;
 
     opaqueShader.use();
     chunkOpaqueUBO.u_clipPlane = clipPlane;
-
-    // disable SSAO
     chunkOpaqueUBO.u_useSSAO = 0;
 
     const glm::mat4 view = in.camera->getViewMatrix();
@@ -267,4 +268,7 @@ void WaterPass::waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) 
     // render objects (non-UI)
     chunk.renderOpaque(in, view, proj, width_, height_);
     in.light->render(view, proj);
+
+    // restore opaque UBO
+    chunkOpaqueUBO = chunkOpaqueUBOCopy;
 } // end of waterRefractionPass()
