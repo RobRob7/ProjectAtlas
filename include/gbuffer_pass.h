@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <memory>
 
-class ChunkOpaquePassGL;
+class ChunkPassGL;
 class Shader;
 class ChunkManager;
 
@@ -22,7 +22,7 @@ public:
 	void resize(int w, int h);
 
 	void render(
-		ChunkOpaquePassGL& chunk, 
+		ChunkPassGL& chunk,
 		const RenderInputs& in, 
 		const glm::mat4& view, 
 		const glm::mat4& proj);

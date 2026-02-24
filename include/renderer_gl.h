@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <memory>
 
-class ChunkOpaquePassGL;
+class ChunkPassGL;
 
 class ChunkManager;
 class Camera;
@@ -59,7 +59,7 @@ private:
 	uint32_t forwardColorTex_{};
 	uint32_t forwardDepthTex_{};
 
-	std::unique_ptr<ChunkOpaquePassGL> chunkOpaque_;
+	std::unique_ptr<ChunkPassGL> chunkPass_;
 };
 
 #endif

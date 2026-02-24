@@ -1,4 +1,4 @@
-#include "chunk_opaque_pass_gl.h"
+#include "chunk_pass_gl.h"
 
 #include "chunk_draw_list.h"
 
@@ -17,28 +17,31 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 //--- PUBLIC ---//
-ChunkOpaquePassGL::~ChunkOpaquePassGL() = default;
+ChunkPassGL::~ChunkPassGL() = default;
 
-void ChunkOpaquePassGL::init()
+void ChunkPassGL::init()
 {
 	opaqueShader_ = std::make_unique<Shader>("chunk/chunk.vert", "chunk/chunk.frag");
     waterShader_ = std::make_unique<Shader>("water/water.vert", "water/water.frag");
 	atlas_ = std::make_unique<Texture>("blocks.png", true);
+
+    uboOpaque_.init(sizeof(ChunkOpaqueUBO));
 } // end of init()
 
-void ChunkOpaquePassGL::updateShader(const RenderInputs& in, const RenderSettings& rs, const int w, const int h)
+void ChunkPassGL::updateShader(const RenderInputs& in, const RenderSettings& rs, const int w, const int h)
 {
     // update uniforms of opaque shader
     opaqueShader_->use();
-    opaqueShader_->setFloat("u_ambientStrength", in.world->getAmbientStrength());
-    opaqueShader_->setVec3("u_viewPos", in.camera->getCameraPosition());
-    opaqueShader_->setVec3("u_lightPos", in.light->getPosition());
-    opaqueShader_->setVec3("u_lightColor", in.light->getColor());
+    chunkOpaqueUBO_.u_ambientStrength = in.world->getAmbientStrength();
+    chunkOpaqueUBO_.u_viewPos = in.camera->getCameraPosition();
+    chunkOpaqueUBO_.u_lightPos = in.light->getPosition();
+    chunkOpaqueUBO_.u_lightColor = in.light->getColor();
 
     // ssao
-    opaqueShader_->setVec2("u_screenSize", glm::vec2{ w, h });
-    opaqueShader_->setBool("u_useSSAO", rs.useSSAO);
+    chunkOpaqueUBO_.u_screenSize = glm::vec2{ w, h };
+    chunkOpaqueUBO_.u_useSSAO = rs.useSSAO ? 1 : 0;
     opaqueShader_->setInt("u_ssao", 3);
+    uboOpaque_.update(&chunkOpaqueUBO_, sizeof(chunkOpaqueUBO_));
 
     // update uniforms of water shader
     waterShader_->use();
@@ -58,7 +61,7 @@ void ChunkOpaquePassGL::updateShader(const RenderInputs& in, const RenderSetting
     waterShader_->setFloat("u_time", in.time);
 } // end of updateOpaqueShader()
 
-void ChunkOpaquePassGL::renderOpaque(
+void ChunkPassGL::renderOpaque(
 	const RenderInputs& in,
 	const glm::mat4& view,
 	const glm::mat4& proj,
@@ -68,26 +71,23 @@ void ChunkOpaquePassGL::renderOpaque(
     in.world->buildOpaqueDrawList(view, proj, list);
 
     opaqueShader_->use();
-    opaqueShader_->setMat4("u_view", view);
-    opaqueShader_->setMat4("u_proj", proj);
+    chunkOpaqueUBO_.u_view = view;
+    chunkOpaqueUBO_.u_proj = proj;
+    chunkOpaqueUBO_.u_screenSize = glm::vec2{ width, height };
 
     glBindTextureUnit(0, atlas_->ID());
     opaqueShader_->setInt("u_atlas", 0);
-    //opaqueShader_->setFloat("u_ambientStrength", in.world->getAmbientStrength());
-    //opaqueShader_->setVec3("u_viewPos", in.camera->getCameraPosition());
-    //opaqueShader_->setVec3("u_lightPos", in.light->getPosition());
-    //opaqueShader_->setVec3("u_lightColor", in.light->getColor());
 
-    opaqueShader_->setVec2("u_screenSize", glm::vec2{ width, height });
     DrawContext ctx{};
     for (const auto& item : list.items)
     {
-        opaqueShader_->setVec3("u_chunkOrigin", item.chunkOrigin);
+        chunkOpaqueUBO_.u_chunkOrigin = item.chunkOrigin;
+        uboOpaque_.update(&chunkOpaqueUBO_, sizeof(chunkOpaqueUBO_));
         item.gpu->drawOpaque(ctx);
     }
 } // end of renderOpaque()
 
-void ChunkOpaquePassGL::renderOpaque(
+void ChunkPassGL::renderOpaque(
     Shader& shader,
     const RenderInputs& in,
     const glm::mat4& view,
@@ -109,7 +109,7 @@ void ChunkOpaquePassGL::renderOpaque(
     }
 } // end of renderOpaque()
 
-void ChunkOpaquePassGL::renderWater(
+void ChunkPassGL::renderWater(
     const RenderInputs& in,
     const glm::mat4& view,
     const glm::mat4& proj,
