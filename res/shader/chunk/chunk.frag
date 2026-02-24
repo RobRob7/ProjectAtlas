@@ -5,15 +5,37 @@ in vec2 TileUV;
 in vec3 FragWorldPos;
 in vec3 Normal;
 
-uniform sampler2D u_atlas;
-uniform vec3 u_viewPos;
-uniform vec3 u_lightPos;
-uniform vec3 u_lightColor;
-uniform float u_ambientStrength;
+layout (std140, binding = 0) uniform UBO
+{
+    vec3 u_chunkOrigin;
+    float _pad0;
+    mat4 u_view;
+    mat4 u_proj;
+    vec4 u_clipPlane;
 
-uniform vec2 u_screenSize;
-uniform bool u_useSSAO;
+    vec3 u_viewPos;
+    float _pad1;
+    vec3 u_lightPos;
+    float _pad2;
+    vec3 u_lightColor;
+    float u_ambientStrength;
+
+    vec2 u_screenSize;
+    int u_useSSAO;
+    int _pad3;
+};
+
+// uniform vec3 u_viewPos;
+// uniform vec3 u_lightPos;
+// uniform vec3 u_lightColor;
+// uniform float u_ambientStrength;
+
+// uniform vec2 u_screenSize;
+// uniform bool u_useSSAO;
+
+
 uniform sampler2D u_ssao;
+uniform sampler2D u_atlas;
 
 out vec4 FragColor;
 
@@ -43,7 +65,7 @@ void main()
 
     // SSAO
     float ao = 1.0;
-    if (u_useSSAO)
+    if (u_useSSAO != 0)
     {
         vec2 ssUV = gl_FragCoord.xy / u_screenSize;
         ao = texture(u_ssao, ssUV).r;

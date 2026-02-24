@@ -1,5 +1,7 @@
-#ifndef CHUNK_OPAQUE_PASS_GL_H
-#define CHUNK_OPAQUE_PASS_GL_H
+#ifndef CHUNK_PASS_GL_H
+#define CHUNK_PASS_GL_H
+
+#include "ubo_gl.h"
 
 #include "shader.h"
 #include "texture.h"
@@ -15,11 +17,31 @@ struct RenderInputs;
 struct RenderSettings;
 struct ChunkDrawList;
 
-class ChunkOpaquePassGL
+struct ChunkOpaqueUBO
+{
+	glm::vec3 u_chunkOrigin;
+	float _pad0;
+	glm::mat4 u_view;
+	glm::mat4 u_proj;
+	glm::vec4 u_clipPlane;
+
+	glm::vec3 u_viewPos;
+	float _pad1;
+	glm::vec3 u_lightPos;
+	float _pad2;
+	glm::vec3 u_lightColor;
+	float u_ambientStrength;
+
+	glm::vec2 u_screenSize;
+	int32_t u_useSSAO;
+	int32_t _pad3;
+};
+
+class ChunkPassGL
 {
 public:
-	ChunkOpaquePassGL() = default;
-	~ChunkOpaquePassGL();
+	ChunkPassGL() = default;
+	~ChunkPassGL();
 
 	void init();
 	void updateShader(const RenderInputs& in, const RenderSettings& rs, const int w, const int h);
@@ -43,11 +65,15 @@ public:
 
 	Shader& getOpaqueShader() { return *opaqueShader_; }
 	Shader& getWaterShader() { return *waterShader_; }
+	ChunkOpaqueUBO& getOpaqueUBO() { return chunkOpaqueUBO_; }
 
 private:
 	std::unique_ptr<Shader> opaqueShader_;
 	std::unique_ptr<Shader> waterShader_;
 	std::unique_ptr<Texture> atlas_;
+	UBOGL uboOpaque_{ UBOBinding::Chunk };
+	ChunkOpaqueUBO chunkOpaqueUBO_;
+
 };
 
 #endif

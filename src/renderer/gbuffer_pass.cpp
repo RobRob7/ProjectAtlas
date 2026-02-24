@@ -1,6 +1,6 @@
 #include "gbuffer_pass.h"
 
-#include "chunk_opaque_pass_gl.h"
+#include "chunk_pass_gl.h"
 #include "shader.h"
 #include "render_inputs.h"
 
@@ -35,7 +35,7 @@ void GBufferPass::resize(int w, int h)
 } // end of resize()
 
 void GBufferPass::render(
-	ChunkOpaquePassGL& chunk,
+	ChunkPassGL& chunk,
 	const RenderInputs& in,
 	const glm::mat4& view,
 	const glm::mat4& proj)

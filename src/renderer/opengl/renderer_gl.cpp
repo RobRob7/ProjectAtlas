@@ -1,6 +1,6 @@
 #include "renderer_gl.h"
 
-#include "chunk_opaque_pass_gl.h"
+#include "chunk_pass_gl.h"
 
 #include "chunk_manager.h"
 #include "camera.h"
@@ -44,8 +44,8 @@ void RendererGL::init()
     if (!presentPass_) presentPass_ = std::make_unique<PresentPass>();
     if (!waterPass_)   waterPass_ = std::make_unique<WaterPass>();
 
-    if (!chunkOpaque_) chunkOpaque_ = std::make_unique<ChunkOpaquePassGL>();
-    chunkOpaque_->init();
+    if (!chunkPass_) chunkPass_ = std::make_unique<ChunkPassGL>();
+    chunkPass_->init();
 
 	gbuffer_->init();
 	debugPass_->init();
@@ -93,7 +93,7 @@ void RendererGL::renderFrame(const RenderInputs& in)
 
     // --------------- PASSES --------------- //
     // gbuffer pass
-    gbuffer_->render(*chunkOpaque_, in, view, proj);
+    gbuffer_->render(*chunkPass_, in, view, proj);
 
     // ssao pass
     if (renderSettings_->useSSAO)
@@ -115,7 +115,7 @@ void RendererGL::renderFrame(const RenderInputs& in)
     }
 
     // water pass
-    waterPass_->render(*chunkOpaque_, in);
+    waterPass_->render(*chunkPass_, in);
     // --------------- END PASSES --------------- //
 
 
@@ -144,11 +144,11 @@ void RendererGL::renderFrame(const RenderInputs& in)
     glBindTextureUnit(8, waterPass_->getNormalTex());
 
     // update opaque + water shader
-    chunkOpaque_->updateShader(in, *renderSettings_, width_, height_);
+    chunkPass_->updateShader(in, *renderSettings_, width_, height_);
 
     // render objects (non-UI)
-    chunkOpaque_->renderOpaque(in, view, proj, width_, height_);
-    chunkOpaque_->renderWater(in, view, proj, width_, height_);
+    chunkPass_->renderOpaque(in, view, proj, width_, height_);
+    chunkPass_->renderWater(in, view, proj, width_, height_);
     in.light->render(view, proj);
     in.skybox->render(view, proj, in.time);
     // --------------- END FORWARD RENDER --------------- //

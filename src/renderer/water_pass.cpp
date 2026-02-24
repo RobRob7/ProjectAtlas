@@ -5,7 +5,7 @@
 #include "render_inputs.h"
 #include "shader.h"
 
-#include "chunk_opaque_pass_gl.h"
+#include "chunk_pass_gl.h"
 #include "camera.h"
 #include "light_gl.h"
 #include "cubemap.h"
@@ -57,7 +57,7 @@ void WaterPass::destroyGL()
     height_ = 0;
 } // end of destroyGL()
 
-void WaterPass::render(ChunkOpaquePassGL& chunk, const RenderInputs& in)
+void WaterPass::render(ChunkPassGL& chunk, const RenderInputs& in)
 {
     waterPass(chunk, in);
 } // end of render()
@@ -178,7 +178,7 @@ void WaterPass::destroyTargets()
     }
 } // end of destroyTargets()
 
-void WaterPass::waterPass(ChunkOpaquePassGL& chunk, const RenderInputs& in)
+void WaterPass::waterPass(ChunkPassGL& chunk, const RenderInputs& in)
 {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CLIP_DISTANCE0);
@@ -193,7 +193,7 @@ void WaterPass::waterPass(ChunkOpaquePassGL& chunk, const RenderInputs& in)
     glDisable(GL_CLIP_DISTANCE0);
 } // end of waterPass()
 
-void WaterPass::waterReflectionPass(ChunkOpaquePassGL& chunk, const RenderInputs& in) const
+void WaterPass::waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, reflFBO_);
     glViewport(0, 0, width_, height_);
@@ -211,18 +211,20 @@ void WaterPass::waterReflectionPass(ChunkOpaquePassGL& chunk, const RenderInputs
     // set clip plane (clip everything below water)
     glm::vec4 clipPlane{ 0, 1, 0, -(waterHeight)};
     auto& opaqueShader = chunk.getOpaqueShader();
+    auto& chunkOpaqueUBO = chunk.getOpaqueUBO();
+
     opaqueShader.use();
-    opaqueShader.setVec4("u_clipPlane", clipPlane);
+    chunkOpaqueUBO.u_clipPlane = clipPlane;
 
     // disable SSAO
-    opaqueShader.setBool("u_useSSAO", false);
+    chunkOpaqueUBO.u_useSSAO = 0;
 
     const float aspect = (fullH_ > 0)
         ? (static_cast<float>(fullW_) / static_cast<float>(fullH_))
         : 1.0f;
     const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
 
-    opaqueShader.setVec3("u_viewPos", camera.getCameraPosition());
+    chunkOpaqueUBO.u_viewPos = camera.getCameraPosition();
 
     // render objects (non-UI)
     chunk.renderOpaque(in, reflView, proj, width_, height_);
@@ -234,7 +236,7 @@ void WaterPass::waterReflectionPass(ChunkOpaquePassGL& chunk, const RenderInputs
     camera.invertPitch();
 } // end of waterReflectionPass()
 
-void WaterPass::waterRefractionPass(ChunkOpaquePassGL& chunk, const RenderInputs& in) const
+void WaterPass::waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, refrFBO_);
     glViewport(0, 0, width_, height_);
@@ -245,11 +247,13 @@ void WaterPass::waterRefractionPass(ChunkOpaquePassGL& chunk, const RenderInputs
     float waterHeight = static_cast<float>(World::SEA_LEVEL) + 0.9f;
     glm::vec4 clipPlane{ 0, -1, 0, (waterHeight) };
     auto& opaqueShader = chunk.getOpaqueShader();
+    auto& chunkOpaqueUBO = chunk.getOpaqueUBO();
+
     opaqueShader.use();
-    opaqueShader.setVec4("u_clipPlane", clipPlane);
+    chunkOpaqueUBO.u_clipPlane = clipPlane;
 
     // disable SSAO
-    opaqueShader.setBool("u_useSSAO", false);
+    chunkOpaqueUBO.u_useSSAO = 0;
 
     const glm::mat4 view = in.camera->getViewMatrix();
 
@@ -258,7 +262,7 @@ void WaterPass::waterRefractionPass(ChunkOpaquePassGL& chunk, const RenderInputs
         : 1.0f;
     const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
 
-    opaqueShader.setVec3("u_viewPos", in.camera->getCameraPosition());
+    chunkOpaqueUBO.u_viewPos = in.camera->getCameraPosition();
 
     // render objects (non-UI)
     chunk.renderOpaque(in, view, proj, width_, height_);
