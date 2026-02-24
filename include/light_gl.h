@@ -3,6 +3,8 @@
 
 #include "i_light.h"
 
+#include "ubo_gl.h"
+
 #include <cstdint>
 #include <memory>
 
@@ -33,6 +35,7 @@ private:
 	std::unique_ptr<Shader> shader_;
 	uint32_t vao_{};
 	uint32_t vbo_{};
+	UBOGL ubo_{UBOBinding::Light};
 
 	glm::vec3 position_{};
 	glm::vec3 color_{};

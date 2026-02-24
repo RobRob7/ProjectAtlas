@@ -1,5 +1,7 @@
 #include "light_gl.h"
 
+#include "ubo_bindings.h"
+
 #include "shader.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -8,75 +10,13 @@
 #include <algorithm>
 #include <cstddef>
 
-//struct VertexLight
-//{
-//	glm::vec3 pos;
-//	glm::vec3 normal;
-//	glm::vec2 uv;
-//};
-//
-//// pos, normals, texcoords
-//const std::array<float, 288> CUBE_VERTICES = {
-//	// =========================
-//	// Back face (Z-)
-//	// =========================
-//	-0.5f,-0.5f,-0.5f,   0.0f,0.0f,-1.0f,   0.0f,0.0f,
-//	 0.5f,-0.5f,-0.5f,   0.0f,0.0f,-1.0f,   1.0f,0.0f,
-//	 0.5f, 0.5f,-0.5f,   0.0f,0.0f,-1.0f,   1.0f,1.0f,
-//	 0.5f, 0.5f,-0.5f,   0.0f,0.0f,-1.0f,   1.0f,1.0f,
-//	-0.5f, 0.5f,-0.5f,   0.0f,0.0f,-1.0f,   0.0f,1.0f,
-//	-0.5f,-0.5f,-0.5f,   0.0f,0.0f,-1.0f,   0.0f,0.0f,
-//
-//	// =========================
-//	// Front face (Z+)
-//	// =========================
-//	-0.5f,-0.5f, 0.5f,   0.0f,0.0f, 1.0f,   0.0f,0.0f,
-//	 0.5f,-0.5f, 0.5f,   0.0f,0.0f, 1.0f,   1.0f,0.0f,
-//	 0.5f, 0.5f, 0.5f,   0.0f,0.0f, 1.0f,   1.0f,1.0f,
-//	 0.5f, 0.5f, 0.5f,   0.0f,0.0f, 1.0f,   1.0f,1.0f,
-//	-0.5f, 0.5f, 0.5f,   0.0f,0.0f, 1.0f,   0.0f,1.0f,
-//	-0.5f,-0.5f, 0.5f,   0.0f,0.0f, 1.0f,   0.0f,0.0f,
-//
-//	// =========================
-//	// Left face (X-)
-//	// =========================
-//	-0.5f, 0.5f, 0.5f,  -1.0f,0.0f,0.0f,   1.0f,0.0f,
-//	-0.5f, 0.5f,-0.5f,  -1.0f,0.0f,0.0f,   1.0f,1.0f,
-//	-0.5f,-0.5f,-0.5f,  -1.0f,0.0f,0.0f,   0.0f,1.0f,
-//	-0.5f,-0.5f,-0.5f,  -1.0f,0.0f,0.0f,   0.0f,1.0f,
-//	-0.5f,-0.5f, 0.5f,  -1.0f,0.0f,0.0f,   0.0f,0.0f,
-//	-0.5f, 0.5f, 0.5f,  -1.0f,0.0f,0.0f,   1.0f,0.0f,
-//
-//	// =========================
-//	// Right face (X+)
-//	// =========================
-//	 0.5f, 0.5f, 0.5f,   1.0f,0.0f,0.0f,   1.0f,0.0f,
-//	 0.5f, 0.5f,-0.5f,   1.0f,0.0f,0.0f,   1.0f,1.0f,
-//	 0.5f,-0.5f,-0.5f,   1.0f,0.0f,0.0f,   0.0f,1.0f,
-//	 0.5f,-0.5f,-0.5f,   1.0f,0.0f,0.0f,   0.0f,1.0f,
-//	 0.5f,-0.5f, 0.5f,   1.0f,0.0f,0.0f,   0.0f,0.0f,
-//	 0.5f, 0.5f, 0.5f,   1.0f,0.0f,0.0f,   1.0f,0.0f,
-//
-//	 // =========================
-//	 // Bottom face (Y-)
-//	 // =========================
-//	 -0.5f,-0.5f,-0.5f,   0.0f,-1.0f,0.0f,   0.0f,1.0f,
-//	  0.5f,-0.5f,-0.5f,   0.0f,-1.0f,0.0f,   1.0f,1.0f,
-//	  0.5f,-0.5f, 0.5f,   0.0f,-1.0f,0.0f,   1.0f,0.0f,
-//	  0.5f,-0.5f, 0.5f,   0.0f,-1.0f,0.0f,   1.0f,0.0f,
-//	 -0.5f,-0.5f, 0.5f,   0.0f,-1.0f,0.0f,   0.0f,0.0f,
-//	 -0.5f,-0.5f,-0.5f,   0.0f,-1.0f,0.0f,   0.0f,1.0f,
-//
-//	 // =========================
-//	 // Top face (Y+)
-//	 // =========================
-//	 -0.5f, 0.5f,-0.5f,   0.0f,1.0f,0.0f,   0.0f,1.0f,
-//	  0.5f, 0.5f,-0.5f,   0.0f,1.0f,0.0f,   1.0f,1.0f,
-//	  0.5f, 0.5f, 0.5f,   0.0f,1.0f,0.0f,   1.0f,0.0f,
-//	  0.5f, 0.5f, 0.5f,   0.0f,1.0f,0.0f,   1.0f,0.0f,
-//	 -0.5f, 0.5f, 0.5f,   0.0f,1.0f,0.0f,   0.0f,0.0f,
-//	 -0.5f, 0.5f,-0.5f,   0.0f,1.0f,0.0f,   0.0f,1.0f
-//};
+struct LightUBO
+{
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 proj;
+	glm::vec4 color;
+};
 
 //--- PUBLIC ---//
 LightGL::LightGL(const glm::vec3& pos, const glm::vec3& color)
@@ -111,15 +51,8 @@ void LightGL::init()
 	glVertexArrayAttribFormat(vao_, 0, 3, GL_FLOAT, GL_FALSE, offsetof(VertexLight, pos));
 	glVertexArrayAttribBinding(vao_, 0, 0);
 
-	//// normal
-	//glEnableVertexArrayAttrib(vao_, 1);
-	//glVertexArrayAttribFormat(vao_, 1, 3, GL_FLOAT, GL_FALSE, offsetof(VertexLight, normal));
-	//glVertexArrayAttribBinding(vao_, 1, 0);
-
-	//// uv
-	//glEnableVertexArrayAttrib(vao_, 2);
-	//glVertexArrayAttribFormat(vao_, 2, 2, GL_FLOAT, GL_FALSE, offsetof(VertexLight, uv));
-	//glVertexArrayAttribBinding(vao_, 2, 0);
+	// UBO
+	ubo_.init(sizeof(LightUBO));
 } // end of init()
 
 void LightGL::render(const glm::mat4& view, const glm::mat4& proj)
@@ -130,11 +63,13 @@ void LightGL::render(const glm::mat4& view, const glm::mat4& proj)
 	shader_->use();
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, position_);
-	
-	shader_->setVec3("u_color", color_);
-	shader_->setMat4("u_model", model);
-	shader_->setMat4("u_view", view);
-	shader_->setMat4("u_proj", proj);
+
+	LightUBO lightUBO{};
+	lightUBO.model = model;
+	lightUBO.view = view;
+	lightUBO.proj = proj;
+	lightUBO.color = glm::vec4(color_, 1.0f);
+	ubo_.update(&lightUBO, sizeof(lightUBO));
 
 	glBindVertexArray(vao_);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -188,4 +123,9 @@ void LightGL::destroyGL()
 		glDeleteBuffers(1, &vbo_);
 		vbo_ = 0;
 	}
+	//if (ubo_)
+	//{
+	//	glDeleteBuffers(1, &ubo_);
+	//	ubo_ = 0;
+	//}
 } // end of destroyGL()
