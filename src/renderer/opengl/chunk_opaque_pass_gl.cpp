@@ -7,11 +7,11 @@
 #include "shader.h"
 #include "texture.h"
 #include "camera.h"
-#include "light.h"
+#include "light_gl.h"
 
 #include "render_inputs.h"
 #include "chunk_manager.h"
-#include "renderer.h"
+#include "renderer_gl.h"
 
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>

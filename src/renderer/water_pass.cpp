@@ -7,7 +7,7 @@
 
 #include "chunk_opaque_pass_gl.h"
 #include "camera.h"
-#include "light.h"
+#include "light_gl.h"
 #include "cubemap.h"
 #include "texture.h"
 

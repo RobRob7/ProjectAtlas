@@ -1,5 +1,5 @@
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef SCENE_VK_H
+#define SCENE_VK_H
 
 #include "i_scene.h"
 
@@ -14,30 +14,11 @@ class ILight;
 class IRenderer;
 struct RenderInputs;
 
-//struct InputState
-//{
-//	// keys
-//	bool w = false;
-//	bool a = false;
-//	bool s = false;
-//	bool d = false;
-//	bool sprint = false;
-//
-//	// actions
-//	bool enableCameraPressed = false;
-//	bool disableCameraPressed = false;
-//	bool placeBlockPressed = false;
-//	bool removeBlockPressed = false;
-//	bool quitRequested = false;
-//	bool enableImguiPressed = false;
-//	bool disableImguiPressed = false;
-//};
-
-class Scene final : public IScene
+class SceneVk final : public IScene
 {
 public:
-	Scene(int w, int h);
-	~Scene() override;
+	SceneVk(int w, int h);
+	~SceneVk() override;
 
 	void init() override;
 

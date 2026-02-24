@@ -11,7 +11,7 @@ class ChunkOpaquePassVk;
 class ChunkManager;
 class Camera;
 class VulkanMain;
-//class Light;
+class Light;
 //class CubeMap;
 //class Crosshair;
 
@@ -37,7 +37,8 @@ private:
 
 	std::unique_ptr<RenderSettings> renderSettings_;
 
-	std::unique_ptr<ChunkOpaquePassVk> chunkOpaque_;
+	std::unique_ptr<Camera> camera_;
+	//std::unique_ptr<ChunkOpaquePassVk> chunkOpaque_;
 };
 
 #endif

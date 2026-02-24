@@ -1,10 +1,10 @@
-#include "renderer.h"
+#include "renderer_gl.h"
 
 #include "chunk_opaque_pass_gl.h"
 
 #include "chunk_manager.h"
 #include "camera.h"
-#include "light.h"
+#include "light_gl.h"
 #include "cubeMap.h"
 #include "crosshair.h"
 
@@ -23,14 +23,14 @@
 #include <stdexcept>
 
 //--- PUBLIC ---//
-Renderer::Renderer() = default;
+RendererGL::RendererGL() = default;
 
-Renderer::~Renderer()
+RendererGL::~RendererGL()
 {
     destroyGL();
 } // end of destructor
 
-void Renderer::init()
+void RendererGL::init()
 {
     destroyGL();
 
@@ -61,7 +61,7 @@ void Renderer::init()
     presentPass_->init();
 } // end of init()
 
-void Renderer::resize(int w, int h)
+void RendererGL::resize(int w, int h)
 {
     if (w <= 0 || h <= 0) return;
     if (w == width_ && h == height_) return;
@@ -78,7 +78,7 @@ void Renderer::resize(int w, int h)
     resizeForwardTargets();
 } // end of resize()
 
-void Renderer::renderFrame(const RenderInputs& in)
+void RendererGL::renderFrame(const RenderInputs& in)
 {
     if (!in.world || !in.camera || !in.light || !in.skybox || !in.crosshair) return;
 
@@ -188,14 +188,14 @@ void Renderer::renderFrame(const RenderInputs& in)
     // --------------- END UI ELEMENTS --------------- //
 } // end of renderFrame()
 
-RenderSettings& Renderer::settings()
+RenderSettings& RendererGL::settings()
 {
     return *renderSettings_;
 } // end of settings()
 
 
 //--- PRIVATE ---//
-void Renderer::destroyGL()
+void RendererGL::destroyGL()
 {
     if (forwardFBO_)
     {
@@ -216,7 +216,7 @@ void Renderer::destroyGL()
     }
 } // end of destroyGL()
 
-void Renderer::resizeForwardTargets()
+void RendererGL::resizeForwardTargets()
 {
     // recreate textures
     if (forwardColorTex_)

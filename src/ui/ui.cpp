@@ -2,11 +2,11 @@
 
 #include "texture.h"
 #include "scene.h"
-#include "renderer.h"
+#include "renderer_gl.h"
 
 #include "chunk_manager.h"
 #include "camera.h"
-#include "light.h"
+#include "light_gl.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -72,7 +72,7 @@ void UI::init()
 	ImGui::NewFrame();
 } // end of init()
 
-void UI::drawFullUI(float dt, Scene& scene)
+void UI::drawFullUI(float dt, IScene& scene)
 {
 	drawTopBar();
 
@@ -236,7 +236,7 @@ void UI::drawStatsFPS(float dt)
 	ImGui::End();
 } // end of drawStatsFPS()
 
-void UI::drawInspector(Scene& scene)
+void UI::drawInspector(IScene& scene)
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 
@@ -396,7 +396,7 @@ void UI::drawInspector(Scene& scene)
 	// ------- light -------
 	if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		Light& light = scene.getLight();
+		ILight& light = scene.getLight();
 		glm::vec3 pos = light.getPosition();
 		glm::vec3 color = light.getColor();
 
@@ -410,7 +410,7 @@ void UI::drawInspector(Scene& scene)
 		changed |= ImGui::ColorEdit3("Color##light", glm::value_ptr(color));
 		if (ImGui::Button("Reset##Color"))
 		{
-			light.setColor(glm::vec3(light.MAX_COLOR));
+			light.setColor(glm::vec3(Light_Constants::MAX_COLOR));
 		}
 
 		if (changed)
