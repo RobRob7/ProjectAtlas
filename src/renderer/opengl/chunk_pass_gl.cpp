@@ -92,6 +92,10 @@ void ChunkPassGL::renderOpaque(
 
 void ChunkPassGL::renderOpaque(
     Shader& shader,
+    UBOGL& uboGL,
+    void* ubo,
+    uint32_t uboSize,
+    glm::vec3& chunkOrigin,
     const RenderInputs& in,
     const glm::mat4& view,
     const glm::mat4& proj,
@@ -101,13 +105,12 @@ void ChunkPassGL::renderOpaque(
     in.world->buildOpaqueDrawList(view, proj, list);
 
     shader.use();
-    shader.setMat4("u_view", view);
-    shader.setMat4("u_proj", proj);
 
     DrawContext ctx{};
     for (const auto& item : list.items)
     {
-        shader.setVec3("u_chunkOrigin", item.chunkOrigin);
+        chunkOrigin = item.chunkOrigin;
+        uboGL.update(ubo, uboSize);
         item.gpu->drawOpaque(ctx);
     }
 } // end of renderOpaque()

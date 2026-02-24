@@ -83,6 +83,10 @@ public:
 		int width, int height);
 	void renderOpaque(
 		Shader& shader,
+		UBOGL& uboGL,
+		void* ubo,
+		uint32_t uboSize,
+		glm::vec3& chunkOrigin,
 		const RenderInputs& in,
 		const glm::mat4& view,
 		const glm::mat4& proj,
