@@ -1,9 +1,12 @@
 #version 430 core
 
-layout(location = 0)  in vec3 aPos;
+layout (location = 0)  in vec3 aPos;
 
-uniform mat4 u_projection;
-uniform mat4 u_view;
+layout (std140, binding = 2) uniform UBO
+{
+    mat4 u_view;
+    mat4 u_projection;
+};
 
 out vec3 TexCoords;
 
