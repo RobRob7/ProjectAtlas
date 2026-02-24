@@ -27,9 +27,9 @@ public:
 	uint32_t getNormalTex() const;
 
 private:
-	int factor_{ 1 };
-	int width_{0};
-	int height_{0};
+	int factor_{ 2 };
+	int width_{ 0 };
+	int height_{ 0 };
 	int fullW_{ 0 };
 	int fullH_{ 0 };
 

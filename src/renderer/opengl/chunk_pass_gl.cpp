@@ -25,7 +25,8 @@ void ChunkPassGL::init()
     waterShader_ = std::make_unique<Shader>("water/water.vert", "water/water.frag");
 	atlas_ = std::make_unique<Texture>("blocks.png", true);
 
-    uboOpaque_.init(sizeof(ChunkOpaqueUBO));
+    uboOpaque_.init<sizeof(ChunkOpaqueUBO)>();
+    uboWater_.init<sizeof(ChunkWaterUBO)>();
 } // end of init()
 
 void ChunkPassGL::updateShader(const RenderInputs& in, const RenderSettings& rs, const int w, const int h)
@@ -45,21 +46,23 @@ void ChunkPassGL::updateShader(const RenderInputs& in, const RenderSettings& rs,
 
     // update uniforms of water shader
     waterShader_->use();
-    waterShader_->setFloat("u_ambientStrength", in.world->getAmbientStrength());
-    waterShader_->setVec3("u_viewPos", in.camera->getCameraPosition());
-    waterShader_->setVec3("u_lightPos", in.light->getPosition());
-    waterShader_->setVec3("u_lightColor", in.light->getColor());
-    waterShader_->setFloat("u_near", in.camera->getNearPlane());
-    waterShader_->setFloat("u_far", in.camera->getFarPlane());
-    waterShader_->setVec2("u_screenSize", glm::vec2{ w, h });
+
+    chunkWaterUBO_.u_time = in.time;
+    chunkWaterUBO_.u_near = in.camera->getNearPlane();
+    chunkWaterUBO_.u_far = in.camera->getFarPlane();
+    chunkWaterUBO_.u_screenSize = glm::vec2{ w, h };
+    chunkWaterUBO_.u_viewPos = in.camera->getCameraPosition();
+    chunkWaterUBO_.u_lightPos = in.light->getPosition();
+    chunkWaterUBO_.u_lightColor = in.light->getColor();
+    chunkWaterUBO_.u_ambientStrength = in.world->getAmbientStrength();
 
     waterShader_->setInt("u_reflectionTex", 4);
     waterShader_->setInt("u_refractionTex", 5);
     waterShader_->setInt("u_refractionDepthTex", 6);
     waterShader_->setInt("u_dudvTex", 7);
     waterShader_->setInt("u_normalTex", 8);
-    waterShader_->setFloat("u_time", in.time);
-} // end of updateOpaqueShader()
+    uboWater_.update(&chunkWaterUBO_, sizeof(chunkWaterUBO_));
+} // end of updateShader()
 
 void ChunkPassGL::renderOpaque(
 	const RenderInputs& in,
@@ -119,8 +122,9 @@ void ChunkPassGL::renderWater(
     in.world->buildWaterDrawList(view, proj, list);
 
     waterShader_->use();
-    waterShader_->setMat4("u_view", view);
-    waterShader_->setMat4("u_proj", proj);
+    chunkWaterUBO_.u_view = view;
+    chunkWaterUBO_.u_proj = proj;
+    chunkWaterUBO_.u_screenSize = glm::vec2{ width, height };
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -133,7 +137,8 @@ void ChunkPassGL::renderWater(
         glm::mat4 model = glm::translate(
             glm::mat4(1.0f),
             item.chunkOrigin);
-        waterShader_->setMat4("u_model", model);
+        chunkWaterUBO_.u_model = model;
+        uboWater_.update(&chunkWaterUBO_, sizeof(chunkWaterUBO_));
         item.gpu->drawWater(ctx);
     }
 

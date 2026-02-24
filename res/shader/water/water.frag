@@ -6,25 +6,41 @@ in VS_OUT {
     vec2 waterUV;
 } fs_in;
 
+layout (std140, binding = 11) uniform UBO
+{
+    // vert
+    mat4 u_model;
+    mat4 u_view;
+    mat4 u_proj;
+
+    vec4 u_tileScale_pad;
+
+    // frag
+    float u_time;
+    float u_distortStrength;
+    float u_waveSpeed;
+    float _pad_waves;
+
+    float u_near;
+    float u_far;
+    vec2 u_screenSize;
+
+    vec3 u_viewPos;
+    int _pad0;
+
+    vec3 u_lightPos;
+    int _pad1;
+    
+    vec3 u_lightColor;
+    float u_ambientStrength;
+};
+
 uniform sampler2D u_reflectionTex;
 uniform sampler2D u_refractionTex;
 uniform sampler2D u_refractionDepthTex;
 
 uniform sampler2D u_dudvTex;
 uniform sampler2D u_normalTex;
-
-uniform float u_time;
-uniform float u_distortStrength = 8.0;
-uniform float u_waveSpeed = 0.04;
-
-uniform float u_near;
-uniform float u_far;
-uniform vec2 u_screenSize;
-
-uniform vec3 u_viewPos;
-uniform vec3 u_lightPos;
-uniform vec3 u_lightColor;
-uniform float u_ambientStrength;
 
 out vec4 FragColor;
 
@@ -38,8 +54,8 @@ float linearizeDepth(float z01)
 void main()
 {
     // [0, 1]
-    // vec2 uv = (fs_in.clipPos.xy / fs_in.clipPos.w) * 0.5 + 0.5;
-    vec2 uv = gl_FragCoord.xy / u_screenSize;
+    vec2 uv = (fs_in.clipPos.xy / fs_in.clipPos.w) * 0.5 + 0.5;
+    // vec2 uv = gl_FragCoord.xy / u_screenSize;
     uv = clamp(uv, 0.001, 0.999);
 
     // view dir
@@ -80,7 +96,7 @@ void main()
     // fade distortion near screen edges to avoid clamp seams
     vec2 border = min(uv, 1.0 - uv);
     float edge = clamp(min(border.x, border.y) / 0.03, 0.0, 1.0);
-    distortion *= edge;
+    // distortion *= edge;
 
     float refrDist = 1.0;
     vec2 refrTexCoords = uv + distortion * refrDist;
