@@ -3,14 +3,26 @@
 
 #include "ubo_bindings.h"
 
+#include <glad/glad.h>
+
 class UBOGL
 {
 public:
 	explicit UBOGL(UBOBinding binding);
 	~UBOGL();
 
-	void init(uint32_t size);
-	void update(const void* data, uint32_t size);
+	template<uint32_t Size>
+	void init()
+	{
+		static_assert(Size % 16 == 0, "UBO size must be 16-byte aligned!");
+		glCreateBuffers(1, &ubo_);
+		glNamedBufferStorage(ubo_, Size, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
+		// binding point
+		glBindBufferBase(GL_UNIFORM_BUFFER, binding_, ubo_);
+	} // end of init()
+
+	void update(const void* data, const uint32_t size);
 private:
 	uint32_t binding_;
 	uint32_t ubo_{};

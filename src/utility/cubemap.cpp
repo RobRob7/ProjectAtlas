@@ -107,7 +107,7 @@ void CubeMap::init()
 	glVertexArrayAttribBinding(vao_, 0, 0);
 
 	// UBO
-	ubo_.init(sizeof(CubemapUBO));
+	ubo_.init<sizeof(CubemapUBO)>();
 
 	shader_->use();
 	shader_->setInt("u_skybox", 0);

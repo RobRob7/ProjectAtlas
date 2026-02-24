@@ -52,7 +52,7 @@ void LightGL::init()
 	glVertexArrayAttribBinding(vao_, 0, 0);
 
 	// UBO
-	ubo_.init(sizeof(LightUBO));
+	ubo_.init<sizeof(LightUBO)>();
 } // end of init()
 
 void LightGL::render(const glm::mat4& view, const glm::mat4& proj)

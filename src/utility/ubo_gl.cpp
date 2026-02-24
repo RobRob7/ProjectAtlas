@@ -1,6 +1,6 @@
 #include "ubo_gl.h"
 
-#include <glad/glad.h>
+#include <stdexcept>
 
 //--- PUBLIC ---//
 UBOGL::UBOGL(UBOBinding binding)
@@ -17,16 +17,11 @@ UBOGL::~UBOGL()
 	}
 } // end of destructor
 
-void UBOGL::init(uint32_t size)
+void UBOGL::update(const void* data, const uint32_t size)
 {
-	glCreateBuffers(1, &ubo_);
-	glNamedBufferStorage(ubo_, size, nullptr, GL_DYNAMIC_STORAGE_BIT);
-
-	// binding point
-	glBindBufferBase(GL_UNIFORM_BUFFER, binding_, ubo_);
-} // end of init()
-
-void UBOGL::update(const void* data, uint32_t size)
-{
+	if (!ubo_)
+	{
+		throw std::runtime_error("UBOGL::UPDATE MUST CALL INIT() first!");
+	}
 	glNamedBufferSubData(ubo_, 0, size, data);
 } // end of update()
