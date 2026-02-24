@@ -8,6 +8,7 @@
 #include <string>
 #include <algorithm>
 #include <limits>
+#include <filesystem>
 
 //--- HELPER ---//
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(

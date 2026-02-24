@@ -1,10 +1,12 @@
 #ifndef UI_H
 #define UI_H
 
+#include "i_scene.h"
+
 #include <memory>
 
 class Texture;
-class Scene;
+//class Scene;
 struct GLFWwindow;
 struct RenderSettings;
 
@@ -18,7 +20,7 @@ public:
 	~UI();
 
 	void init();
-	void drawFullUI(float dt, Scene& scene);
+	void drawFullUI(float dt, IScene& scene);
 	void setUIInputEnabled(bool enabled);
 	void setUIDisplayEnabled(bool enabled);
 	void setCameraModeUIEnabled(bool enabled);
@@ -26,7 +28,7 @@ public:
 private:
 	void drawTopBar();
 	void drawStatsFPS(float dt);
-	void drawInspector(Scene& scene);
+	void drawInspector(IScene& scene);
 private:
 	GLFWwindow* window_;
 	RenderSettings& renderSettings_;

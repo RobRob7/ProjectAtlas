@@ -2,25 +2,40 @@
 #define APPLICATION_H
 
 #include "render_inputs.h"
+#include "i_renderer.h"
+#include "i_scene.h"
 
 #include <memory>
 
 struct GLFWwindow;
 
-class Scene;
-class Renderer;
+class OpenGLMain;
+class VulkanMain;
+
+//class Scene;
+//class SceneVk;
 class UI;
 struct InputState;
+
+enum class Backend
+{
+	OpenGL,
+	Vulkan,
+	DX12
+};
 
 class Application
 {
 public:
-	Application(int width, int height);
+	Application(int width, int height, Backend backend);
 	~Application();
 
 	void run();
 
 private:
+	void setCallbacks();
+	void initWindowGL();
+	void initWindowVk();
 	InputState buildInputState();
 private:
 	RenderInputs in_;
@@ -43,8 +58,12 @@ private:
 	// auto save time threshold (in min)
 	float autoSaveTime_ = 5;
 
-	std::unique_ptr<Scene> scene_;
-	std::unique_ptr<Renderer> renderer_;
+	Backend backend_;
+	std::unique_ptr<OpenGLMain> openglMain_;
+	std::unique_ptr<VulkanMain> vulkanMain_;
+
+	std::unique_ptr<IScene> scene_;
+	std::unique_ptr<IRenderer> renderer_;
 	std::unique_ptr<UI> ui_;
 };
 #endif

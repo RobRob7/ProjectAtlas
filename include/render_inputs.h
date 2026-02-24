@@ -1,17 +1,17 @@
-#ifndef RENDERINPUTS_H
-#define RENDERINPUTS_H
+#ifndef RENDER_INPUTS_H
+#define RENDER_INPUTS_H
 
-class ChunkManager;
 class Camera;
-class Light;
+class ChunkManager;
+class ILight;
 class CubeMap;
 class Crosshair;
 
 struct RenderInputs
 {
-	ChunkManager* world = nullptr;
 	Camera* camera = nullptr;
-	Light* light = nullptr;
+	ChunkManager* world = nullptr;
+	ILight* light = nullptr;
 	CubeMap* skybox = nullptr;
 	Crosshair* crosshair = nullptr;
 

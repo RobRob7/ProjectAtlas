@@ -1,8 +1,7 @@
 #ifndef I_RENDERER_H
 #define I_RENDERER_H
 
-#include "render_inputs.h"
-
+struct RenderInputs;
 struct RenderSettings;
 
 class IRenderer

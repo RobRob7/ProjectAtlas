@@ -1,5 +1,5 @@
-#ifndef RENDERER_H
-#define RENDERER_H
+#ifndef RENDERER_GL_H
+#define RENDERER_GL_H
 
 #include "i_renderer.h"
 #include "render_settings.h"
@@ -25,11 +25,11 @@ class FogPass;
 
 struct RenderInputs;
 
-class Renderer : public IRenderer
+class RendererGL : public IRenderer
 {
 public:
-	Renderer();
-	~Renderer() override;
+	RendererGL();
+	~RendererGL() override;
 
 	void init() override;
 	void resize(int w, int h) override;

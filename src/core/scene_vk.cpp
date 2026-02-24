@@ -1,4 +1,4 @@
-#include "scene.h"
+#include "scene_vk.h"
 
 #include "constants.h"
 
@@ -16,33 +16,33 @@
 using namespace World;
 
 //--- PUBLIC ---//
-Scene::Scene(int w, int h)
+SceneVk::SceneVk(int w, int h)
 	: width_(w), height_(h)
 {
 } // end of constuctor
 
-Scene::~Scene() = default;
+SceneVk::~SceneVk() = default;
 
-void Scene::init()
+void SceneVk::init()
 {
-	world_ = std::make_unique<ChunkManager>();
-	world_->init(nullptr);
+	//world_ = std::make_unique<ChunkManager>();
+	//world_->init(nullptr);
 
 	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, CHUNK_SIZE_Y, 3.0f));
 
-	light_ = std::make_unique<LightGL>(camera_->getCameraPosition() + glm::vec3(0.0f, -10.0f, 0.0f));
-	light_->init();
+	//light_ = std::make_unique<LightGL>(camera_->getCameraPosition() + glm::vec3(0.0f, -10.0f, 0.0f));
+	//light_->init();
 
-	skybox_ = std::make_unique<CubeMap>();
-	skybox_->init();
+	//skybox_ = std::make_unique<CubeMap>();
+	//skybox_->init();
 
-	crosshair_ = std::make_unique<Crosshair>();
-	crosshair_->init();
+	//crosshair_ = std::make_unique<Crosshair>();
+	//crosshair_->init();
 } // end of init
 
-void Scene::render(IRenderer& renderer, RenderInputs& in)
+void SceneVk::render(IRenderer& renderer, RenderInputs& in)
 {
-	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
+	//if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
 	in.world = world_.get();
 	in.camera = camera_.get();
@@ -53,7 +53,7 @@ void Scene::render(IRenderer& renderer, RenderInputs& in)
 	renderer.renderFrame(in);
 } // end of render()
 
-void Scene::update(float dt, const InputState& in)
+void SceneVk::update(float dt, const InputState& in)
 {
 	if (!camera_ || !world_) return;
 
@@ -99,7 +99,7 @@ void Scene::update(float dt, const InputState& in)
 	}
 } // end of update()
 
-void Scene::onResize(int w, int h)
+void SceneVk::onResize(int w, int h)
 {
 	width_ = w;
 	height_ = h;
@@ -110,7 +110,7 @@ void Scene::onResize(int w, int h)
 	}
 } // end of onResize()
 
-void Scene::onMouseMove(float x, float y)
+void SceneVk::onMouseMove(float x, float y)
 {
 	if (camera_ && camera_->isEnabled())
 	{
@@ -118,7 +118,7 @@ void Scene::onMouseMove(float x, float y)
 	}
 } // end of onMouseMove()
 
-void Scene::onScroll(float yoffset)
+void SceneVk::onScroll(float yoffset)
 {
 	if (camera_ && camera_->isEnabled())
 	{
@@ -126,7 +126,7 @@ void Scene::onScroll(float yoffset)
 	}
 } // end of onScroll()
 
-void Scene::requestSave()
+void SceneVk::requestSave()
 {
 	if (world_)
 	{
@@ -134,22 +134,22 @@ void Scene::requestSave()
 	}
 } // end of requestSave()
 
-Camera& Scene::getCamera()
+Camera& SceneVk::getCamera()
 {
 	return *camera_;
 } // end of getCamera()
 
-CubeMap& Scene::getSkybox()
+CubeMap& SceneVk::getSkybox()
 {
 	return *skybox_;
 } // end of getSkybox()
 
-ChunkManager& Scene::getWorld()
+ChunkManager& SceneVk::getWorld()
 {
 	return *world_;
 } // end of getWorld()
 
-ILight& Scene::getLight()
+ILight& SceneVk::getLight()
 {
 	return *light_;
 } // end of getLight()

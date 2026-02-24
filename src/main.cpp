@@ -1,4 +1,3 @@
-#include "application_vk.h"
 #include "application.h"
 
  #include <iostream>
@@ -12,7 +11,7 @@ int main()
 {
 	try
 	{
-		ApplicationVk app(width, height);
+		Application app(width, height, Backend::OpenGL);
 		app.run();
 	}
 	catch (const std::exception& e)
