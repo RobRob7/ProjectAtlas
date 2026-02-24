@@ -84,6 +84,9 @@ void RendererGL::renderFrame(const RenderInputs& in)
 
     in.world->update(in.camera->getCameraPosition());
 
+    // update opaque + water shader
+    chunkPass_->updateShader(in, *renderSettings_, width_, height_);
+
     const glm::mat4 view = in.camera->getViewMatrix();
     const float aspect = (height_ > 0)
         ? (static_cast<float>(width_) / static_cast<float>(height_))
@@ -142,9 +145,6 @@ void RendererGL::renderFrame(const RenderInputs& in)
     glBindTextureUnit(6, waterPass_->getRefrDepthTex());
     glBindTextureUnit(7, waterPass_->getDuDVTex());
     glBindTextureUnit(8, waterPass_->getNormalTex());
-
-    // update opaque + water shader
-    chunkPass_->updateShader(in, *renderSettings_, width_, height_);
 
     // render objects (non-UI)
     chunkPass_->renderOpaque(in, view, proj, width_, height_);
