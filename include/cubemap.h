@@ -1,6 +1,8 @@
 #ifndef CUBEMAP_H
 #define CUBEMAP_H
 
+#include "ubo_gl.h"
+
 #include <glm/glm.hpp>
 
 #include <string_view>
@@ -28,19 +30,17 @@ public:
     void init();
 
     // render cubemap
-    void render(const glm::mat4& view, const glm::mat4& projection, const float time = -1.0) const;
+    void render(const glm::mat4& view, const glm::mat4& projection, const float time = -1.0);
 
 private:
     void destroyGL();
 private:
-    // cubemap shader
     std::unique_ptr<Shader> shader_;
-    // cubemap texture
     std::unique_ptr<Texture> texture_;
 
-    // cubemap VAO, VBO
     uint32_t vao_{};
     uint32_t vbo_{};
+    UBOGL ubo_{ UBOBinding::Cubemap };
 
     std::array<std::string_view, 6> faces_;
 };

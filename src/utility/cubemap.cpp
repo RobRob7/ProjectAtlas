@@ -1,5 +1,7 @@
 #include "cubemap.h"
 
+#include "ubo_bindings.h"
+
 #include "texture.h"
 #include "shader.h"
 
@@ -7,6 +9,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
+
+struct CubemapUBO
+{
+	glm::mat4 view;
+	glm::mat4 proj;
+};
 
 const std::array<float, 108> SkyboxVertices =
 {
@@ -93,17 +101,20 @@ void CubeMap::init()
 	// attach vbo to vao
 	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, 3 * sizeof(float));
 
-	// pos attribute = 0
+	// pos attribute
 	glEnableVertexArrayAttrib(vao_, 0);
 	glVertexArrayAttribFormat(vao_, 0, 3, GL_FLOAT, GL_FALSE, 0);
 	glVertexArrayAttribBinding(vao_, 0, 0);
 
+	// UBO
+	ubo_.init(sizeof(CubemapUBO));
+
 	shader_->use();
-	shader_->setInt("skybox", 0);
+	shader_->setInt("u_skybox", 0);
 } // end of init()
 
 // render cubemap
-void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const float time) const
+void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const float time)
 {
 	if (!shader_ || !texture_ || vao_ == 0)
 		return;
@@ -129,16 +140,16 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 	glDepthMask(GL_FALSE);
 
 	shader_->use();
-	shader_->setMat4("u_view", viewStrippedTranslation);
-	shader_->setMat4("u_projection", projection);
+	CubemapUBO cubemapUBO{};
+	cubemapUBO.view = viewStrippedTranslation;
+	cubemapUBO.proj = projection;
+	ubo_.update(&cubemapUBO, sizeof(cubemapUBO));
 
 	glBindVertexArray(vao_);
 	glBindTextureUnit(0, texture_->ID());
 
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 
-	//glDepthMask(GL_TRUE);
-	//glDepthFunc(GL_LESS);
 	glDepthMask(prevMask);
 	glDepthFunc(prevFunc);
 } // end of render()
