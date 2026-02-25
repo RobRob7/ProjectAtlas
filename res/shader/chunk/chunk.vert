@@ -2,18 +2,24 @@
 
 layout (location = 0) in uint combined;
 
-layout (std140, binding = 0) uniform UBO
+layout (std140, set = 0, binding = 0) uniform UBO
 {
+    // vert
     vec3 u_chunkOrigin;
     float _pad0;
+
     mat4 u_view;
     mat4 u_proj;
+
     vec4 u_clipPlane;
 
+    // frag
     vec3 u_viewPos;
     float _pad1;
+
     vec3 u_lightPos;
     float _pad2;
+
     vec3 u_lightColor;
     float u_ambientStrength;
 
@@ -21,11 +27,6 @@ layout (std140, binding = 0) uniform UBO
     int u_useSSAO;
     int _pad3;
 };
-
-// uniform vec3 u_chunkOrigin;
-// uniform mat4 u_view;
-// uniform mat4 u_proj;
-// uniform vec4 u_clipPlane;
 
 flat out uvec2 Tile;
 out vec2 TileUV;

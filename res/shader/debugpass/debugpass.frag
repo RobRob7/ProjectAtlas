@@ -2,12 +2,16 @@
 
 in vec2 vUV;
 
-uniform sampler2D u_normal;
-uniform sampler2D u_depth;
+layout (std140, binding = 3) uniform UBO
+{
+    int u_mode;
+    float u_near;
+    float u_far;
+    float _pad0;
+};
 
-uniform int u_mode;
-uniform float u_near;
-uniform float u_far;
+layout (binding = 0) uniform sampler2D u_gNormal;
+layout (binding = 1) uniform sampler2D u_gDepth;
 
 out vec4 FragColor;
 
@@ -22,7 +26,7 @@ void main()
     // normal
     if (u_mode == 1)
     {
-        vec3 n = texture(u_normal, vUV).xyz;
+        vec3 n = texture(u_gNormal, vUV).xyz;
         FragColor = vec4(n * 0.5 + 0.5, 1.0);
         return;
     }
@@ -30,7 +34,7 @@ void main()
     // depth
     if (u_mode == 2)
     {
-        float d = texture(u_depth, vUV).r;
+        float d = texture(u_gDepth, vUV).r;
         float lin = LinearizeDepth(d);
 
         // visualize depth

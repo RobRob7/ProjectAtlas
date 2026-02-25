@@ -1,5 +1,6 @@
 #include "cubemap.h"
 
+#include "texture_bindings.h"
 #include "ubo_bindings.h"
 
 #include "texture.h"
@@ -108,9 +109,6 @@ void CubeMap::init()
 
 	// UBO
 	ubo_.init<sizeof(CubemapUBO)>();
-
-	shader_->use();
-	shader_->setInt("u_skybox", 0);
 } // end of init()
 
 // render cubemap
@@ -144,9 +142,9 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 	cubemapUBO.view = viewStrippedTranslation;
 	cubemapUBO.proj = projection;
 	ubo_.update(&cubemapUBO, sizeof(cubemapUBO));
+	glBindTextureUnit(TO_API_FORM(TextureBinding::CubemapTex), texture_->ID());
 
 	glBindVertexArray(vao_);
-	glBindTextureUnit(0, texture_->ID());
 
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 

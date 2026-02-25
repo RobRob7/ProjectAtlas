@@ -1,5 +1,5 @@
-#ifndef GBUFFERPASS_H
-#define GBUFFERPASS_H
+#ifndef GBUFFER_PASS_H
+#define GBUFFER_PASS_H
 
 #include "ubo_gl.h"
 

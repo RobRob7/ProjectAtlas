@@ -1,5 +1,5 @@
-#ifndef CHUNKMANAGER_H
-#define CHUNKMANAGER_H
+#ifndef CHUNK_MANAGER_H
+#define CHUNK_MANAGER_H
 
 #include "constants.h"
 

@@ -5,18 +5,24 @@ in vec2 TileUV;
 in vec3 FragWorldPos;
 in vec3 Normal;
 
-layout (std140, binding = 0) uniform UBO
+layout (std140, set = 0, binding = 0) uniform UBO
 {
+    // vert
     vec3 u_chunkOrigin;
     float _pad0;
+
     mat4 u_view;
     mat4 u_proj;
+
     vec4 u_clipPlane;
 
+    // frag
     vec3 u_viewPos;
     float _pad1;
+
     vec3 u_lightPos;
     float _pad2;
+
     vec3 u_lightColor;
     float u_ambientStrength;
 
@@ -25,17 +31,8 @@ layout (std140, binding = 0) uniform UBO
     int _pad3;
 };
 
-// uniform vec3 u_viewPos;
-// uniform vec3 u_lightPos;
-// uniform vec3 u_lightColor;
-// uniform float u_ambientStrength;
-
-// uniform vec2 u_screenSize;
-// uniform bool u_useSSAO;
-
-
-uniform sampler2D u_ssao;
-uniform sampler2D u_atlas;
+layout (binding = 4) uniform sampler2D u_atlasTex;
+layout (binding = 7) uniform sampler2D u_ssaoRaw;
 
 out vec4 FragColor;
 
@@ -54,7 +51,7 @@ void main()
     vec2 local = fract(TileUV);
     vec2 uv = atlasUV(Tile, local);
 
-    vec4 texColor = texture(u_atlas, uv);
+    vec4 texColor = texture(u_atlasTex, uv);
 
     // allow textures to be see-through
     // (like tree canopy texture)
@@ -68,7 +65,7 @@ void main()
     if (u_useSSAO != 0)
     {
         vec2 ssUV = gl_FragCoord.xy / u_screenSize;
-        ao = texture(u_ssao, ssUV).r;
+        ao = texture(u_ssaoRaw, ssUV).r;
     }
 
     // add attenuation

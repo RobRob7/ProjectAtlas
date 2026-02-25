@@ -19,16 +19,22 @@ struct ChunkDrawList;
 
 struct ChunkOpaqueUBO
 {
+	// vert
 	glm::vec3 u_chunkOrigin;
 	float _pad0;
+
 	glm::mat4 u_view;
 	glm::mat4 u_proj;
+
+	// frag
 	glm::vec4 u_clipPlane;
 
 	glm::vec3 u_viewPos;
 	float _pad1;
+
 	glm::vec3 u_lightPos;
 	float _pad2;
+
 	glm::vec3 u_lightColor;
 	float u_ambientStrength;
 

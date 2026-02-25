@@ -1,5 +1,7 @@
 #include "water_pass.h"
 
+#include "texture_bindings.h"
+
 #include "constants.h"
 
 #include "render_inputs.h"
@@ -59,6 +61,13 @@ void WaterPass::destroyGL()
 
 void WaterPass::render(ChunkPassGL& chunk, const RenderInputs& in)
 {
+    // bind textures
+    glBindTextureUnit(TO_API_FORM(TextureBinding::WaterReflColorTex), getReflColorTex());
+    glBindTextureUnit(TO_API_FORM(TextureBinding::WaterRefrColorTex), getRefrColorTex());
+    glBindTextureUnit(TO_API_FORM(TextureBinding::WaterRefrDepthTex), getRefrDepthTex());
+    glBindTextureUnit(TO_API_FORM(TextureBinding::DudvTex), getDuDVTex());
+    glBindTextureUnit(TO_API_FORM(TextureBinding::WaterNormalTex), getNormalTex());
+
     waterPass(chunk, in);
 } // end of render()
 

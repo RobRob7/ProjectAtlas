@@ -1,5 +1,5 @@
-#ifndef CHUNKMESHDATA_H
-#define CHUNKMESHDATA_H
+#ifndef CHUNK_MESH_DATA_H
+#define CHUNK_MESH_DATA_H
 
 #include <glm/glm.hpp>
 
