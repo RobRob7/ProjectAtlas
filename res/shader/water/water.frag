@@ -160,9 +160,9 @@ void main()
 
     // SPECULAR
     vec3 H = normalize(L + V);
-    float shininess = 16.0;
+    float shininess = 32.0;
     float spec = pow(max(dot(N, H), 0.0), shininess);
-    float specStrength = 0.50;
+    float specStrength = 0.30;
     vec3 specular = u_lightColor * spec * specStrength;
 
     // output color
