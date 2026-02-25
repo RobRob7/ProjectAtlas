@@ -24,6 +24,8 @@ void FXAAPass::init()
 	shader_->use();
 	shader_->setInt("u_sceneColorTex", 0);
 
+	ubo_.init<sizeof(FXAAPassUBO)>();
+
 	glCreateVertexArrays(1, &fsVao_);
 } // end of init()
 
@@ -40,9 +42,6 @@ void FXAAPass::resize(int w, int h)
 	width_ = w;
 	height_ = h;
 	createTargets();
-
-	shader_->use();
-	shader_->setVec2("u_inverseScreenSize", glm::vec2(1.0f / static_cast<float>(width_), 1.0f / static_cast<float>(height_)));
 } // end of resize()
 
 void FXAAPass::render(uint32_t sceneColorTex)
@@ -59,9 +58,11 @@ void FXAAPass::render(uint32_t sceneColorTex)
 	glBindVertexArray(fsVao_);
 
 	shader_->use();
-	shader_->setFloat("u_edgeSharpnessQuality", edgeSharpnessQuality_);
-	shader_->setFloat("u_edgeThresholdMax", edgeThresholdMax_);
-	shader_->setFloat("u_edgeThresholdMin", edgeThresholdMin_);
+	fxaaPassUBO_.u_inverseScreenSize = glm::vec2(1.0f / static_cast<float>(width_), 1.0f / static_cast<float>(height_));
+	fxaaPassUBO_.u_edgeSharpnessQuality = edgeSharpnessQuality_;
+	fxaaPassUBO_.u_edgeThresholdMax = edgeThresholdMax_;
+	fxaaPassUBO_.u_edgeThresholdMin = edgeThresholdMin_;
+	ubo_.update(&fxaaPassUBO_, sizeof(fxaaPassUBO_));
 
 	glBindTextureUnit(0, sceneColorTex);
 

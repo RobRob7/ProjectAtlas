@@ -2,12 +2,18 @@
 
 in vec2 vUV;
 
-uniform sampler2D u_sceneColorTex;
-uniform vec2 u_inverseScreenSize;
+layout (std140, binding = 5) uniform UBO
+{
+    vec2 u_inverseScreenSize;
+    float u_edgeSharpnessQuality;
+    float u_edgeThresholdMax;
 
-uniform float u_edgeSharpnessQuality;
-uniform float u_edgeThresholdMax;
-uniform float u_edgeThresholdMin;
+    float u_edgeThresholdMin;
+    float _pad0;
+    vec2 _pad1;
+};
+
+uniform sampler2D u_sceneColorTex;
 
 out vec4 FragColor;
 

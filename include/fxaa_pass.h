@@ -1,8 +1,23 @@
 #ifndef FXAAPASS_H
 #define FXAAPASS_H
 
+#include "ubo_gl.h"
+
+#include <glm/glm.hpp>
+
 #include <cstdint>
 #include <memory>
+
+struct FXAAPassUBO
+{
+    glm::vec2 u_inverseScreenSize;
+    float u_edgeSharpnessQuality;
+    float u_edgeThresholdMax;
+
+    float u_edgeThresholdMin;
+    float _pad0;
+    glm::vec2 _pad1;
+};
 
 class Shader;
 
@@ -35,6 +50,9 @@ private:
     uint32_t fxaaColorTex_{};
 
     std::unique_ptr<Shader> shader_;
+
+    UBOGL ubo_{ UBOBinding::FXAAPass };
+    FXAAPassUBO fxaaPassUBO_;
 private:
     void createTargets();
     void destroyTargets();
