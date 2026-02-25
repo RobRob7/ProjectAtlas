@@ -1,10 +1,10 @@
 #version 430 core
 
-in vec3 TexCoords;
-
-out vec4 FragColor;
+layout (location = 0) in vec3 TexCoords;
 
 layout (binding = 13) uniform samplerCube u_skyboxTex;
+
+layout (location = 0) out vec4 FragColor;
 
 void main()
 {

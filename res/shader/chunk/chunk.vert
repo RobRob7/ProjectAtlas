@@ -28,10 +28,10 @@ layout (std140, set = 0, binding = 0) uniform UBO
     int _pad3;
 };
 
-flat out uvec2 Tile;
-out vec2 TileUV;
-out vec3 FragWorldPos;
-out vec3 Normal;
+layout (location = 0) flat out uvec2 Tile;
+layout (location = 1) out vec2 TileUV;
+layout (location = 2) out vec3 FragWorldPos;
+layout (location = 3) out vec3 Normal;
 
 const vec3[6] normalSample =
 {

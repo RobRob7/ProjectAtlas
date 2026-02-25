@@ -1,9 +1,9 @@
 #version 460 core
 
-flat in uvec2 Tile;
-in vec2 TileUV;
-in vec3 FragWorldPos;
-in vec3 Normal;
+layout (location = 0) flat in uvec2 Tile;
+layout (location = 1) in vec2 TileUV;
+layout (location = 2) in vec3 FragWorldPos;
+layout (location = 3) in vec3 Normal;
 
 layout (std140, set = 0, binding = 0) uniform UBO
 {
@@ -34,7 +34,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
 layout (binding = 4) uniform sampler2D u_atlasTex;
 layout (binding = 7) uniform sampler2D u_ssaoRaw;
 
-out vec4 FragColor;
+layout(location = 0) out vec4 FragColor;
 
 const float ATLAS_COLS = 32.0;
 const float ATLAS_ROWS = 32.0;

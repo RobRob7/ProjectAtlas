@@ -27,20 +27,32 @@ static void RunShaderCompilerScript()
 	fs::path shaderRoot = buildDir / "res" / "shader";
 
 	if (!fs::exists(scriptPath))
+	{
 		throw std::runtime_error("Missing script: " + scriptPath.string());
+	}
 	if (!fs::exists(shaderRoot))
+	{
 		throw std::runtime_error("Missing shader folder: " + shaderRoot.string());
+	}
 
 	const std::string pythonExe = "python";
 
+#ifdef _DEBUG
+	const std::string buildMode = "debug";
+#else
+	const std::string buildMode = "release";
+#endif
+
 	std::string cmd =
-		pythonExe + " \"" + scriptPath.string() + "\" \"" + shaderRoot.string() + "\"";
+		pythonExe + " \"" + scriptPath.string() + "\" \"" + shaderRoot.string() + "\" " + buildMode;
 
 	//std::cout << "Running: " << cmd << "\n";
 
 	int code = std::system(cmd.c_str());
 	if (code != 0)
+	{
 		throw std::runtime_error("Shader compilation script failed. Exit code: " + std::to_string(code));
+	}
 } // end of RunShaderCompilerScript()
 
 

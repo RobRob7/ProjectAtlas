@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec3 aPos;
 
-layout (std140, binding = 7) uniform UBO
+layout (std140, set = 0, binding = 7) uniform UBO
 {
     mat4 u_model;
     mat4 u_view;

@@ -1,8 +1,8 @@
 #version 460 core
 
-in vec2 vUV;
+layout (location = 0) in vec2 vUV;
 
-layout (std140, binding = 5) uniform UBO
+layout (std140, set = 0, binding = 5) uniform UBO
 {
     vec2 u_inverseScreenSize;
     float u_edgeSharpnessQuality;
@@ -15,7 +15,7 @@ layout (std140, binding = 5) uniform UBO
 
 layout (binding = 14) uniform sampler2D u_forwardColorTex;
 
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
 
 // rgb to luma helper
 float luma(vec3 rgb)

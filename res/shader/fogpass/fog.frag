@@ -1,8 +1,8 @@
 #version 460 core
 
-in vec2 vUV;
+layout (location = 0) in vec2 vUV;
 
-layout (std140, binding = 4) uniform UBO
+layout (std140, set = 0, binding = 4) uniform UBO
 {
     float u_near;
     float u_far;
@@ -20,7 +20,7 @@ layout (std140, binding = 4) uniform UBO
 layout (binding = 14) uniform sampler2D u_forwardColorTex;
 layout (binding = 15) uniform sampler2D u_forwardDepthTex;
 
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
 
 float linearizeDepth(float z01)
 {
