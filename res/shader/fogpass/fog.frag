@@ -20,15 +20,6 @@ layout (std140, binding = 4) uniform UBO
 uniform sampler2D u_sceneColorTex;
 uniform sampler2D u_sceneDepthTex;
 
-// uniform float u_near;
-// uniform float u_far;
-
-// uniform vec3 u_fogColor;
-// uniform float u_fogStart;
-// uniform float u_fogEnd;
-
-// uniform float u_ambStr;
-
 out vec4 FragColor;
 
 float linearizeDepth(float z01)
