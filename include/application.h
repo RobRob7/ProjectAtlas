@@ -12,8 +12,6 @@ struct GLFWwindow;
 class OpenGLMain;
 class VulkanMain;
 
-//class Scene;
-//class SceneVk;
 class UI;
 struct InputState;
 

@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec3 aPos;
 
-layout (std140, binding = 11) uniform UBO
+layout (std140, set = 0, binding = 11) uniform UBO
 {
     // vert
     mat4 u_model;
@@ -31,7 +31,7 @@ layout (std140, binding = 11) uniform UBO
     float u_ambientStrength;
 };
 
-out VS_OUT {
+layout (location = 0) out VS_OUT {
     vec3 worldPos;
     vec4 clipPos;
     vec2 waterUV;

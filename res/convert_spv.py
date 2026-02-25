@@ -15,15 +15,16 @@ def is_vk_shader(filename: str) -> bool:
     name, ext = os.path.splitext(filename)
 
     return (
-        name.endswith("_vk") and
+        # name.endswith("_vk") and
         ext in VALID_EXTENSIONS
     )
 
 
-def compile_shader(filepath: str):
+def compile_shader(filepath: str, is_debug: bool):
     output_path = filepath + ".spv"
 
-    print(f"Compiling: {filepath}")
+    if (is_debug):
+        print(f"Compiling: {filepath}")
 
     result = subprocess.run(
         [GLSLC, filepath, "-o", output_path],
@@ -34,18 +35,18 @@ def compile_shader(filepath: str):
     if result.returncode != 0:
         print(f"Failed to compile {filepath}")
         print(result.stderr)
-    # else:
-    #     print(f"Generated {output_path}")
+        
     
-    print("")
+    if (is_debug):
+        print(f"Generated {output_path}\n")
 
 
-def main(root_dir: str):
+def main(root_dir: str, is_debug: bool):
     for root, dirs, files in os.walk(root_dir):
         for file in files:
             if is_vk_shader(file):
                 full_path = os.path.join(root, file)
-                compile_shader(full_path)
+                compile_shader(full_path, is_debug)
 
 
 if __name__ == "__main__":
@@ -53,5 +54,8 @@ if __name__ == "__main__":
         directory = sys.argv[1]
     else:
         directory = "."
-
-    main(directory)
+    
+    debugOn = False
+    if (sys.argv[2] == "debug"):
+        debugOn = True
+    main(directory, debugOn)

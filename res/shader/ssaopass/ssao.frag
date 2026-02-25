@@ -1,10 +1,10 @@
 #version 460 core
 
-in vec2 vUV;
+layout (location = 0) in vec2 vUV;
 
 #define MAX_KERNEL_SIZE 64
 
-layout (std140, binding = 9) uniform UBO
+layout (std140, set = 0, binding = 9) uniform UBO
 {
     mat4 u_proj;
     mat4 u_invProj;
@@ -24,7 +24,7 @@ layout (binding = 0) uniform sampler2D u_gNormal;
 layout (binding = 1) uniform sampler2D u_gDepth;
 layout (binding = 6) uniform sampler2D u_ssaoNoiseTex;
 
-out float FragAO;
+layout (location = 0) out float FragAO;
 
 vec3 ReconstructViewPos(vec2 uv, float depth01)
 {

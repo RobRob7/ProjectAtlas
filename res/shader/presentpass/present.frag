@@ -1,10 +1,10 @@
 #version 460 core
 
-in vec2 vUV;
+layout (location = 0) in vec2 vUV;
 
 layout (binding = 14) uniform sampler2D u_forwardColorTex;
 
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
 
 void main()
 {

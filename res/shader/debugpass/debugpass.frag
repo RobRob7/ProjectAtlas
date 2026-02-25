@@ -1,8 +1,8 @@
 #version 460 core
 
-in vec2 vUV;
+layout (location = 0) in vec2 vUV;
 
-layout (std140, binding = 3) uniform UBO
+layout (std140, set = 0, binding = 3) uniform UBO
 {
     int u_mode;
     float u_near;
@@ -13,7 +13,7 @@ layout (std140, binding = 3) uniform UBO
 layout (binding = 0) uniform sampler2D u_gNormal;
 layout (binding = 1) uniform sampler2D u_gDepth;
 
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
 
 float LinearizeDepth(float depth)
 {

@@ -1,6 +1,6 @@
 #version 460 core
 
-in VS_OUT {
+layout (location = 0) in VS_OUT {
     vec3 normalVS;
 } fs_in;
 

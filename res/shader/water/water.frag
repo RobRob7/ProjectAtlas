@@ -1,12 +1,12 @@
 #version 460 core
 
-in VS_OUT {
+layout (location = 0) in VS_OUT {
     vec3 worldPos;
     vec4 clipPos;
     vec2 waterUV;
 } fs_in;
 
-layout (std140, binding = 11) uniform UBO
+layout (std140, set = 0, binding = 11) uniform UBO
 {
     // vert
     mat4 u_model;
@@ -42,7 +42,7 @@ layout (binding = 10) uniform sampler2D u_waterRefrDepthTex;
 layout (binding = 11) uniform sampler2D u_waterDUDVTex;
 layout (binding = 12) uniform sampler2D u_waterNormalTex;
 
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
 
 float linearizeDepth(float z01)
 {
