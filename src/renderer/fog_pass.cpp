@@ -22,6 +22,8 @@ void FogPass::init()
 	shader_->setInt("u_sceneColorTex", 0);
 	shader_->setInt("u_sceneDepthTex", 1);
 
+	ubo_.init<sizeof(FogPassUBO)>();
+
 	glCreateVertexArrays(1, &fsVao_);
 } // end of init()
 
@@ -38,14 +40,13 @@ void FogPass::render(uint32_t sceneColorTex, uint32_t sceneDepthTex,
 	glBindVertexArray(fsVao_);
 	
 	shader_->use();
-	shader_->setFloat("u_near", nearPlane);
-	shader_->setFloat("u_far", farPlane);
-
-	shader_->setVec3("u_fogColor", fogColor_);
-	shader_->setFloat("u_fogStart", fogStart_);
-	shader_->setFloat("u_fogEnd", fogEnd_);
-
-	shader_->setFloat("u_ambStr", ambStr);
+	fogPassUBO_.u_near = nearPlane;
+	fogPassUBO_.u_far = farPlane;
+	fogPassUBO_.u_fogColor = fogColor_;
+	fogPassUBO_.u_fogStart = fogStart_;
+	fogPassUBO_.u_fogEnd = fogEnd_;
+	fogPassUBO_.u_ambStr = ambStr;
+	ubo_.update(&fogPassUBO_, sizeof(fogPassUBO_));
 
 	glBindTextureUnit(0, sceneColorTex);
 	glBindTextureUnit(1, sceneDepthTex);

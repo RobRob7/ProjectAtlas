@@ -1,10 +1,27 @@
 #ifndef FOGPASS_H
 #define FOGPASS_H
 
+#include "ubo_gl.h"
+
 #include <glm/glm.hpp>
 
 #include <cstdint>
 #include <memory>
+
+struct FogPassUBO
+{
+    float u_near;
+    float u_far;
+    glm::vec2 _pad0;
+
+    glm::vec3 u_fogColor;
+    float _pad1;
+
+    float u_fogStart;
+    float u_fogEnd;
+    float u_ambStr;
+    float _pad2;
+};
 
 class Shader;
 
@@ -31,6 +48,9 @@ private:
 
     uint32_t fsVao_{};
     std::unique_ptr<Shader> shader_;
+
+    UBOGL ubo_{ UBOBinding::FogPass };
+    FogPassUBO fogPassUBO_;
 };
 
 #endif

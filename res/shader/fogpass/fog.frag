@@ -2,17 +2,32 @@
 
 in vec2 vUV;
 
+layout (std140, binding = 4) uniform UBO
+{
+    float u_near;
+    float u_far;
+    vec2 _pad0;
+
+    vec3 u_fogColor;
+    float _pad1;
+
+    float u_fogStart;
+    float u_fogEnd;
+    float u_ambStr;
+    float _pad2;
+};
+
 uniform sampler2D u_sceneColorTex;
 uniform sampler2D u_sceneDepthTex;
 
-uniform float u_near;
-uniform float u_far;
+// uniform float u_near;
+// uniform float u_far;
 
-uniform vec3 u_fogColor;
-uniform float u_fogStart;
-uniform float u_fogEnd;
+// uniform vec3 u_fogColor;
+// uniform float u_fogStart;
+// uniform float u_fogEnd;
 
-uniform float u_ambStr;
+// uniform float u_ambStr;
 
 out vec4 FragColor;
 
