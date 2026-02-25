@@ -350,6 +350,10 @@ void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin,
 	{
 		if (hit.hit)
 		{
+			// DISALLOW block place in water
+			if (getBlock(hit.block.x, hit.block.y, hit.block.z) == BlockID::Water) return;
+
+
 			glm::ivec3 placePos = hit.block + hit.normal;
 			setBlock(placePos.x, placePos.y, placePos.z, lastBlockUsed_);
 			// add block to counter
@@ -367,7 +371,7 @@ void ChunkManager::placeOrRemoveBlock(bool shouldPlace, const glm::vec3& origin,
 				|| getBlock(hit.block.x + 1, hit.block.y, hit.block.z) == BlockID::Water
 				|| getBlock(hit.block.x, hit.block.y, hit.block.z - 1) == BlockID::Water
 				|| getBlock(hit.block.x, hit.block.y, hit.block.z + 1) == BlockID::Water
-				|| getBlock(hit.block.x, hit.block.y - 1, hit.block.z) == BlockID::Water
+				//|| getBlock(hit.block.x, hit.block.y - 1, hit.block.z) == BlockID::Water
 				|| getBlock(hit.block.x, hit.block.y + 1, hit.block.z) == BlockID::Water) return;
 
 			setBlock(hit.block.x, hit.block.y, hit.block.z, BlockID::Air);
