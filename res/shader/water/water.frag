@@ -35,12 +35,12 @@ layout (std140, binding = 11) uniform UBO
     float u_ambientStrength;
 };
 
-uniform sampler2D u_reflectionTex;
-uniform sampler2D u_refractionTex;
-uniform sampler2D u_refractionDepthTex;
+layout (binding = 8) uniform sampler2D u_waterReflColorTex;
+layout (binding = 9) uniform sampler2D u_waterRefrColorTex;
+layout (binding = 10) uniform sampler2D u_waterRefrDepthTex;
 
-uniform sampler2D u_dudvTex;
-uniform sampler2D u_normalTex;
+layout (binding = 11) uniform sampler2D u_waterDUDVTex;
+layout (binding = 12) uniform sampler2D u_waterNormalTex;
 
 out vec4 FragColor;
 
@@ -68,8 +68,8 @@ void main()
     vec2 dudvUV2 = fract(baseUV * 1.73 + vec2(-u_time * u_waveSpeed * 0.6, u_time * u_waveSpeed * 0.9));
 
     // [-1, 1]
-    vec2 distortion1 = texture(u_dudvTex, dudvUV1).rg * 2.0 - 1.0;
-    vec2 distortion2 = texture(u_dudvTex, dudvUV2).rg * 2.0 - 1.0;
+    vec2 distortion1 = texture(u_waterDUDVTex, dudvUV1).rg * 2.0 - 1.0;
+    vec2 distortion2 = texture(u_waterDUDVTex, dudvUV2).rg * 2.0 - 1.0;
 
     // mix d1, d2
     float mixFactor = 0.7;
@@ -81,8 +81,8 @@ void main()
     nUV1 = fract(nUV1 + dudv * 0.05);
     nUV2 = fract(nUV2 + dudv * 0.05);
 
-    vec3 n1 = texture(u_normalTex, nUV1).rgb;
-    vec3 n2 = texture(u_normalTex, nUV2).rgb;
+    vec3 n1 = texture(u_waterNormalTex, nUV1).rgb;
+    vec3 n2 = texture(u_waterNormalTex, nUV2).rgb;
     vec3 nTex = mix(n1, n2, mixFactor);
 
 	vec3 N = vec3(nTex.r * 2.0 - 1.0, nTex.b, nTex.g * 2.0 - 1.0);
@@ -108,11 +108,11 @@ void main()
     reflTexCoords = clamp(reflTexCoords, 0.0, 1.0);
 
     // refr, refl
-    vec3 refraction = texture(u_refractionTex, refrTexCoords).rgb;
-    vec3 reflection = texture(u_reflectionTex, reflTexCoords).rgb;
+    vec3 refraction = texture(u_waterRefrColorTex, refrTexCoords).rgb;
+    vec3 reflection = texture(u_waterReflColorTex, reflTexCoords).rgb;
 
     // ------- DEPTH ------- //
-    float sceneDepth01 = texture(u_refractionDepthTex, refrTexCoords).r;
+    float sceneDepth01 = texture(u_waterRefrDepthTex, refrTexCoords).r;
     float sceneDepth   = linearizeDepth(sceneDepth01);
 
     float waterDepth01  = gl_FragCoord.z;

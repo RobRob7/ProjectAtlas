@@ -1,5 +1,7 @@
 #include "chunk_pass_gl.h"
 
+#include "texture_bindings.h"
+
 #include "chunk_draw_list.h"
 
 #include "i_chunk_mesh_gpu.h"
@@ -24,6 +26,7 @@ void ChunkPassGL::init()
 	opaqueShader_ = std::make_unique<Shader>("chunk/chunk.vert", "chunk/chunk.frag");
     waterShader_ = std::make_unique<Shader>("water/water.vert", "water/water.frag");
 	atlas_ = std::make_unique<Texture>("blocks.png", true);
+    glBindTextureUnit(TO_API_FORM(TextureBinding::AtlasTex), atlas_->ID());
 
     uboOpaque_.init<sizeof(ChunkOpaqueUBO)>();
     uboWater_.init<sizeof(ChunkWaterUBO)>();
@@ -37,16 +40,14 @@ void ChunkPassGL::updateShader(const RenderInputs& in, const RenderSettings& rs,
     chunkOpaqueUBO_.u_viewPos = in.camera->getCameraPosition();
     chunkOpaqueUBO_.u_lightPos = in.light->getPosition();
     chunkOpaqueUBO_.u_lightColor = in.light->getColor();
-
     // ssao
     chunkOpaqueUBO_.u_screenSize = glm::vec2{ w, h };
     chunkOpaqueUBO_.u_useSSAO = rs.useSSAO ? 1 : 0;
-    opaqueShader_->setInt("u_ssao", 3);
     uboOpaque_.update(&chunkOpaqueUBO_, sizeof(chunkOpaqueUBO_));
+
 
     // update uniforms of water shader
     waterShader_->use();
-
     chunkWaterUBO_.u_time = in.time;
     chunkWaterUBO_.u_near = in.camera->getNearPlane();
     chunkWaterUBO_.u_far = in.camera->getFarPlane();
@@ -55,12 +56,6 @@ void ChunkPassGL::updateShader(const RenderInputs& in, const RenderSettings& rs,
     chunkWaterUBO_.u_lightPos = in.light->getPosition();
     chunkWaterUBO_.u_lightColor = in.light->getColor();
     chunkWaterUBO_.u_ambientStrength = in.world->getAmbientStrength();
-
-    waterShader_->setInt("u_reflectionTex", 4);
-    waterShader_->setInt("u_refractionTex", 5);
-    waterShader_->setInt("u_refractionDepthTex", 6);
-    waterShader_->setInt("u_dudvTex", 7);
-    waterShader_->setInt("u_normalTex", 8);
     uboWater_.update(&chunkWaterUBO_, sizeof(chunkWaterUBO_));
 } // end of updateShader()
 
@@ -77,9 +72,6 @@ void ChunkPassGL::renderOpaque(
     chunkOpaqueUBO_.u_view = view;
     chunkOpaqueUBO_.u_proj = proj;
     chunkOpaqueUBO_.u_screenSize = glm::vec2{ width, height };
-
-    glBindTextureUnit(0, atlas_->ID());
-    opaqueShader_->setInt("u_atlas", 0);
 
     DrawContext ctx{};
     for (const auto& item : list.items)

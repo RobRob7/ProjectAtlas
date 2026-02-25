@@ -13,7 +13,7 @@ layout (std140, binding = 5) uniform UBO
     vec2 _pad1;
 };
 
-uniform sampler2D u_sceneColorTex;
+layout (binding = 14) uniform sampler2D u_forwardColorTex;
 
 out vec4 FragColor;
 
@@ -30,12 +30,12 @@ void main()
     vec2 offSW = vec2(-1.0, -1.0) * u_inverseScreenSize;
     vec2 offSE = vec2( 1.0, -1.0) * u_inverseScreenSize;
 
-    float lumaNW = luma(texture(u_sceneColorTex, vUV + offNW).rgb);
-    float lumaNE = luma(texture(u_sceneColorTex, vUV + offNE).rgb);
-    float lumaSW = luma(texture(u_sceneColorTex, vUV + offSW).rgb);
-    float lumaSE = luma(texture(u_sceneColorTex, vUV + offSE).rgb);
+    float lumaNW = luma(texture(u_forwardColorTex, vUV + offNW).rgb);
+    float lumaNE = luma(texture(u_forwardColorTex, vUV + offNE).rgb);
+    float lumaSW = luma(texture(u_forwardColorTex, vUV + offSW).rgb);
+    float lumaSE = luma(texture(u_forwardColorTex, vUV + offSE).rgb);
 
-    vec3 rgbM  = texture(u_sceneColorTex, vUV).rgb;
+    vec3 rgbM  = texture(u_forwardColorTex, vUV).rgb;
 
     float lumaM = luma(rgbM);
 
@@ -69,14 +69,14 @@ void main()
     dir.y = dirSWMinusNE - dirSEMinusNW;
 
     vec2 dir1 = normalize(dir);
-    vec4 rgbN1 = texture(u_sceneColorTex, vUV - dir1 * u_inverseScreenSize);
-    vec4 rgbP1 = texture(u_sceneColorTex, vUV + dir1 * u_inverseScreenSize);
+    vec4 rgbN1 = texture(u_forwardColorTex, vUV - dir1 * u_inverseScreenSize);
+    vec4 rgbP1 = texture(u_forwardColorTex, vUV + dir1 * u_inverseScreenSize);
 
     float dirAbsMinTimesC = min(abs(dir1.x), abs(dir1.y)) * u_edgeSharpnessQuality;
     vec2 dir2 = clamp(dir1.xy / dirAbsMinTimesC, -2.0, 2.0);
 
-    vec4 rgbN2 = texture(u_sceneColorTex, vUV - dir2 * u_inverseScreenSize);
-    vec4 rgbP2 = texture(u_sceneColorTex, vUV + dir2 * u_inverseScreenSize);
+    vec4 rgbN2 = texture(u_forwardColorTex, vUV - dir2 * u_inverseScreenSize);
+    vec4 rgbP2 = texture(u_forwardColorTex, vUV + dir2 * u_inverseScreenSize);
 
     vec4 rgbA = rgbN1 + rgbP1;
     vec4 rgbB = ((rgbN2 + rgbP2) * 0.25) + (rgbA * 0.25);

@@ -17,8 +17,8 @@ layout (std140, binding = 4) uniform UBO
     float _pad2;
 };
 
-uniform sampler2D u_sceneColorTex;
-uniform sampler2D u_sceneDepthTex;
+layout (binding = 14) uniform sampler2D u_forwardColorTex;
+layout (binding = 15) uniform sampler2D u_forwardDepthTex;
 
 out vec4 FragColor;
 
@@ -30,9 +30,9 @@ float linearizeDepth(float z01)
 
 void main()
 {
-    vec3 color = texture(u_sceneColorTex, vUV).rgb;
+    vec3 color = texture(u_forwardColorTex, vUV).rgb;
 
-    float z01 = texture(u_sceneDepthTex, vUV).r;
+    float z01 = texture(u_forwardDepthTex, vUV).r;
     float d = linearizeDepth(z01);
 
     float fogFactor = clamp((u_fogEnd - d) / (u_fogEnd - u_fogStart), 0.0, 1.0);

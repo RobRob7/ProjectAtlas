@@ -1,5 +1,5 @@
-#ifndef CHUNKDATA_H
-#define CHUNKDATA_H
+#ifndef CHUNK_DATA_H
+#define CHUNK_DATA_H
 
 #include "constants.h"
 

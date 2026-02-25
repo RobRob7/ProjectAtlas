@@ -1,5 +1,5 @@
-#ifndef WATERPASS_H
-#define WATERPASS_H
+#ifndef WATER_PASS_H
+#define WATER_PASS_H
 
 #include <cstdint>
 #include <memory>

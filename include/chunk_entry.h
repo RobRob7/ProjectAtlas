@@ -1,5 +1,5 @@
-#ifndef CHUNKENTRY_H
-#define CHUNKENTRY_H
+#ifndef CHUNK_ENTRY_H
+#define CHUNK_ENTRY_H
 
 #include "chunk_mesh.h"
 

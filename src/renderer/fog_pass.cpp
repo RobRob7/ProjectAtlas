@@ -1,5 +1,9 @@
 #include "fog_pass.h"
 
+#include "render_settings.h"
+
+#include "texture_bindings.h"
+
 #include "shader.h"
 
 #include <glad/glad.h>
@@ -12,20 +16,29 @@ FogPass::~FogPass()
 	destroyGL();
 } // end of destructor
 
-void FogPass::init()
+void FogPass::init(RenderSettings& rs)
 {
 	destroyGL();
 
 	shader_ = std::make_unique<Shader>("fogpass/fog.vert", "fogpass/fog.frag");
 
-	shader_->use();
-	shader_->setInt("u_sceneColorTex", 0);
-	shader_->setInt("u_sceneDepthTex", 1);
-
 	ubo_.init<sizeof(FogPassUBO)>();
+
+	rs.fogSettings.color = fogColor_;
+	rs.fogSettings.start = fogStart_;
+	rs.fogSettings.end = fogEnd_;
 
 	glCreateVertexArrays(1, &fsVao_);
 } // end of init()
+
+void FogPass::resize(int w, int h)
+{
+	if (w <= 0 || h <= 0) return;
+	if (w == width_ && h == height_) return;
+
+	width_ = w;
+	height_ = h;
+} // end of resize()
 
 void FogPass::render(uint32_t sceneColorTex, uint32_t sceneDepthTex, 
 	float nearPlane, float farPlane, float ambStr)
@@ -36,6 +49,7 @@ void FogPass::render(uint32_t sceneColorTex, uint32_t sceneDepthTex,
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, width_, height_);
 	glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(fsVao_);
 	
@@ -48,8 +62,8 @@ void FogPass::render(uint32_t sceneColorTex, uint32_t sceneDepthTex,
 	fogPassUBO_.u_ambStr = ambStr;
 	ubo_.update(&fogPassUBO_, sizeof(fogPassUBO_));
 
-	glBindTextureUnit(0, sceneColorTex);
-	glBindTextureUnit(1, sceneDepthTex);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::ForwardColorTex), sceneColorTex);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::ForwardDepthTex), sceneDepthTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 

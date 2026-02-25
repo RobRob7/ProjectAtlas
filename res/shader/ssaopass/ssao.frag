@@ -20,9 +20,9 @@ layout (std140, binding = 9) uniform UBO
     vec3 u_samples[MAX_KERNEL_SIZE];
 };
 
-uniform sampler2D u_gNormal;
-uniform sampler2D u_gDepth;
-uniform sampler2D u_noise;
+layout (binding = 0) uniform sampler2D u_gNormal;
+layout (binding = 1) uniform sampler2D u_gDepth;
+layout (binding = 6) uniform sampler2D u_ssaoNoiseTex;
 
 out float FragAO;
 
@@ -49,7 +49,7 @@ void main()
     vec3 P = ReconstructViewPos(vUV, depth01);
 
     //
-    vec3 rand = normalize(texture(u_noise, vUV * u_noiseScale).xyz * 2.0 - 1.0);
+    vec3 rand = normalize(texture(u_ssaoNoiseTex, vUV * u_noiseScale).xyz * 2.0 - 1.0);
 
     vec3 T = normalize(rand - N * dot(rand, N));
     vec3 B = cross(N, T);

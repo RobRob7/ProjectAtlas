@@ -1,5 +1,7 @@
 #include "present_pass.h"
 
+#include "texture_bindings.h"
+
 #include "shader.h"
 
 #include <glad/glad.h>
@@ -30,21 +32,21 @@ void PresentPass::resize(int w, int h)
 	height_ = h;
 } // end of resize()
 
-void PresentPass::render(uint32_t sceneColorTex)
+void PresentPass::render(uint32_t finalColorTex)
 {
-	if (!shader_ || !sceneColorTex || width_ <= 0 || height_ <= 0 || fsVao_ == 0)
+	if (!shader_ || !finalColorTex || width_ <= 0 || height_ <= 0 || fsVao_ == 0)
 		return;
 
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
+
+	glViewport(0, 0, width_, height_);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, width_, height_);
 	glDisable(GL_DEPTH_TEST);
 
 	shader_->use();
-	shader_->setInt("u_sceneColorTex", 0);
-
-	glBindTextureUnit(0, sceneColorTex);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::ForwardColorTex), finalColorTex);
 
 	glBindVertexArray(fsVao_);
 

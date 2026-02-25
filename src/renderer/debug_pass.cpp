@@ -1,5 +1,7 @@
 #include "debug_pass.h"
 
+#include "texture_bindings.h"
+
 #include "shader.h"
 
 #include <glad/glad.h>
@@ -18,11 +20,9 @@ void DebugPass::init()
 
 	debugShader_ = std::make_unique<Shader>("debugpass/debugpass.vert", "debugpass/debugpass.frag");
 
-	glCreateVertexArrays(1, &vao_);
+	ubo_.init<sizeof(DebugPassUBO)>();
 
-	debugShader_->use();
-	debugShader_->setInt("u_normal", 0);
-	debugShader_->setInt("u_depth", 1);
+	glCreateVertexArrays(1, &vao_);
 } // end of init()
 
 void DebugPass::destroyGL()
@@ -44,12 +44,13 @@ void DebugPass::render(uint32_t normalTex, uint32_t depthTex, float nearPlane, f
 	glDisable(GL_DEPTH_TEST);
 
 	debugShader_->use();
-	debugShader_->setInt("u_mode", mode);
-	debugShader_->setFloat("u_near", nearPlane);
-	debugShader_->setFloat("u_far", farPlane);
+	debugPassUBO_.u_mode = mode;
+	debugPassUBO_.u_near = nearPlane;
+	debugPassUBO_.u_far = farPlane;
+	ubo_.update(&debugPassUBO_, sizeof(debugPassUBO_));
 
-	glBindTextureUnit(0, normalTex);
-	glBindTextureUnit(1, depthTex);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::GNormalTex), normalTex);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::GDepthTex), depthTex);
 
 	glBindVertexArray(vao_);
 	glDrawArrays(GL_TRIANGLES, 0, 3);

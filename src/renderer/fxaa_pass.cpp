@@ -1,5 +1,7 @@
 #include "fxaa_pass.h"
 
+#include "texture_bindings.h"
+
 #include "shader.h"
 
 #include <glm/glm.hpp>
@@ -20,9 +22,6 @@ void FXAAPass::init()
 	destroyGL();
 
 	shader_ = std::make_unique<Shader>("fxaapass/fxaa.vert", "fxaapass/fxaa.frag");
-
-	shader_->use();
-	shader_->setInt("u_sceneColorTex", 0);
 
 	ubo_.init<sizeof(FXAAPassUBO)>();
 
@@ -64,7 +63,7 @@ void FXAAPass::render(uint32_t sceneColorTex)
 	fxaaPassUBO_.u_edgeThresholdMin = edgeThresholdMin_;
 	ubo_.update(&fxaaPassUBO_, sizeof(fxaaPassUBO_));
 
-	glBindTextureUnit(0, sceneColorTex);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::ForwardColorTex), sceneColorTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 

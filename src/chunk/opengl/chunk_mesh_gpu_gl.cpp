@@ -120,18 +120,30 @@ void ChunkMeshGPUGL::drawOpaque(const DrawContext&)
 {
 	if (opaqueIndexCount_ <= 0) return;
 
+	const GLboolean wasDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
+
+	glEnable(GL_DEPTH_TEST);
+
 	glBindVertexArray(opaqueVao_);
 	glDrawElements(GL_TRIANGLES, opaqueIndexCount_, GL_UNSIGNED_INT, nullptr);
+	glBindVertexArray(0);
+
+	if (!wasDepthEnabled)
+		glDisable(GL_DEPTH_TEST);
 } // end of drawOpaque()
 
 void ChunkMeshGPUGL::drawWater(const DrawContext&)
 {
-	if (waterIndexCount_ <= 0)
-	{
-		std::cout << "NO WATER!\n";
-		return;
-	}
+	if (waterIndexCount_ <= 0) return;
+
+	const GLboolean wasDepthEnabled = glIsEnabled(GL_DEPTH_TEST);
+
+	glEnable(GL_DEPTH_TEST);
 	
 	glBindVertexArray(waterVao_);
 	glDrawElements(GL_TRIANGLES, waterIndexCount_, GL_UNSIGNED_INT, nullptr);
+	glBindVertexArray(0);
+
+	if (!wasDepthEnabled)
+		glDisable(GL_DEPTH_TEST);
 } // end of drawWater()

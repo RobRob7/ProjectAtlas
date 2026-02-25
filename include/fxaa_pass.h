@@ -1,5 +1,5 @@
-#ifndef FXAAPASS_H
-#define FXAAPASS_H
+#ifndef FXAA_PASS_H
+#define FXAA_PASS_H
 
 #include "ubo_gl.h"
 

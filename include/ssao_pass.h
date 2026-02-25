@@ -1,5 +1,5 @@
-#ifndef SSAOPASS_H
-#define SSAOPASS_H
+#ifndef SSAO_PASS_H
+#define SSAO_PASS_H
 
 #include "ubo_gl.h"
 
@@ -43,7 +43,7 @@ public:
 	void init();
 	void resize(int w, int h);
 	void destroyGL();
-	void render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& proj, const glm::mat4& invProj);
+	void render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& proj);
 
 	uint32_t aoRawTexture() const;
 	uint32_t aoBlurTexture() const;

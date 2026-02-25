@@ -1,5 +1,5 @@
-#ifndef PRESENTPASS_H
-#define PRESENTPASS_H
+#ifndef PRESENT_PASS_H
+#define PRESENT_PASS_H
 
 #include <cstdint>
 #include <memory>
@@ -14,7 +14,7 @@ public:
 
 	void init();
 	void resize(int w, int h);
-	void render(uint32_t sceneColorTex);
+	void render(uint32_t finalColorTex);
 
 private:
 	void destroyGL();

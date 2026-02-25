@@ -12,10 +12,10 @@ enum class DebugMode : int
 
 struct FogSettings
 {
-	glm::vec3 color{ 1.0f, 1.0f, 1.0f };
+	glm::vec3 color;
 
-	float start = 50.0f;
-	float end = 500.0f;
+	float start;
+	float end;
 };
 
 struct RenderSettings

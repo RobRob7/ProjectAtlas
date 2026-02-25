@@ -1,5 +1,7 @@
 #include "renderer_gl.h"
 
+#include "texture_bindings.h"
+
 #include "chunk_pass_gl.h"
 
 #include "chunk_manager.h"
@@ -57,7 +59,7 @@ void RendererGL::init()
 
     waterPass_->init();
     fxaaPass_->init();
-    fogPass_->init();
+    fogPass_->init(*renderSettings_);
     presentPass_->init();
 } // end of init()
 
@@ -73,6 +75,7 @@ void RendererGL::resize(int w, int h)
     ssaoPass_->resize(width_, height_);
     fxaaPass_->resize(width_, height_);
     waterPass_->resize(width_, height_);
+    fogPass_->resize(width_, height_);
     presentPass_->resize(width_, height_);
 
     resizeForwardTargets();
@@ -101,8 +104,7 @@ void RendererGL::renderFrame(const RenderInputs& in)
     // ssao pass
     if (renderSettings_->useSSAO)
     {
-        glm::mat4 invProj = glm::inverse(proj);
-        ssaoPass_->render(gbuffer_->getNormalTexture(), gbuffer_->getDepthTexture(), proj, invProj);
+        ssaoPass_->render(gbuffer_->getNormalTexture(), gbuffer_->getDepthTexture(), proj);
     }
 
     // debug pass
@@ -124,27 +126,8 @@ void RendererGL::renderFrame(const RenderInputs& in)
 
     // --------------- FORWARD RENDER --------------- //
     glBindFramebuffer(GL_FRAMEBUFFER, forwardFBO_);
-    glViewport(0, 0, width_, height_);
-    glEnable(GL_DEPTH_TEST);
-
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    if (renderSettings_->useSSAO)
-    {
-        glBindTextureUnit(3, ssaoPass_->aoBlurTexture());
-    }
-    else
-    {
-        glBindTextureUnit(3, 0);
-    }
-
-    // bind textures
-    glBindTextureUnit(4, waterPass_->getReflColorTex());
-    glBindTextureUnit(5, waterPass_->getRefrColorTex());
-    glBindTextureUnit(6, waterPass_->getRefrDepthTex());
-    glBindTextureUnit(7, waterPass_->getDuDVTex());
-    glBindTextureUnit(8, waterPass_->getNormalTex());
 
     // render objects (non-UI)
     chunkPass_->renderOpaque(in, view, proj, width_, height_);
@@ -155,10 +138,6 @@ void RendererGL::renderFrame(const RenderInputs& in)
 
 
     // --------------- POST-PROCESSING --------------- //
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, width_, height_);
-    glDisable(GL_DEPTH_TEST);
-
     // FXAA
     uint32_t finalColorTex = forwardColorTex_;
     if (renderSettings_->useFXAA)
@@ -168,9 +147,6 @@ void RendererGL::renderFrame(const RenderInputs& in)
     }
 
     // FOG
-    fogPass_->setFogColor(renderSettings_->fogSettings.color);
-    fogPass_->setFogStart(renderSettings_->fogSettings.start);
-    fogPass_->setFogEnd(renderSettings_->fogSettings.end);
     if (renderSettings_->useFog)
     {
         fogPass_->render(finalColorTex, forwardDepthTex_,

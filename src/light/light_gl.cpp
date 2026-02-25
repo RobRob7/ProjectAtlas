@@ -123,9 +123,4 @@ void LightGL::destroyGL()
 		glDeleteBuffers(1, &vbo_);
 		vbo_ = 0;
 	}
-	//if (ubo_)
-	//{
-	//	glDeleteBuffers(1, &ubo_);
-	//	ubo_ = 0;
-	//}
 } // end of destroyGL()

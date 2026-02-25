@@ -1,5 +1,7 @@
 #include "ssao_pass.h"
 
+#include "texture_bindings.h"
+
 #include "shader.h"
 
 #include <glad/glad.h>
@@ -61,7 +63,7 @@ void SSAOPass::destroyGL()
 	height_ = 0;
 } // end of destroyGL()
 
-void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& proj, const glm::mat4& invProj)
+void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& proj)
 {
 	if (!ssaoShader_ || !blurShader_) return;
 	if (!fboRaw_ || !fboBlur_) return;
@@ -74,7 +76,7 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 
 	ssaoShader_->use();
 	ssaoUBO_.u_proj = proj;
-	ssaoUBO_.u_invProj = invProj;
+	ssaoUBO_.u_invProj = glm::inverse(proj);
 	ssaoUBO_.u_radius = radius_;
 	ssaoUBO_.u_bias = bias_;
 	ssaoUBO_.u_kernelSize = kernelSize_;
@@ -82,12 +84,10 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 		static_cast<float>(width_) / static_cast<float>(kNoiseSize_),
 		static_cast<float>(height_) / static_cast<float>(kNoiseSize_));
 
-	glBindTextureUnit(0, normalTex);
-	glBindTextureUnit(1, depthTex);
-	glBindTextureUnit(2, noiseTexture_);
-	ssaoShader_->setInt("u_gNormal", 0);
-	ssaoShader_->setInt("u_gDepth", 1);
-	ssaoShader_->setInt("u_noise", 2);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::GNormalTex), normalTex);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::GDepthTex), depthTex);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::SSAONoiseTex), noiseTexture_);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::SSAOBlurTex), aoBlur_);
 	uboSSAO_.update(&ssaoUBO_, sizeof(ssaoUBO_));
 
 	glBindVertexArray(fsVao_);
@@ -100,8 +100,7 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 
 	blurShader_->use();
 	ssaoBlurUBO_.u_texelSize = glm::vec2(1.0f / width_, 1.0f / height_);
-	glBindTextureUnit(0, aoRaw_);
-	blurShader_->setInt("u_ao", 0);
+	glBindTextureUnit(TO_API_FORM(TextureBinding::SSAORaw), aoRaw_);
 	uboBlur_.update(&ssaoBlurUBO_, sizeof(ssaoBlurUBO_));
 
 	glBindVertexArray(fsVao_);

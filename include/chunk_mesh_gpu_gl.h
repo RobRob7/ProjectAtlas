@@ -1,5 +1,5 @@
-#ifndef CHUNKMESHGPUGL_H
-#define CHUNKMESHGPUGL_H
+#ifndef CHUNK_MESH_GPU_GL_H
+#define CHUNK_MESH_GPU_GL_H
 
 #include "i_chunk_mesh_gpu.h"
 

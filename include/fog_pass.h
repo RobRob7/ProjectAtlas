@@ -1,5 +1,5 @@
-#ifndef FOGPASS_H
-#define FOGPASS_H
+#ifndef FOG_PASS_H
+#define FOG_PASS_H
 
 #include "ubo_gl.h"
 
@@ -24,6 +24,7 @@ struct FogPassUBO
 };
 
 class Shader;
+struct RenderSettings;
 
 class FogPass
 {
@@ -31,7 +32,8 @@ public:
     FogPass();
     ~FogPass();
 
-    void init();
+    void init(RenderSettings& rs);
+    void resize(int w, int h);
     void render(uint32_t sceneColorTex, uint32_t sceneDepthTex,
         float nearPlane, float farPlane, float ambStr);
 
@@ -42,9 +44,11 @@ public:
 private:
     void destroyGL();
 private:
+    int width_{};
+    int height_{};
     glm::vec3 fogColor_{ 1.0f, 1.0f, 1.0f };
     float fogStart_{ 50.0f };
-    float fogEnd_{ 2000.0f };
+    float fogEnd_{ 500.0f };
 
     uint32_t fsVao_{};
     std::unique_ptr<Shader> shader_;
