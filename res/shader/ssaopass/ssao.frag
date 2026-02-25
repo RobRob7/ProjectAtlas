@@ -4,19 +4,25 @@ in vec2 vUV;
 
 #define MAX_KERNEL_SIZE 64
 
+layout (std140, binding = 9) uniform UBO
+{
+    mat4 u_proj;
+    mat4 u_invProj;
+
+    vec2 u_noiseScale;
+    float u_radius;
+    float u_bias;
+
+    int u_kernelSize;
+    float _pad0;
+	vec2 _pad1;
+
+    vec3 u_samples[MAX_KERNEL_SIZE];
+};
+
 uniform sampler2D u_gNormal;
 uniform sampler2D u_gDepth;
 uniform sampler2D u_noise;
-
-uniform mat4 u_proj;
-uniform mat4 u_invProj;
-uniform vec2 u_noiseScale;
-
-uniform float u_radius;
-uniform float u_bias;
-uniform int u_kernelSize;
-
-uniform vec3 u_samples[MAX_KERNEL_SIZE];
 
 out float FragAO;
 

@@ -4,7 +4,6 @@
 
 #include <glad/glad.h>
 
-#include <cstdlib>
 #include <vector>
 #include <stdexcept>
 #include <random>
@@ -22,6 +21,9 @@ void SSAOPass::init()
 {
 	ssaoShader_ = std::make_unique<Shader>("ssaopass/ssao.vert", "ssaopass/ssao.frag");
 	blurShader_ = std::make_unique<Shader>("ssaopass/ssaoblur.vert", "ssaopass/ssaoblur.frag");
+
+	uboBlur_.init<sizeof(SSAOBlurUBO)>();
+	uboSSAO_.init<sizeof(SSAOUBO)>();
 
 	glCreateVertexArrays(1, &fsVao_);
 
@@ -71,14 +73,14 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	ssaoShader_->use();
-	ssaoShader_->setMat4("u_proj", proj);
-	ssaoShader_->setMat4("u_invProj", invProj);
-	ssaoShader_->setFloat("u_radius", radius_);
-	ssaoShader_->setFloat("u_bias", bias_);
-	ssaoShader_->setInt("u_kernelSize", kernelSize_);
-	ssaoShader_->setVec2("u_noiseScale", glm::vec2(
+	ssaoUBO_.u_proj = proj;
+	ssaoUBO_.u_invProj = invProj;
+	ssaoUBO_.u_radius = radius_;
+	ssaoUBO_.u_bias = bias_;
+	ssaoUBO_.u_kernelSize = kernelSize_;
+	ssaoUBO_.u_noiseScale = glm::vec2(
 		static_cast<float>(width_) / static_cast<float>(kNoiseSize_),
-		static_cast<float>(height_) / static_cast<float>(kNoiseSize_)));
+		static_cast<float>(height_) / static_cast<float>(kNoiseSize_));
 
 	glBindTextureUnit(0, normalTex);
 	glBindTextureUnit(1, depthTex);
@@ -86,6 +88,7 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 	ssaoShader_->setInt("u_gNormal", 0);
 	ssaoShader_->setInt("u_gDepth", 1);
 	ssaoShader_->setInt("u_noise", 2);
+	uboSSAO_.update(&ssaoUBO_, sizeof(ssaoUBO_));
 
 	glBindVertexArray(fsVao_);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -96,9 +99,10 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	blurShader_->use();
-	blurShader_->setVec2("u_texelSize", glm::vec2(1.0f / width_, 1.0f / height_));
+	ssaoBlurUBO_.u_texelSize = glm::vec2(1.0f / width_, 1.0f / height_);
 	glBindTextureUnit(0, aoRaw_);
 	blurShader_->setInt("u_ao", 0);
+	uboBlur_.update(&ssaoBlurUBO_, sizeof(ssaoBlurUBO_));
 
 	glBindVertexArray(fsVao_);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -255,6 +259,7 @@ void SSAOPass::createKernel()
 	ssaoShader_->use();
 	for (int i = 0; i < kernelSize_; ++i)
 	{
-		ssaoShader_->setVec3(("u_samples[" + std::to_string(i) + "]").c_str(), samples_[i]);
+		ssaoUBO_.u_samples[i] = samples_[i];
+		uboSSAO_.update(&ssaoUBO_, sizeof(ssaoUBO_));
 	} // end for
 } // end of createKernel()

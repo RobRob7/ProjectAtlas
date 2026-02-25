@@ -2,8 +2,13 @@
 
 in vec2 vUV;
 
+layout (std140, binding = 10) uniform UBO
+{
+    vec2 u_texelSize;
+    vec2 _pad0;
+};
+
 uniform sampler2D u_ao;
-uniform vec2 u_texelSize;
 
 out float FragAO;
 
