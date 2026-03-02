@@ -14,25 +14,6 @@ class ILight;
 class IRenderer;
 struct RenderInputs;
 
-//struct InputState
-//{
-//	// keys
-//	bool w = false;
-//	bool a = false;
-//	bool s = false;
-//	bool d = false;
-//	bool sprint = false;
-//
-//	// actions
-//	bool enableCameraPressed = false;
-//	bool disableCameraPressed = false;
-//	bool placeBlockPressed = false;
-//	bool removeBlockPressed = false;
-//	bool quitRequested = false;
-//	bool enableImguiPressed = false;
-//	bool disableImguiPressed = false;
-//};
-
 class Scene final : public IScene
 {
 public:
@@ -52,9 +33,6 @@ public:
 	void onMouseMove(float x, float y) override;
 	void onScroll(float yoffset) override;
 
-	// saving feature
-	void requestSave() override;
-
 	// getters
 	Camera& getCamera() override;
 	CubeMap& getSkybox() override;
@@ -63,9 +41,14 @@ public:
 
 private:
 	// width of window
-	int width_;
+	int width_{};
 	// height of window
-	int height_;
+	int height_{};
+
+	// save timer
+	float saveTimer_{ 0.0f };
+	// auto save time threshold (in min)
+	const float autoSaveTime_{ 5 };
 
 	// objects
 	std::unique_ptr<Camera> camera_;

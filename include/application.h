@@ -38,23 +38,16 @@ private:
 private:
 	RenderInputs in_;
 
-	// place/delete block limit
 	bool leftMouseDown_ = false;
 	bool rightMouseDown_ = false;
 
-	int width_;
-	int height_;
+	int width_{};
+	int height_{};
 
 	GLFWwindow* window_ = nullptr;
 
-	// time between current frame and last frame
-	float deltaTime_ = 0.0f;
-	float lastFrame_ = 0.0f;
-
-	// save timer
-	float saveTimer_ = 0.0f;
-	// auto save time threshold (in min)
-	float autoSaveTime_ = 5;
+	float deltaTime_{ 0.0f };
+	float lastFrame_{ 0.0f };
 
 	Backend backend_;
 	std::unique_ptr<OpenGLMain> openglMain_;
