@@ -131,16 +131,6 @@ void Application::run()
 		deltaTime_ = currentFrame - lastFrame_;
 		lastFrame_ = currentFrame;
 
-		// update save timer
-		saveTimer_ += deltaTime_;
-
-		// auto saving
-		if (saveTimer_ >= (autoSaveTime_ * 60.0f))
-		{
-			scene_->requestSave();
-			saveTimer_ = 0.0f;
-		}
-
 		// poll user input events
 		glfwPollEvents();
 
@@ -197,7 +187,8 @@ void Application::run()
 		}
 		///////////////////////////////////
 
-		// render scene
+
+		///////////// RENDER ///////////////
 		in_.time = static_cast<float>(glfwGetTime());
 		scene_->render(*renderer_, in_);
 
@@ -208,6 +199,7 @@ void Application::run()
 			// swap buffers
 			glfwSwapBuffers(window_);
 		}
+		///////////////////////////////////
 	} // end while
 } // end of run()
 

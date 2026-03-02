@@ -33,9 +33,6 @@ public:
 	void onMouseMove(float x, float y) override;
 	void onScroll(float yoffset) override;
 
-	// saving feature
-	void requestSave() override;
-
 	// getters
 	Camera& getCamera() override;
 	CubeMap& getSkybox() override;
@@ -44,9 +41,14 @@ public:
 
 private:
 	// width of window
-	int width_;
+	int width_{};
 	// height of window
-	int height_;
+	int height_{};
+
+	// save timer
+	float saveTimer_{ 0.0f };
+	// auto save time threshold (in min)
+	const float autoSaveTime_{ 5 };
 
 	// objects
 	std::unique_ptr<Camera> camera_;

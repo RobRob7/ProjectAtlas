@@ -57,9 +57,16 @@ void SceneVk::update(float dt, const InputState& in)
 {
 	if (!camera_ || !world_) return;
 
+	saveTimer_ += dt;
+	if (saveTimer_ >= (autoSaveTime_ * 60.0f))
+	{
+		world_->saveWorld();
+		saveTimer_ = 0.0f;
+	}
+
 	if (in.quitRequested)
 	{
-		requestSave();
+		world_->saveWorld();
 		return;
 	}
 
@@ -125,14 +132,6 @@ void SceneVk::onScroll(float yoffset)
 		camera_->handleMouseScroll(yoffset);
 	}
 } // end of onScroll()
-
-void SceneVk::requestSave()
-{
-	if (world_)
-	{
-		world_->saveWorld();
-	}
-} // end of requestSave()
 
 Camera& SceneVk::getCamera()
 {

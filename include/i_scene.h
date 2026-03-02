@@ -46,9 +46,6 @@ public:
 	virtual void onMouseMove(float x, float y) = 0;
 	virtual void onScroll(float yoffset) = 0;
 
-	// saving feature
-	virtual void requestSave() = 0;
-
 	// getters
 	virtual Camera& getCamera() = 0;
 	virtual CubeMap& getSkybox() = 0;
