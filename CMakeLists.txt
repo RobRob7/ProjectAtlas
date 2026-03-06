@@ -32,9 +32,6 @@ add_subdirectory(deps/libnoise)				# libnoise
 # VS set startup project main
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${CMAKE_PROJECT_NAME})
 
-# copy res folder to cmake binary directory
-file(COPY ${CMAKE_SOURCE_DIR}/res DESTINATION ${CMAKE_BINARY_DIR})
-
 # collect all *.cpp under src/ into MY_SOURCES
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
@@ -48,8 +45,7 @@ target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURC
 
 # define preprocessor macro
 target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC 
-	#RESOURCES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/res/"
-	RESOURCES_PATH="${CMAKE_CURRENT_BINARY_DIR}/res/"
+	RESOURCES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/res/"
 	SAVE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/world/"
 	VULKAN_HPP_NO_EXCEPTIONS
 	VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1

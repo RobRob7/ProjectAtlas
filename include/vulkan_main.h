@@ -72,7 +72,8 @@ public:
 
     void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) const;
 
-    vk::Format getDepthFormat() const;
+    vk::Format findDepthFormat() const;
+    vk::Format getDepthFormat() const { return depthFormat_; }
 
     vk::Device getDevice() const { return device_.get(); }
     vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice_; }
@@ -103,6 +104,7 @@ private:
     void createLogicalDevice();
     void createSwapChain();
     void createImageViews();
+    void createDepthResources();
     void createCommandPool();
 
     void createCommandBuffers();
@@ -155,6 +157,12 @@ private:
 
     vk::Queue graphicsQueue_{};
     vk::Queue presentQueue_{};
+
+    vk::UniqueImage depthImage_{};
+    vk::UniqueDeviceMemory depthImageMemory_{};
+    vk::UniqueImageView depthImageView_{};
+    vk::Format depthFormat_{ vk::Format::eUndefined };
+    vk::ImageLayout depthImageLayout_{ vk::ImageLayout::eUndefined };
 
     vk::UniqueSwapchainKHR swapChain_{};
     std::vector<vk::Image> swapChainImages_;

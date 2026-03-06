@@ -21,10 +21,10 @@ static void RunShaderCompilerScript()
 {
 	namespace fs = std::filesystem;
 
-	fs::path buildDir = fs::current_path();
+	fs::path buildDir = fs::path(RESOURCES_PATH);
 
-	fs::path scriptPath = buildDir / "res" / "convert_spv.py";
-	fs::path shaderRoot = buildDir / "res" / "shader";
+	fs::path scriptPath = buildDir / "convert_spv.py";
+	fs::path shaderRoot = buildDir / "shader";
 
 	if (!fs::exists(scriptPath))
 	{
@@ -111,12 +111,18 @@ Application::~Application()
 	if (vulkanMain_)
 	{
 		vulkanMain_->waitIdle();
-		vulkanMain_.reset();
 	}
+
+	ui_.reset();
+	renderer_.reset();
+	scene_.reset();
+	openglMain_.reset();
+	vulkanMain_.reset();
 
 	if (window_)
 	{
 		glfwDestroyWindow(window_);
+		window_ = nullptr;
 	}
 	glfwTerminate();
 } // end of destructor
