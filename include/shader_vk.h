@@ -1,36 +1,33 @@
 #ifndef SHADER_MODULE_VK_H
 #define SHADER_MODULE_VK_H
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 #include <string_view>
 #include <vector>
 #include <cstdint>
-#include <filesystem>
 
 class ShaderModuleVk
 {
 public:
-	ShaderModuleVk(VkDevice device, std::string_view vertexPathFile, std::string_view fragPathFile);
+	ShaderModuleVk(vk::Device device, std::string_view vertexPathFile, std::string_view fragPathFile);
 	~ShaderModuleVk() noexcept;
 
 	ShaderModuleVk(const ShaderModuleVk&) = delete;
 	ShaderModuleVk& operator=(const ShaderModuleVk&) = delete;
 
-	ShaderModuleVk(ShaderModuleVk&& other) noexcept;
-	ShaderModuleVk& operator=(ShaderModuleVk&& other) noexcept;
+	ShaderModuleVk(ShaderModuleVk&& other) noexcept = default;
+	ShaderModuleVk& operator=(ShaderModuleVk&& other) noexcept = default;
 
-	VkShaderModule vert() const { return vertShaderModule_; }
-	VkShaderModule frag() const { return fragShaderModule_; }
+	vk::ShaderModule vertShader() const noexcept { return vertShaderModule_.get(); }
+	vk::ShaderModule fragShader() const noexcept { return fragShaderModule_.get(); }
 
 private:
-	void destroy() noexcept;
-	VkShaderModule createShaderModule(const std::vector<uint32_t>& code);
-	std::vector<uint32_t> readFile(const std::filesystem::path& pathFile);
+	vk::UniqueShaderModule createShaderModule(const std::vector<uint32_t>& code);
 private:
-	VkDevice device_{ VK_NULL_HANDLE };
-	VkShaderModule vertShaderModule_{ VK_NULL_HANDLE };
-	VkShaderModule fragShaderModule_{ VK_NULL_HANDLE };
+	vk::Device device_{};
+	vk::UniqueShaderModule vertShaderModule_{};
+	vk::UniqueShaderModule fragShaderModule_{};
 };
 
 #endif

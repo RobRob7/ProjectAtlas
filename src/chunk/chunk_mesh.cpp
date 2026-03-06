@@ -1,5 +1,9 @@
 #include "chunk_mesh.h"
 
+#include <glm/glm.hpp>
+
+#include <cstdint>
+
 //--- HELPER ---//
 // world opaque vertices
 // LAYOUT (32u bits)

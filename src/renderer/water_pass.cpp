@@ -236,7 +236,7 @@ void WaterPass::waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) 
 
     // render objects (non-UI)
     chunk.renderOpaque(in, reflView, proj, width_, height_);
-    in.light->render(reflView, proj);
+    in.light->render({}, reflView, proj);
     in.skybox->render(reflView, proj);
 
     // restore camera
@@ -276,7 +276,7 @@ void WaterPass::waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) 
 
     // render objects (non-UI)
     chunk.renderOpaque(in, view, proj, width_, height_);
-    in.light->render(view, proj);
+    in.light->render({}, view, proj);
 
     // restore opaque UBO
     chunkOpaqueUBO = chunkOpaqueUBOCopy;

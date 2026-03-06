@@ -92,7 +92,7 @@ Application::Application(int width, int height, Backend backend)
 		RunShaderCompilerScript();
 
 		// setup scene + renderer
-		scene_ = std::make_unique<SceneVk>(width_, height_);
+		scene_ = std::make_unique<SceneVk>(*vulkanMain_, width_, height_);
 		scene_->init();
 		renderer_ = std::make_unique<RendererVk>(*vulkanMain_);
 		renderer_->init();

@@ -73,12 +73,11 @@ void ChunkPassGL::renderOpaque(
     chunkOpaqueUBO_.u_proj = proj;
     chunkOpaqueUBO_.u_screenSize = glm::vec2{ width, height };
 
-    DrawContext ctx{};
     for (const auto& item : list.items)
     {
         chunkOpaqueUBO_.u_chunkOrigin = item.chunkOrigin;
         uboOpaque_.update(&chunkOpaqueUBO_, sizeof(chunkOpaqueUBO_));
-        item.gpu->drawOpaque(ctx);
+        item.gpu->drawOpaque();
     }
 } // end of renderOpaque()
 
@@ -98,12 +97,11 @@ void ChunkPassGL::renderOpaque(
 
     shader.use();
 
-    DrawContext ctx{};
     for (const auto& item : list.items)
     {
         chunkOrigin = item.chunkOrigin;
         uboGL.update(ubo, uboSize);
-        item.gpu->drawOpaque(ctx);
+        item.gpu->drawOpaque();
     }
 } // end of renderOpaque()
 
@@ -126,7 +124,6 @@ void ChunkPassGL::renderWater(
     glDepthMask(GL_FALSE);
     glEnable(GL_DEPTH_TEST);
 
-    DrawContext ctx{};
     for (const auto& item : list.items)
     {
         glm::mat4 model = glm::translate(
@@ -134,7 +131,7 @@ void ChunkPassGL::renderWater(
             item.chunkOrigin);
         chunkWaterUBO_.u_model = model;
         uboWater_.update(&chunkWaterUBO_, sizeof(chunkWaterUBO_));
-        item.gpu->drawWater(ctx);
+        item.gpu->drawWater();
     }
 
     glDepthMask(GL_TRUE);

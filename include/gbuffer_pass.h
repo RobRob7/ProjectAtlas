@@ -11,7 +11,6 @@
 class ChunkPassGL;
 class Shader;
 class ChunkManager;
-
 struct RenderInputs;
 
 struct GbufferUBO

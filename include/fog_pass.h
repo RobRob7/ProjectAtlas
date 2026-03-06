@@ -8,6 +8,9 @@
 #include <cstdint>
 #include <memory>
 
+class Shader;
+struct RenderSettings;
+
 struct FogPassUBO
 {
     float u_near;
@@ -22,9 +25,6 @@ struct FogPassUBO
     float u_ambStr;
     float _pad2;
 };
-
-class Shader;
-struct RenderSettings;
 
 class FogPass
 {

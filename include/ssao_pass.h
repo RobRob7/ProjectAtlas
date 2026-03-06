@@ -8,6 +8,8 @@
 #include <memory>
 #include <array>
 
+class Shader;
+
 inline constexpr int MAX_KERNEL_SIZE = 64;
 
 struct SSAOBlurUBO
@@ -31,8 +33,6 @@ struct SSAOUBO
 
 	glm::vec3 u_samples[MAX_KERNEL_SIZE];
 };
-
-class Shader;
 
 class SSAOPass
 {

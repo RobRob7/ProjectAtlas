@@ -6,11 +6,9 @@
 
 #include <glm/glm.hpp>
 
-#include <vector>
 #include <array>
 #include <cstdint>
 #include <optional>
-#include <functional>
 
 class IChunkMeshGPU;
 

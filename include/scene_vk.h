@@ -5,6 +5,7 @@
 
 #include <memory>
 
+class VulkanMain;
 class Camera;
 class CubeMap;
 class Crosshair;
@@ -17,7 +18,7 @@ struct RenderInputs;
 class SceneVk final : public IScene
 {
 public:
-	SceneVk(int w, int h);
+	SceneVk(VulkanMain& vk, int w, int h);
 	~SceneVk() override;
 
 	void init() override;
@@ -40,6 +41,7 @@ public:
 	ILight& getLight() override;
 
 private:
+	VulkanMain& vk_;
 	// width of window
 	int width_{};
 	// height of window

@@ -1,22 +1,14 @@
 #include "light_gl.h"
 
-#include "ubo_bindings.h"
-
 #include "shader.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>
 
-#include <algorithm>
 #include <cstddef>
+#include <cassert>
 
-struct LightUBO
-{
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 proj;
-	glm::vec4 color;
-};
+using namespace Light_Constants;
 
 //--- PUBLIC ---//
 LightGL::LightGL(const glm::vec3& pos, const glm::vec3& color)
@@ -55,9 +47,11 @@ void LightGL::init()
 	ubo_.init<sizeof(LightUBO)>();
 } // end of init()
 
-void LightGL::render(const glm::mat4& view, const glm::mat4& proj)
+void LightGL::render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj)
 {
-	if (!shader_ || vao_ == 0) 
+	assert(ctx.backend == RenderContext::Backend::OpenGL && "Must be OpenGL render context!");
+
+	if (!shader_ || vao_ == 0)
 		return;
 
 	shader_->use();
@@ -74,40 +68,6 @@ void LightGL::render(const glm::mat4& view, const glm::mat4& proj)
 	glBindVertexArray(vao_);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 } // end of render
-
-glm::vec3& LightGL::getPosition()
-{
-	return position_;
-} // end of getPosition()
-
-const glm::vec3& LightGL::getPosition() const
-{
-	return position_;
-} // end of getPosition()
-
-glm::vec3& LightGL::getColor()
-{
-	return color_;
-} // end of getColor()
-
-const glm::vec3& LightGL::getColor() const
-{
-	return color_;
-} // end of getColor()
-
-void LightGL::setPosition(const glm::vec3& pos)
-{
-	position_ = pos;
-} // end of setPosition()
-
-void LightGL::setColor(const glm::vec3& color)
-{
-	color_ = {
-		std::clamp(color.x, MIN_COLOR, MAX_COLOR),
-		std::clamp(color.y, MIN_COLOR, MAX_COLOR),
-		std::clamp(color.z, MIN_COLOR, MAX_COLOR)
-	};
-} // end of setColor()
 
 
 //--- PRIVATE ---//

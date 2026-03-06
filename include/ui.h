@@ -1,12 +1,10 @@
 #ifndef UI_H
 #define UI_H
 
-#include "i_scene.h"
-
 #include <memory>
 
 class Texture;
-//class Scene;
+class IScene;
 struct GLFWwindow;
 struct RenderSettings;
 
@@ -35,7 +33,6 @@ private:
 
 	// window top bar logo
 	std::unique_ptr<Texture> logoTex_;
-	//void* logoTex_;
 
 	bool enabled_;
 	bool cameraModeOn_;

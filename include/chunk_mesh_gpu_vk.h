@@ -3,6 +3,8 @@
 
 #include "i_chunk_mesh_gpu.h"
 
+#include <vulkan/vulkan.hpp>
+
 #include <cstdint>
 
 class VulkanMain;
@@ -15,27 +17,25 @@ public:
 	~ChunkMeshGPUVk() override;
 
 	void upload(const ChunkMeshData& data) override;
-	void drawOpaque(const DrawContext& ctx) override;
-	void drawWater(const DrawContext& ctx) override;
+	void drawOpaque() override;
+	void drawWater() override;
 
 private:
 	VulkanMain& vk_;
 
 	// opaque
-	VkBuffer opaqueVB_{ VK_NULL_HANDLE };
-	VkDeviceMemory opaqueVBMem_{ VK_NULL_HANDLE };
-	VkBuffer opaqueIB_{ VK_NULL_HANDLE };
-	VkDeviceMemory opaqueIBMem_{ VK_NULL_HANDLE };
+	vk::UniqueBuffer opaqueVB_{};
+	vk::UniqueDeviceMemory opaqueVBMem_{};
+	vk::UniqueBuffer opaqueIB_{};
+	vk::UniqueDeviceMemory opaqueIBMem_{};
 	uint32_t opaqueIndexCount_{ 0 };
 
 	// water
-	VkBuffer waterVB_{ VK_NULL_HANDLE };
-	VkDeviceMemory waterVBMem_{ VK_NULL_HANDLE };
-	VkBuffer waterIB_{ VK_NULL_HANDLE };
-	VkDeviceMemory waterIBMem_{ VK_NULL_HANDLE };
+	vk::UniqueBuffer waterVB_{};
+	vk::UniqueDeviceMemory waterVBMem_{};
+	vk::UniqueBuffer waterIB_{};
+	vk::UniqueDeviceMemory waterIBMem_{};
 	uint32_t waterIndexCount_{ 0 };
-private:
-	void destroyBuffers();
 };
 
 #endif

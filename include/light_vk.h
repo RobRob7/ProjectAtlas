@@ -1,23 +1,22 @@
-#ifndef LIGHT_GL_H
-#define LIGHT_GL_H
+#ifndef LIGHT_VK_H
+#define LIGHT_VK_H
 
 #include "i_light.h"
 
-#include "ubo_gl.h"
-#include "ubo_bindings.h"
+#include "vulkan/vulkan.hpp"
 
-#include <cstdint>
 #include <memory>
 #include <algorithm>
 
-class Shader;
+class VulkanMain;
+class ShaderModuleVk;
 
-class LightGL final : public ILight
+class LightVk final : public ILight
 {
 public:
-	LightGL(const glm::vec3& pos, const glm::vec3& color = glm::vec3(1.0f));
-	~LightGL() override;
-
+	LightVk(VulkanMain& vk, const glm::vec3& pos, const glm::vec3& color = glm::vec3(1.0f));
+	~LightVk() override;
+	
 	void init() override;
 	void render(const Light_Constants::RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj) override;
 
@@ -38,12 +37,29 @@ public:
 	} // end of setColor()
 
 private:
-	void destroyGL();
+	void createVertexBuffer();
+	void createPipeline();
+	void createUBO();
+	void createDesciptorSet();
+
 private:
-	std::unique_ptr<Shader> shader_;
-	uint32_t vao_{};
-	uint32_t vbo_{};
-	UBOGL ubo_{UBOBinding::Light};
+	VulkanMain& vk_;
+
+	std::unique_ptr<ShaderModuleVk> shader_;
+
+	vk::UniqueDescriptorSetLayout setLayout_{};
+	vk::UniqueDescriptorPool descPool_{};
+	vk::DescriptorSet descSet_{};
+
+	vk::UniqueBuffer uboBuffer_{};
+	vk::UniqueDeviceMemory uboMemory_{};
+
+	vk::UniqueBuffer vertexBuffer_{};
+	vk::UniqueDeviceMemory vertexMemory_{};
+	vk::DeviceSize vertexBufferSize_{};
+
+	vk::UniquePipelineLayout pipelineLayout_{};
+	vk::UniquePipeline pipeline_{};
 
 	glm::vec3 position_{};
 	glm::vec3 color_{};

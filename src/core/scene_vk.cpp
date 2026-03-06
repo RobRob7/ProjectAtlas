@@ -1,5 +1,7 @@
 #include "scene_vk.h"
 
+#include "vulkan_main.h"
+
 #include "constants.h"
 
 #include "i_renderer.h"
@@ -9,15 +11,15 @@
 #include "cubeMap.h"
 #include "crosshair.h"
 #include "chunk_manager.h"
-#include "light_gl.h"
+#include "light_vk.h"
 
 #include <glm/glm.hpp>
 
 using namespace World;
 
 //--- PUBLIC ---//
-SceneVk::SceneVk(int w, int h)
-	: width_(w), height_(h)
+SceneVk::SceneVk(VulkanMain& vk, int w, int h)
+	: vk_(vk), width_(w), height_(h)
 {
 } // end of constuctor
 
@@ -30,8 +32,8 @@ void SceneVk::init()
 
 	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, CHUNK_SIZE_Y, 3.0f));
 
-	//light_ = std::make_unique<LightGL>(camera_->getCameraPosition() + glm::vec3(0.0f, -10.0f, 0.0f));
-	//light_->init();
+	light_ = std::make_unique<LightVk>(vk_, camera_->getCameraPosition() + glm::vec3(0.0f, -10.0f, 0.0f));
+	light_->init();
 
 	//skybox_ = std::make_unique<CubeMap>();
 	//skybox_->init();
@@ -55,20 +57,20 @@ void SceneVk::render(IRenderer& renderer, RenderInputs& in)
 
 void SceneVk::update(float dt, const InputState& in)
 {
-	if (!camera_ || !world_) return;
+	//if (!camera_ || !world_) return;
 
 	saveTimer_ += dt;
-	if (saveTimer_ >= (autoSaveTime_ * 60.0f))
-	{
-		world_->saveWorld();
-		saveTimer_ = 0.0f;
-	}
+	//if (saveTimer_ >= (autoSaveTime_ * 60.0f))
+	//{
+	//	world_->saveWorld();
+	//	saveTimer_ = 0.0f;
+	//}
 
-	if (in.quitRequested)
-	{
-		world_->saveWorld();
-		return;
-	}
+	//if (in.quitRequested)
+	//{
+	//	world_->saveWorld();
+	//	return;
+	//}
 
 	if (in.disableCameraPressed)
 	{
@@ -90,19 +92,19 @@ void SceneVk::update(float dt, const InputState& in)
 		if (in.s) camera_->processKeyboard(CameraMovement::BACKWARD, dt);
 		if (in.d) camera_->processKeyboard(CameraMovement::RIGHT, dt);
 
-		if (in.removeBlockPressed)
-		{
-			world_->placeOrRemoveBlock(false,
-				camera_->getCameraPosition(),
-				camera_->getCameraDirection());
-		}
+		//if (in.removeBlockPressed)
+		//{
+		//	world_->placeOrRemoveBlock(false,
+		//		camera_->getCameraPosition(),
+		//		camera_->getCameraDirection());
+		//}
 
-		if (in.placeBlockPressed)
-		{
-			world_->placeOrRemoveBlock(true,
-				camera_->getCameraPosition(),
-				camera_->getCameraDirection());
-		}
+		//if (in.placeBlockPressed)
+		//{
+		//	world_->placeOrRemoveBlock(true,
+		//		camera_->getCameraPosition(),
+		//		camera_->getCameraDirection());
+		//}
 	}
 } // end of update()
 

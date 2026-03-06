@@ -10,6 +10,14 @@ namespace Light_Constants
 	inline constexpr float MIN_COLOR = 0.0f;
 	inline constexpr float MAX_COLOR = 1.0f;
 
+	struct LightUBO
+	{
+		glm::mat4 model;
+		glm::mat4 view;
+		glm::mat4 proj;
+		glm::vec4 color;
+	};
+
 	// pos, normals, texcoords
 	inline constexpr std::array<float, 288> CUBE_VERTICES = {
 		// =========================
@@ -79,6 +87,14 @@ namespace Light_Constants
 		glm::vec3 normal;
 		glm::vec2 uv;
 	};
+
+	struct RenderContext
+	{
+		enum class Backend {OpenGL, Vulkan};
+
+		Backend backend = Backend::OpenGL;
+		const void* nativeCmd = nullptr;
+	};
 };
 
 class ILight
@@ -87,7 +103,7 @@ public:
 	virtual ~ILight() = default;
 
 	virtual void init() = 0;
-	virtual void render(const glm::mat4& view, const glm::mat4& proj) = 0;
+	virtual void render(const Light_Constants::RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj) = 0;
 
 	virtual glm::vec3& getPosition() = 0;
 	virtual const glm::vec3& getPosition() const = 0;

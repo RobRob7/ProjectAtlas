@@ -19,4 +19,9 @@ enum class UBOBinding : uint32_t
     WaterPass = 11,
 };
 
+constexpr uint32_t TO_API_FORM(UBOBinding b) noexcept
+{
+    return static_cast<uint32_t>(b);
+} // end of TO_API_FORM
+
 #endif

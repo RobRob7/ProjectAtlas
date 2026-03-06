@@ -1,6 +1,14 @@
 #ifndef I_SCENE_H
 #define I_SCENE_H
 
+class IRenderer;
+class RenderInputs;
+
+class Camera;
+class CubeMap;
+class ChunkManager;
+class ILight;
+
 struct InputState
 {
 	// keys
@@ -20,20 +28,12 @@ struct InputState
 	bool disableImguiPressed = false;
 };
 
-class IRenderer;
-class RenderInputs;
-
-class Camera;
-class CubeMap;
-class ChunkManager;
-class ILight;
-
 class IScene
 {
 public:
 	virtual ~IScene() = default;
 
-	 virtual void init() = 0;
+	virtual void init() = 0;
 
 	// render scene
 	virtual void render(IRenderer& renderer, RenderInputs& in) = 0;
