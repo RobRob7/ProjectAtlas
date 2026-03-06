@@ -76,14 +76,14 @@ bool VulkanMain::beginFrame(FrameContext& out)
 		vk::Result res = device_->waitForFences(1, &f, VK_TRUE, UINT64_MAX);
 		if (res != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("waitForFences failed!");
+			throw std::runtime_error("waitForFences failed: " + vk::to_string(res));
 		}
 	}
 
 	// acquire next image
 	uint32_t imageIndex = 0;
 	{
-		auto rv = device_->acquireNextImageKHR(
+		vk::ResultValue rv = device_->acquireNextImageKHR(
 			swapChain_.get(),
 			UINT64_MAX,
 			imageAvailableSemaphores_[currentFrame_].get(),
@@ -97,7 +97,7 @@ bool VulkanMain::beginFrame(FrameContext& out)
 		}
 		if (rv.result != vk::Result::eSuccess && rv.result != vk::Result::eSuboptimalKHR)
 		{
-			throw std::runtime_error("failed to acquire swapchain image!");
+			throw std::runtime_error("acquireNextImageKHR failed: " + vk::to_string(rv.result));
 		}
 
 		imageIndex = rv.value;
@@ -111,7 +111,7 @@ bool VulkanMain::beginFrame(FrameContext& out)
 
 		if (res != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("waitForFences(imagesInFlight) failed!");
+			throw std::runtime_error("waitForFences failed:" + vk::to_string(res));
 		}
 	}
 
@@ -128,7 +128,7 @@ bool VulkanMain::beginFrame(FrameContext& out)
 
 		if (res != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("resetFences failed!");
+			throw std::runtime_error("resetFences failed:" + vk::to_string(res));
 		}
 	}
 
@@ -139,9 +139,12 @@ bool VulkanMain::beginFrame(FrameContext& out)
 	vk::CommandBufferBeginInfo beginInfo{};
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
-	if (cmd.begin(beginInfo) != vk::Result::eSuccess)
 	{
-		throw std::runtime_error("failed to begin command buffer!");
+		vk::Result res = cmd.begin(beginInfo);
+		if (res != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("begin failed: " + vk::to_string(res));
+		}
 	}
 
 	// fill out frame context
@@ -162,9 +165,12 @@ bool VulkanMain::beginFrame(FrameContext& out)
 
 bool VulkanMain::endFrame(const FrameContext& frame)
 {
-	if (frame.cmd.end() != vk::Result::eSuccess)
 	{
-		throw std::runtime_error("failed to record command buffer!");
+		vk::Result res = frame.cmd.end();
+		if (res != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("end failed: " + vk::to_string(res));
+		}
 	}
 
 	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores_[currentFrame_].get()};
@@ -183,7 +189,7 @@ bool VulkanMain::endFrame(const FrameContext& frame)
 		vk::Result res = graphicsQueue_.submit(1, &submitInfo, inFlightFences_[currentFrame_].get());
 		if (res != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("failed to submit draw command buffer!");
+			throw std::runtime_error("submit failed: " + vk::to_string(res));
 		}
 	}
 
@@ -212,8 +218,7 @@ bool VulkanMain::endFrame(const FrameContext& frame)
 
 	if (res != vk::Result::eSuccess)
 	{
-		std::cerr << "vkQueuePresentKHR failed: " << vk::to_string(res) << "\n";
-		throw std::runtime_error("failed to present swapchain image!");
+		throw std::runtime_error("presentKHR failed: " + vk::to_string(res));
 	}
 
 	currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -248,10 +253,10 @@ void VulkanMain::createBuffer(
 	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
 	{
-		auto rv = device_->createBuffer(bufferInfo, nullptr);
+		vk::ResultValue rv = device_->createBuffer(bufferInfo, nullptr);
 		if (rv.result != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("failed to create buffer!");
+			throw std::runtime_error("createBuffer failed: " + vk::to_string(rv.result));
 		}
 		buffer = rv.value;
 	}
@@ -263,10 +268,10 @@ void VulkanMain::createBuffer(
 	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
 	{
-		auto rv = device_->allocateMemory(allocInfo, nullptr);
+		vk::ResultValue rv = device_->allocateMemory(allocInfo, nullptr);
 		if (rv.result != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("failed to allocate buffer memory!");
+			throw std::runtime_error("allocateMemory failed: " + vk::to_string(rv.result));
 		}
 		bufferMemory = rv.value;
 	}
@@ -275,7 +280,7 @@ void VulkanMain::createBuffer(
 		vk::Result res = device_->bindBufferMemory(buffer, bufferMemory, 0);
 		if (res != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("failed to bind buffer memory!");
+			throw std::runtime_error("bindBufferMemory failed: " + vk::to_string(res));
 		}
 	}
 } // end of createBuffer()
@@ -289,10 +294,10 @@ vk::CommandBuffer VulkanMain::beginSingleTimeCommands() const
 
 	vk::CommandBuffer commandBuffer{};
 	{
-		auto rv = device_->allocateCommandBuffers(allocInfo);
+		vk::ResultValue rv = device_->allocateCommandBuffers(allocInfo);
 		if (rv.result != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("allocateCommandBuffers failed!");
+			throw std::runtime_error("allocateCommandBuffers failed: " + vk::to_string(rv.result));
 		}
 		commandBuffer = rv.value[0];
 	}
@@ -300,9 +305,10 @@ vk::CommandBuffer VulkanMain::beginSingleTimeCommands() const
 	vk::CommandBufferBeginInfo beginInfo{};
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
-	if (commandBuffer.begin(beginInfo) != vk::Result::eSuccess)
+	vk::Result res = commandBuffer.begin(beginInfo);
+	if (res != vk::Result::eSuccess)
 	{
-		throw std::runtime_error("beginSingleTimeCommands: begin failed!");
+		throw std::runtime_error("beginSingleTimeCommands: begin failed: " + vk::to_string(res));
 	}
 
 	return commandBuffer;
@@ -316,8 +322,21 @@ void VulkanMain::endSingleTimeCommands(vk::CommandBuffer commandBuffer) const
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	graphicsQueue_.submit(1, &submitInfo, nullptr);
-	graphicsQueue_.waitIdle();
+	{
+		vk::Result res = graphicsQueue_.submit(1, &submitInfo, nullptr);
+		if (res != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("submit failed: " + vk::to_string(res));
+		}
+	}
+
+	{
+		vk::Result res = graphicsQueue_.waitIdle();
+		if (res != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("waitIdle failed: " + vk::to_string(res));
+		}
+	}
 
 	device_->freeCommandBuffers(commandPool_.get(), 1, &commandBuffer);
 } // end of endSingleTimeCommands()
@@ -344,7 +363,7 @@ vk::Format VulkanMain::findDepthFormat() const
 
 	for (vk::Format format : candidates)
 	{
-		auto props = physicalDevice_.getFormatProperties(format);
+		vk::FormatProperties props = physicalDevice_.getFormatProperties(format);
 
 		if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
 		{
@@ -352,7 +371,7 @@ vk::Format VulkanMain::findDepthFormat() const
 		}
 	} // end for
 
-	throw std::runtime_error("Failed to find supported depth format!");
+	throw std::runtime_error("failed to find supported depth format!");
 } // end of findDepthFormat()
 
 
@@ -397,10 +416,10 @@ void VulkanMain::createInstance()
 	}
 
 	{
-		auto rv = vk::createInstanceUnique(createInfo, nullptr);
+		vk::ResultValue rv = vk::createInstanceUnique(createInfo, nullptr);
 		if (rv.result != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("failed to create instance!");
+			throw std::runtime_error("createInstanceUnique failed: " + vk::to_string(rv.result));
 		}
 		instance_ = std::move(rv.value);
 	}
@@ -415,10 +434,10 @@ void VulkanMain::setupDebugMessenger()
 	populateDebugMessengerCreateInfo(createInfo);
 
 	{
-		auto rv = instance_->createDebugUtilsMessengerEXTUnique(createInfo);
+		vk::ResultValue rv = instance_->createDebugUtilsMessengerEXTUnique(createInfo);
 		if (rv.result != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("failed to set up debug messenger!");
+			throw std::runtime_error("createDebugUtilsMessengerEXTUnique failed: " + vk::to_string(rv.result));
 		}
 		debugMessenger_ = std::move(rv.value);
 	}
@@ -427,6 +446,7 @@ void VulkanMain::setupDebugMessenger()
 void VulkanMain::createSurface()
 {
 	VkSurfaceKHR rawSurface{};
+
 	if (glfwCreateWindowSurface(instance_.get(), window_, nullptr, &rawSurface) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create window surface!");
@@ -437,11 +457,11 @@ void VulkanMain::createSurface()
 
 void VulkanMain::pickPhysicalDevice()
 {
-	auto rv = instance_->enumeratePhysicalDevices();
+	vk::ResultValue rv = instance_->enumeratePhysicalDevices();
 	
 	if (rv.result != vk::Result::eSuccess || rv.value.empty())
 	{
-		throw std::runtime_error("failed to find GPUs with Vulkan support!");
+		throw std::runtime_error("enumeratePhysicalDevices failed: " + vk::to_string(rv.result));
 	}
 
 	for (const auto& device : rv.value) 
@@ -510,10 +530,10 @@ void VulkanMain::createLogicalDevice()
 		createInfo.enabledLayerCount = 0;
 	}
 
-	auto rv = physicalDevice_.createDeviceUnique(createInfo, nullptr);
+	vk::ResultValue rv = physicalDevice_.createDeviceUnique(createInfo, nullptr);
 	if (rv.result != vk::Result::eSuccess)
 	{
-		throw std::runtime_error("failed to create logical device!");
+		throw std::runtime_error("createDeviceUnique failed: " + vk::to_string(rv.result));
 	}
 
 	device_ = std::move(rv.value);
@@ -570,20 +590,20 @@ void VulkanMain::createSwapChain()
 	createInfo.clipped = VK_TRUE;
 	createInfo.oldSwapchain = nullptr;
 
-	auto rv = device_->createSwapchainKHRUnique(createInfo, nullptr);
+	vk::ResultValue rv = device_->createSwapchainKHRUnique(createInfo, nullptr);
 	if (rv.result != vk::Result::eSuccess) 
 	{
-		throw std::runtime_error("failed to create swap chain!");
+		throw std::runtime_error("createSwapchainKHRUnique failed: " + vk::to_string(rv.result));
 	}
 
 	swapChain_ = std::move(rv.value);
 
 	// get swapchain images
 	{
-		auto rv = device_->getSwapchainImagesKHR(swapChain_.get());
+		vk::ResultValue rv = device_->getSwapchainImagesKHR(swapChain_.get());
 		if (rv.result != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("getSwapchainImagesKHR failed!");
+			throw std::runtime_error("getSwapchainImagesKHR failed: " + vk::to_string(rv.result));
 		}
 		swapChainImages_ = std::move(rv.value);
 	}
@@ -610,10 +630,10 @@ void VulkanMain::createImageViews()
 			0, 1
 		};
 
-		auto rv = device_->createImageViewUnique(createInfo, nullptr);
+		vk::ResultValue rv = device_->createImageViewUnique(createInfo, nullptr);
 		if (rv.result != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("failed to create image view!");
+			throw std::runtime_error("createImageViewUnique failed: " + vk::to_string(rv.result));
 		}
 
 		swapChainImageViews_.push_back(std::move(rv.value));
@@ -720,10 +740,10 @@ void VulkanMain::createCommandPool()
 	poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-	auto rv = device_->createCommandPoolUnique(poolInfo, nullptr);
+	vk::ResultValue rv = device_->createCommandPoolUnique(poolInfo, nullptr);
 	if (rv.result != vk::Result::eSuccess)
 	{
-		throw std::runtime_error("failed to create command pool!");
+		throw std::runtime_error("createCommandPoolUnique failed: " + vk::to_string(rv.result));
 	}
 
 	commandPool_ = std::move(rv.value);
@@ -736,10 +756,10 @@ void VulkanMain::createCommandBuffers()
 	allocInfo.level = vk::CommandBufferLevel::ePrimary;
 	allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 
-	auto rv = device_->allocateCommandBuffers(allocInfo);
+	vk::ResultValue rv = device_->allocateCommandBuffers(allocInfo);
 	if (rv.result != vk::Result::eSuccess)
 	{
-		throw std::runtime_error("failed to allocate command buffers!");
+		throw std::runtime_error("allocateCommandBuffers failed: " + vk::to_string(rv.result));
 	}
 
 	commandBuffers_ = std::move(rv.value);
@@ -760,20 +780,20 @@ void VulkanMain::createSyncObjects()
 	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
 		{
-			auto rv = device_->createSemaphoreUnique(semInfo, nullptr);
+			vk::ResultValue rv = device_->createSemaphoreUnique(semInfo, nullptr);
 			if (rv.result != vk::Result::eSuccess)
 			{
-				throw std::runtime_error("failed to create per-frame semaphore!");
+				throw std::runtime_error("createSemaphoreUnique failed: " + vk::to_string(rv.result));
 			}
 
 			imageAvailableSemaphores_.push_back(std::move(rv.value));
 		}
 
 		{
-			auto rv = device_->createFenceUnique(fenceInfo, nullptr);
+			vk::ResultValue rv = device_->createFenceUnique(fenceInfo, nullptr);
 			if (rv.result != vk::Result::eSuccess)
 			{
-				throw std::runtime_error("failed to create per-frame fence!");
+				throw std::runtime_error("createFenceUnique failed: " + vk::to_string(rv.result));
 			}
 
 			inFlightFences_.push_back(std::move(rv.value));
@@ -816,7 +836,13 @@ void VulkanMain::recreateSwapChain()
 		glfwWaitEvents();
 	} // end while
 
-	device_->waitIdle();
+	{
+		vk::Result res = device_->waitIdle();
+		if (res != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("waitIdle failed: " + vk::to_string(res));
+		}
+	}
 
 	cleanupSwapChain();
 	createSwapChain();
@@ -846,7 +872,7 @@ void VulkanMain::populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateI
 
 bool VulkanMain::checkValidationLayerSupport()
 {
-	auto rv = vk::enumerateInstanceLayerProperties();
+	vk::ResultValue rv = vk::enumerateInstanceLayerProperties();
 	if (rv.result != vk::Result::eSuccess)
 	{
 		return false;
@@ -925,10 +951,10 @@ QueueFamilyIndices VulkanMain::findQueueFamilies(vk::PhysicalDevice device)
 	uint32_t i = 0;
 	for (const auto& qf : queueFamilies) 
 	{
-		auto rv = device.getSurfaceSupportKHR(i, surface_.get());
+		vk::ResultValue rv = device.getSurfaceSupportKHR(i, surface_.get());
 		if (rv.result != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("getSurfaceSupportKHR failed!");
+			throw std::runtime_error("getSurfaceSupportKHR failed: " + vk::to_string(rv.result));
 		}
 		
 		if (rv.value)
@@ -969,7 +995,7 @@ vk::SampleCountFlagBits VulkanMain::getMaxUsableSampleCount()
 
 bool VulkanMain::checkDeviceExtensionSupport(vk::PhysicalDevice device) 
 {
-	auto rv = device.enumerateDeviceExtensionProperties(nullptr);
+	vk::ResultValue rv = device.enumerateDeviceExtensionProperties(nullptr);
 	if (rv.result != vk::Result::eSuccess)
 	{
 		return false;
@@ -989,17 +1015,17 @@ SwapChainSupportDetails VulkanMain::querySwapChainSupport(vk::PhysicalDevice dev
 	SwapChainSupportDetails details;
 	
 	{
-		auto rv = device.getSurfaceCapabilitiesKHR(surface_.get());
+		vk::ResultValue rv = device.getSurfaceCapabilitiesKHR(surface_.get());
 		if (rv.result != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("getSurfaceCapabilitiesKHR failed!");
+			throw std::runtime_error("getSurfaceCapabilitiesKHR failed: " + vk::to_string(rv.result));
 		}
 
 		details.capabilities = rv.value;
 	}
 
 	{
-		auto rv = device.getSurfaceFormatsKHR(surface_.get());
+		vk::ResultValue rv = device.getSurfaceFormatsKHR(surface_.get());
 		if (rv.result == vk::Result::eSuccess)
 		{
 			details.formats = std::move(rv.value);
@@ -1007,7 +1033,7 @@ SwapChainSupportDetails VulkanMain::querySwapChainSupport(vk::PhysicalDevice dev
 	}
 
 	{
-		auto rv = device.getSurfacePresentModesKHR(surface_.get());
+		vk::ResultValue rv = device.getSurfacePresentModesKHR(surface_.get());
 		if (rv.result == vk::Result::eSuccess)
 		{
 			details.presentModes = std::move(rv.value);
@@ -1030,10 +1056,10 @@ vk::UniqueImageView VulkanMain::createImageView(vk::Image image, vk::Format form
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
-	auto rv = device_->createImageViewUnique(viewInfo, nullptr);
+	vk::ResultValue rv = device_->createImageViewUnique(viewInfo, nullptr);
 	if (rv.result != vk::Result::eSuccess)
 	{
-		throw std::runtime_error("failed to create image view!");
+		throw std::runtime_error("createImageViewUnique failed: " + vk::to_string(rv.result));
 	}
 
 	return std::move(rv.value);
@@ -1103,10 +1129,10 @@ void VulkanMain::createPerImageSync()
 
 	for (uint32_t i = 0; i < swapChainImages_.size(); ++i)
 	{
-		auto rv = device_->createSemaphoreUnique(semInfo, nullptr);
+		vk::ResultValue rv = device_->createSemaphoreUnique(semInfo, nullptr);
 		if (rv.result != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("failed to create per-image render finished semaphore!");
+			throw std::runtime_error("createSemaphoreUnique failed: " + vk::to_string(rv.result));
 		}
 		renderFinishedPerImage_.push_back(std::move(rv.value));
 	} // end for
