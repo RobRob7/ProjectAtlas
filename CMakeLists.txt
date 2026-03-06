@@ -25,7 +25,6 @@ set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(deps/glfw-3.4)				# window opener
 add_subdirectory(deps/glad)					# opengl loader
 add_subdirectory(deps/glm-1.01)				# math
-add_subdirectory(deps/freetype-2.10.0)		# freetype
 add_subdirectory(deps/stb)					# stb image
 add_subdirectory(deps/imgui-1.92.5)			# imgui
 add_subdirectory(deps/libnoise)				# libnoise
@@ -47,10 +46,14 @@ target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES})
 # include header directories
 target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-# define preprocessor macro RESOURCES_PATH
-target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC RESOURCES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/res/")
-# define preprocessor macro SAVE_PATH
-target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC SAVE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/world/") 
+# define preprocessor macro
+target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC 
+	#RESOURCES_PATH="${CMAKE_CURRENT_SOURCE_DIR}/res/"
+	RESOURCES_PATH="${CMAKE_CURRENT_BINARY_DIR}/res/"
+	SAVE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/world/"
+	VULKAN_HPP_NO_EXCEPTIONS
+	VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
+)
 
 # link libs
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE Vulkan::Vulkan glm glfw glad freetype stb imgui libnoise)
+target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE Vulkan::Vulkan glm glfw glad stb imgui libnoise)

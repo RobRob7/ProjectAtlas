@@ -132,7 +132,7 @@ void RendererGL::renderFrame(const RenderInputs& in)
     // render objects (non-UI)
     chunkPass_->renderOpaque(in, view, proj, width_, height_);
     chunkPass_->renderWater(in, view, proj, width_, height_);
-    in.light->render(view, proj);
+    in.light->render({}, view, proj);
     in.skybox->render(view, proj, in.time);
     // --------------- END FORWARD RENDER --------------- //
 

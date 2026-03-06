@@ -2,18 +2,14 @@
 #define RENDERER_VK_H
 
 #include "i_renderer.h"
-#include "render_settings.h"
 
 #include <memory>
 
-class ChunkOpaquePassVk;
-
-class ChunkManager;
-class Camera;
 class VulkanMain;
-class Light;
-//class CubeMap;
-//class Crosshair;
+class Camera;
+class ILight;
+struct RenderInputs;
+struct RenderSettings;
 
 class RendererVk final : public IRenderer
 {
@@ -38,7 +34,7 @@ private:
 	std::unique_ptr<RenderSettings> renderSettings_;
 
 	std::unique_ptr<Camera> camera_;
-	//std::unique_ptr<ChunkOpaquePassVk> chunkOpaque_;
+	std::unique_ptr<ILight> light_;
 };
 
 #endif

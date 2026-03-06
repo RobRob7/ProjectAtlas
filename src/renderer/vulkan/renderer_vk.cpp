@@ -1,13 +1,12 @@
 #include "renderer_vk.h"
 
-#include "chunk_opaque_pass_vk.h"
+#include "vulkan_main.h"
 
+#include "render_settings.h"
 #include "render_inputs.h"
 
-#include "chunk_manager.h"
 #include "camera.h"
-
-#include "vulkan_main.h"
+#include "i_light.h"
 
 #include <glm/glm.hpp>
 
@@ -16,64 +15,60 @@
 
 //--- HELPER ---//
 static void transitionSwapchainImage(
-	VkCommandBuffer cmd, 
-	VkImage image,
-	VkImageLayout oldLayout, 
-	VkImageLayout newLayout)
+	vk::CommandBuffer cmd, 
+	vk::Image image,
+	vk::ImageLayout oldLayout, 
+	vk::ImageLayout newLayout)
 {
-	VkImageMemoryBarrier barrier{};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	vk::ImageMemoryBarrier barrier{};
 	barrier.oldLayout = oldLayout;
 	barrier.newLayout = newLayout;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+	barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
 	barrier.image = image;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
 	barrier.subresourceRange.layerCount = 1;
 
-	VkPipelineStageFlags sourceStage = 0;
-	VkPipelineStageFlags destinationStage = 0;
+	vk::PipelineStageFlags sourceStage{};
+	vk::PipelineStageFlags destinationStage{};
 
 	// ---- old -> COLOR_ATTACHMENT_OPTIMAL ----
-	if ((oldLayout == VK_IMAGE_LAYOUT_UNDEFINED || oldLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) &&
-		newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+	if ((oldLayout == vk::ImageLayout::eUndefined ||
+		oldLayout == vk::ImageLayout::ePresentSrcKHR) &&
+		newLayout == vk::ImageLayout::eColorAttachmentOptimal)
 	{
-		barrier.srcAccessMask = 0;
-		barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
 
-		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-
-		destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+		destinationStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	}
 	// ---- COLOR_ATTACHMENT_OPTIMAL -> PRESENT ----
-	else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL &&
-		newLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+	else if (oldLayout == vk::ImageLayout::eColorAttachmentOptimal &&
+		newLayout == vk::ImageLayout::ePresentSrcKHR)
 	{
-		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		barrier.dstAccessMask = 0;
+		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
 
-		sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		sourceStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		destinationStage = vk::PipelineStageFlagBits::eBottomOfPipe;
 	}
 	else
 	{
-		// Make it obvious if some other path happens
 		throw std::runtime_error("Unsupported swapchain layout transition");
 	}
 
-
-	vkCmdPipelineBarrier(
-		cmd,
-		sourceStage, destinationStage,
-		0,
-		0, nullptr,
-		0, nullptr,
-		1, &barrier
+	cmd.pipelineBarrier(
+		sourceStage,
+		destinationStage,
+		vk::DependencyFlags{},
+		{},
+		{},
+		barrier
 	);
 } // end of transitionSwapchainImage()
+
 
 //--- PUBLIC ---//
 RendererVk::RendererVk(VulkanMain& vk)
@@ -81,18 +76,11 @@ RendererVk::RendererVk(VulkanMain& vk)
 {
 } // end of constructor
 
-RendererVk::~RendererVk()
-{
-
-} // end of destructor
+RendererVk::~RendererVk() = default;
 
 void RendererVk::init()
 {
 	if (!renderSettings_) renderSettings_ = std::make_unique<RenderSettings>();
-
-	//if (!chunkOpaque_) chunkOpaque_ = std::make_unique<ChunkOpaquePassVk>(vk_);
-
-	//chunkOpaque_->init(vk_.swapChainImageFormat());
 } // end of init()
 
 void RendererVk::resize(int w, int h)
@@ -109,9 +97,10 @@ void RendererVk::renderFrame(const RenderInputs& in)
 	const float aspect = (height_ > 0)
 		? (static_cast<float>(width_) / static_cast<float>(height_))
 		: 1.0f;
-	const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
+	glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
+	proj[1][1] *= -1.0f;
 
-	VkFrameContext frame{};
+	FrameContext frame{};
 	if (!vk_.beginFrame(frame))
 	{
 		return;
@@ -122,44 +111,57 @@ void RendererVk::renderFrame(const RenderInputs& in)
 		resize(frame.extent.width, frame.extent.height);
 	}
 
-	VkCommandBuffer cmd = frame.cmd;
+	vk::CommandBuffer cmd = frame.cmd;
 
-	VkImageLayout old = vk_.swapchainLayout(frame.imageIndex);
+	vk::ImageLayout old = vk_.getSwapChainLayout(frame.imageIndex);
+	transitionSwapchainImage(cmd, frame.swapchainImage, old, vk::ImageLayout::eColorAttachmentOptimal);
 
-	transitionSwapchainImage(cmd, frame.swapchainImage, old,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-	VkClearValue clear{};
+	vk::ClearValue clear{};
 	clear.color.float32[0] = 0.1f;
-	clear.color.float32[1] = 0.2f;
-	clear.color.float32[2] = 0.4f;
+	clear.color.float32[1] = 0.1f;
+	clear.color.float32[2] = 0.1f;
 	clear.color.float32[3] = 1.0f;
 
-	VkRenderingAttachmentInfo colorAttach{ VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO };
+	vk::RenderingAttachmentInfo colorAttach{};
 	colorAttach.imageView = frame.swapchainImageView;
-	colorAttach.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	colorAttach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorAttach.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttach.storeOp = vk::AttachmentStoreOp::eStore;
 	colorAttach.clearValue = clear;
 
-	VkRenderingInfo renderingInfo{ VK_STRUCTURE_TYPE_RENDERING_INFO };
-	renderingInfo.renderArea.offset = { 0, 0 };
+	vk::RenderingAttachmentInfo depthAttach{};
+	depthAttach.imageView = frame.depthImageView;
+	depthAttach.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+	depthAttach.loadOp = vk::AttachmentLoadOp::eClear;
+	depthAttach.storeOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttach.clearValue.depthStencil = vk::ClearDepthStencilValue{ 1.0f, 0 };
+
+	vk::RenderingInfo renderingInfo{};
+	renderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
 	renderingInfo.renderArea.extent = frame.extent;
 	renderingInfo.layerCount = 1;
 	renderingInfo.colorAttachmentCount = 1;
 	renderingInfo.pColorAttachments = &colorAttach;
+	renderingInfo.pDepthAttachment = &depthAttach;
 
-	vkCmdBeginRendering(cmd, &renderingInfo);
-	vkCmdEndRendering(cmd);
+	// BEGIN RENDER
+	cmd.beginRendering(renderingInfo);
+	{
+		Light_Constants::RenderContext ctx{};
+		ctx.backend = Light_Constants::RenderContext::Backend::Vulkan;
+		ctx.nativeCmd = &cmd;
+
+		if (in.light) in.light->render(ctx, view, proj);
+	}
+
+	// END RENDER
+	cmd.endRendering();
 
 	transitionSwapchainImage(cmd, frame.swapchainImage,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		vk::ImageLayout::eColorAttachmentOptimal,
+		vk::ImageLayout::ePresentSrcKHR);
 
-	vk_.setSwapchainLayout(frame.imageIndex, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-	//chunkOpaque_->renderOpaque(in, frame, view, proj);
-
+	vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
 	vk_.endFrame(frame);
 } // end of renderFrame()
 

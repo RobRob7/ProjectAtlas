@@ -6,6 +6,8 @@
 #include <memory>
 #include <cstdint>
 
+class Shader;
+
 struct DebugPassUBO
 {
 	int32_t u_mode;
@@ -13,8 +15,6 @@ struct DebugPassUBO
 	float u_far;
 	float _pad0;
 };
-
-class Shader;
 
 class DebugPass
 {

@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <memory>
 
+class Shader;
+
 struct FXAAPassUBO
 {
     glm::vec2 u_inverseScreenSize;
@@ -18,8 +20,6 @@ struct FXAAPassUBO
     float _pad0;
     glm::vec2 _pad1;
 };
-
-class Shader;
 
 class FXAAPass
 {

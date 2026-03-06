@@ -1,5 +1,6 @@
 #include "ui.h"
 
+#include "i_scene.h"
 #include "texture.h"
 #include "scene.h"
 #include "renderer_gl.h"

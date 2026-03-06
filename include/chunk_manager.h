@@ -4,7 +4,7 @@
 #include "constants.h"
 
 #include "save.h"
-#include "chunk_draw_list.h"
+
 #include "chunk_mesh.h"
 
 #include <glm/glm.hpp>
@@ -16,6 +16,7 @@
 #include <cstdint>
 
 struct ChunkEntry;
+struct ChunkDrawList;
 class VulkanMain;
 
 using namespace World;

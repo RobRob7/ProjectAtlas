@@ -5,7 +5,6 @@
 
 #include <noise/noiseutils.h>
 
-#include <cstdint>
 #include <array>
 #include <istream>
 
@@ -30,7 +29,6 @@ public:
 
 private:
 	std::array<BlockID, CHUNK_SIZE * CHUNK_SIZE_Y* CHUNK_SIZE> blocks_;
-	// libnoise
 	utils::NoiseMap heightMap_;
 private:
 	void setBlocks(int x, int y, int z, BlockID id);

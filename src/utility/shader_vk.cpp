@@ -1,93 +1,12 @@
 #include "shader_vk.h"
 
+#include <filesystem>
 #include <stdexcept>
 #include <fstream>
-//--- PUBLIC ---//
-ShaderModuleVk::ShaderModuleVk(VkDevice device, std::string_view vertexPathFile, std::string_view fragPathFile)
-	: device_(device)
-{
-	if (device_ == VK_NULL_HANDLE)
-	{
-		throw std::runtime_error("ShaderModuleVk: device is VK_NULL_HANDLE");
-	}
+#include <utility>
 
-	vertShaderModule_ = createShaderModule(readFile(std::filesystem::path(RESOURCES_PATH) / vertexPathFile));
-	fragShaderModule_ = createShaderModule(readFile(std::filesystem::path(RESOURCES_PATH) / fragPathFile));
-} // end of constructor
-
-ShaderModuleVk::~ShaderModuleVk() noexcept
-{
-	destroy();
-} // end of destructor
-
-ShaderModuleVk::ShaderModuleVk(ShaderModuleVk&& other) noexcept
-{
-	device_ = other.device_;
-	vertShaderModule_ = other.vertShaderModule_;
-	fragShaderModule_ = other.fragShaderModule_;
-
-	other.device_ = VK_NULL_HANDLE;
-	other.vertShaderModule_ = VK_NULL_HANDLE;
-	other.fragShaderModule_ = VK_NULL_HANDLE;
-} // end of move constructor
-
-ShaderModuleVk& ShaderModuleVk::operator=(ShaderModuleVk&& other) noexcept
-{
-	if (this == &other) return *this;
-
-	destroy();
-
-	device_ = other.device_;
-	vertShaderModule_ = other.vertShaderModule_;
-	fragShaderModule_ = other.fragShaderModule_;
-
-	other.device_ = VK_NULL_HANDLE;
-	other.vertShaderModule_ = VK_NULL_HANDLE;
-	other.fragShaderModule_ = VK_NULL_HANDLE;
-
-	return *this;
-} // end of move assignment
-
-
-//--- PRIVATE ---//
-void ShaderModuleVk::destroy() noexcept
-{
-	if (device_ == VK_NULL_HANDLE) return;
-
-	if (vertShaderModule_ != VK_NULL_HANDLE)
-	{
-		vkDestroyShaderModule(device_, vertShaderModule_, nullptr);
-		vertShaderModule_ = VK_NULL_HANDLE;
-	}
-	if (fragShaderModule_ != VK_NULL_HANDLE)
-	{
-		vkDestroyShaderModule(device_, fragShaderModule_, nullptr);
-		fragShaderModule_ = VK_NULL_HANDLE;
-	}
-} // end of destroy()
-
-VkShaderModule ShaderModuleVk::createShaderModule(const std::vector<uint32_t>& code)
-{
-	if (code.empty())
-	{
-		throw std::runtime_error("SPIR-V code is empty");
-	}
-
-	VkShaderModuleCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	createInfo.codeSize = code.size() * sizeof(uint32_t);
-	createInfo.pCode = code.data();
-
-	VkShaderModule shaderModule{ VK_NULL_HANDLE };
-	if (vkCreateShaderModule(device_, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create shader module!");
-	}
-
-	return shaderModule;
-} // end of createShaderModule()
-
-std::vector<uint32_t> ShaderModuleVk::readFile(const std::filesystem::path& pathFile)
+//--- HELPER ---//
+static std::vector<uint32_t> ReadFile(const std::filesystem::path& pathFile)
 {
 	std::ifstream file(pathFile, std::ios::ate | std::ios::binary);
 
@@ -111,7 +30,51 @@ std::vector<uint32_t> ShaderModuleVk::readFile(const std::filesystem::path& path
 
 	file.seekg(0);
 	file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
-	file.close();
+	if (!file)
+	{
+		throw std::runtime_error("failed to read file: " + pathFile.string());
+	}
 
 	return buffer;
 } // end of readFile()
+
+
+//--- PUBLIC ---//
+ShaderModuleVk::ShaderModuleVk(vk::Device device, std::string_view vertexPathFile, std::string_view fragPathFile)
+	: device_(device)
+{
+	if (!device_)
+	{
+		throw std::runtime_error("ShaderModuleVk: device is null!");
+	}
+
+	const auto vertFullPath = std::filesystem::path(RESOURCES_PATH) / "shader" / vertexPathFile;
+	const auto fragFullPath = std::filesystem::path(RESOURCES_PATH) / "shader" / fragPathFile;
+
+	vertShaderModule_ = createShaderModule(ReadFile(vertFullPath));
+	fragShaderModule_ = createShaderModule(ReadFile(fragFullPath));
+} // end of constructor
+
+ShaderModuleVk::~ShaderModuleVk() noexcept = default;
+
+
+//--- PRIVATE ---//
+vk::UniqueShaderModule ShaderModuleVk::createShaderModule(const std::vector<uint32_t>& code)
+{
+	if (code.empty())
+	{
+		throw std::runtime_error("SPIR-V code is empty");
+	}
+
+	vk::ShaderModuleCreateInfo createInfo{};
+	createInfo.codeSize = code.size() * sizeof(uint32_t);
+	createInfo.pCode = code.data();
+
+	auto rv = device_.createShaderModuleUnique(createInfo);
+	if (rv.result != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("createShaderModuleUnique failed: " + vk::to_string(rv.result));
+	}
+
+	return std::move(rv.value);
+} // end of createShaderModule()

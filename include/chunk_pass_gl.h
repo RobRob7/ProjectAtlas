@@ -9,9 +9,7 @@
 #include <glm/glm.hpp>
 
 #include <memory>
-
-class Shader;
-class Texture;
+#include <cstdint>
 
 struct RenderInputs;
 struct RenderSettings;

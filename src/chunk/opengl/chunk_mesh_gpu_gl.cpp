@@ -4,8 +4,6 @@
 
 #include <glad/glad.h>
 
-#include <iostream>
-
 //--- PUBLIC ---//
 ChunkMeshGPUGL::ChunkMeshGPUGL()
 {
@@ -116,7 +114,7 @@ void ChunkMeshGPUGL::upload(const ChunkMeshData& data)
 	waterIndexCount_ = static_cast<int32_t>(data.waterIndices.size());
 } // end of upload()
 
-void ChunkMeshGPUGL::drawOpaque(const DrawContext&)
+void ChunkMeshGPUGL::drawOpaque()
 {
 	if (opaqueIndexCount_ <= 0) return;
 
@@ -132,7 +130,7 @@ void ChunkMeshGPUGL::drawOpaque(const DrawContext&)
 		glDisable(GL_DEPTH_TEST);
 } // end of drawOpaque()
 
-void ChunkMeshGPUGL::drawWater(const DrawContext&)
+void ChunkMeshGPUGL::drawWater()
 {
 	if (waterIndexCount_ <= 0) return;
 

@@ -5,7 +5,7 @@
 #include <noise/noise.h>
  
 #include <random>
-#include <cmath>
+#include <array>
 
 //--- PUBLIC ---//
 ChunkData::ChunkData(int cx, int cz)
