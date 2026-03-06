@@ -111,7 +111,7 @@ bool VulkanMain::beginFrame(FrameContext& out)
 
 		if (res != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("waitForFences failed:" + vk::to_string(res));
+			throw std::runtime_error("waitForFences failed: " + vk::to_string(res));
 		}
 	}
 
@@ -128,13 +128,20 @@ bool VulkanMain::beginFrame(FrameContext& out)
 
 		if (res != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("resetFences failed:" + vk::to_string(res));
+			throw std::runtime_error("resetFences failed: " + vk::to_string(res));
 		}
 	}
 
 	// reset + begin command buffer
 	vk::CommandBuffer cmd = commandBuffers_[currentFrame_];
-	cmd.reset(vk::CommandBufferResetFlags{});
+
+	{
+		vk::Result res = cmd.reset(vk::CommandBufferResetFlags{});
+		if (res != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("commandBuffer reset failed: " + vk::to_string(res));
+		}
+	}
 
 	vk::CommandBufferBeginInfo beginInfo{};
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -143,7 +150,7 @@ bool VulkanMain::beginFrame(FrameContext& out)
 		vk::Result res = cmd.begin(beginInfo);
 		if (res != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("begin failed: " + vk::to_string(res));
+			throw std::runtime_error("commandBuffer begin failed: " + vk::to_string(res));
 		}
 	}
 
@@ -169,7 +176,7 @@ bool VulkanMain::endFrame(const FrameContext& frame)
 		vk::Result res = frame.cmd.end();
 		if (res != vk::Result::eSuccess)
 		{
-			throw std::runtime_error("end failed: " + vk::to_string(res));
+			throw std::runtime_error("commandBuffer end failed: " + vk::to_string(res));
 		}
 	}
 
@@ -316,7 +323,13 @@ vk::CommandBuffer VulkanMain::beginSingleTimeCommands() const
 
 void VulkanMain::endSingleTimeCommands(vk::CommandBuffer commandBuffer) const
 {
-	commandBuffer.end();
+	{
+		vk::Result res = commandBuffer.end();
+		if (res != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("end failed: " + vk::to_string(res));
+		}
+	}
 
 	vk::SubmitInfo submitInfo{};
 	submitInfo.commandBufferCount = 1;
@@ -447,9 +460,12 @@ void VulkanMain::createSurface()
 {
 	VkSurfaceKHR rawSurface{};
 
-	if (glfwCreateWindowSurface(instance_.get(), window_, nullptr, &rawSurface) != VK_SUCCESS)
+	VkResult res = glfwCreateWindowSurface(instance_.get(), window_, nullptr, &rawSurface);
+	if (res != VK_SUCCESS)
 	{
-		throw std::runtime_error("failed to create window surface!");
+		throw std::runtime_error(
+			"glfwCreateWindowSurface failed: " + vk::to_string(static_cast<vk::Result>(res))
+		);
 	}
 
 	surface_ = vk::UniqueSurfaceKHR(vk::SurfaceKHR(rawSurface), instance_.get());
@@ -459,9 +475,13 @@ void VulkanMain::pickPhysicalDevice()
 {
 	vk::ResultValue rv = instance_->enumeratePhysicalDevices();
 	
-	if (rv.result != vk::Result::eSuccess || rv.value.empty())
+	if (rv.result != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("enumeratePhysicalDevices failed: " + vk::to_string(rv.result));
+	}
+	if (rv.value.empty())
+	{
+		throw std::runtime_error("No physical devices found.");
 	}
 
 	for (const auto& device : rv.value) 
@@ -1026,18 +1046,20 @@ SwapChainSupportDetails VulkanMain::querySwapChainSupport(vk::PhysicalDevice dev
 
 	{
 		vk::ResultValue rv = device.getSurfaceFormatsKHR(surface_.get());
-		if (rv.result == vk::Result::eSuccess)
+		if (rv.result != vk::Result::eSuccess)
 		{
-			details.formats = std::move(rv.value);
+			throw std::runtime_error("getSurfaceFormatsKHR failed: " + vk::to_string(rv.result));
 		}
+		details.formats = std::move(rv.value);
 	}
 
 	{
 		vk::ResultValue rv = device.getSurfacePresentModesKHR(surface_.get());
-		if (rv.result == vk::Result::eSuccess)
+		if (rv.result != vk::Result::eSuccess)
 		{
-			details.presentModes = std::move(rv.value);
+			throw std::runtime_error("getSurfacePresentModesKHR failed: " + vk::to_string(rv.result));
 		}
+		details.presentModes = std::move(rv.value);
 	}
 
 	return details;
