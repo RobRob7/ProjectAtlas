@@ -213,7 +213,7 @@ void LightVk::createPipeline()
 	vk::PipelineRasterizationStateCreateInfo rs{};
 	rs.polygonMode = vk::PolygonMode::eFill;
 	rs.cullMode = vk::CullModeFlagBits::eBack;
-	rs.frontFace = vk::FrontFace::eClockwise;
+	rs.frontFace = vk::FrontFace::eCounterClockwise;
 	rs.lineWidth = 1.0f;
 
 	vk::PipelineMultisampleStateCreateInfo ms{};
@@ -276,7 +276,7 @@ void LightVk::createPipeline()
 	// depth
 	vk::PipelineDepthStencilStateCreateInfo ds{};
 	ds.depthTestEnable = vk::True;
-	ds.depthWriteEnable = vk::True;
+	ds.depthWriteEnable = vk::False;
 	ds.depthCompareOp = vk::CompareOp::eLessOrEqual;
 
 	vk::PipelineRenderingCreateInfo rendering{};

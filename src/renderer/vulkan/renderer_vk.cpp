@@ -133,7 +133,7 @@ void RendererVk::renderFrame(const RenderInputs& in)
 	depthAttach.imageView = frame.depthImageView;
 	depthAttach.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 	depthAttach.loadOp = vk::AttachmentLoadOp::eClear;
-	depthAttach.storeOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttach.storeOp = vk::AttachmentStoreOp::eStore;
 	depthAttach.clearValue.depthStencil = vk::ClearDepthStencilValue{ 1.0f, 0 };
 
 	vk::RenderingInfo renderingInfo{};

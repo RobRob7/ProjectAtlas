@@ -49,6 +49,7 @@ void VulkanMain::init()
 	createSwapChain();
 	createImageViews();
 	createCommandPool();
+	createDepthResources();
 	createCommandBuffers();
 	createSyncObjects();
 
@@ -59,7 +60,11 @@ void VulkanMain::waitIdle() const
 {
 	if (device_)
 	{
-		device_->waitIdle();
+		vk::Result res = device_->waitIdle();
+		if (res != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("waitIdle failed: " + vk::to_string(res));
+		}
 	}
 } // end of waitIdle()
 
@@ -143,6 +148,10 @@ bool VulkanMain::beginFrame(FrameContext& out)
 	out.cmd = cmd;
 	out.frameIndex = currentFrame_;
 	out.imageIndex = imageIndex;
+
+	out.depthImage = depthImage_.get();
+	out.depthImageView = depthImageView_.get();
+
 	out.swapchainImage = swapChainImages_[imageIndex];
 	out.swapchainImageView = swapChainImageViews_[imageIndex].get();
 	out.extent = swapChainExtent_;
@@ -324,7 +333,7 @@ void VulkanMain::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::Devi
 	endSingleTimeCommands(commandBuffer);
 } // end of copyBuffer()
 
-vk::Format VulkanMain::getDepthFormat() const
+vk::Format VulkanMain::findDepthFormat() const
 {
 	std::vector<vk::Format> candidates =
 	{
@@ -341,10 +350,10 @@ vk::Format VulkanMain::getDepthFormat() const
 		{
 			return format;
 		}
-	}
+	} // end for
 
 	throw std::runtime_error("Failed to find supported depth format!");
-} // end of getDepthFormat()
+} // end of findDepthFormat()
 
 
 //--- PRIVATE ---//
@@ -611,6 +620,98 @@ void VulkanMain::createImageViews()
 	} // end for
 } // end of createImageViews()
 
+void VulkanMain::createDepthResources()
+{
+	depthFormat_ = findDepthFormat();
+
+	vk::ImageCreateInfo imageInfo{};
+	imageInfo.imageType = vk::ImageType::e2D;
+	imageInfo.extent.width = swapChainExtent_.width;
+	imageInfo.extent.height = swapChainExtent_.height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = depthFormat_;
+	imageInfo.tiling = vk::ImageTiling::eOptimal;
+	imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+	imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+	imageInfo.samples = vk::SampleCountFlagBits::e1;
+	imageInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	{
+		vk::ResultValue rv = device_->createImageUnique(imageInfo);
+		if (rv.result != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("createImageUnique failed: " + vk::to_string(rv.result));
+		}
+		depthImage_ = std::move(rv.value);
+	}
+
+	vk::MemoryRequirements memReq = device_->getImageMemoryRequirements(depthImage_.get());
+
+	vk::MemoryAllocateInfo allocInfo{};
+	allocInfo.allocationSize = memReq.size;
+	allocInfo.memoryTypeIndex = findMemoryType(
+		memReq.memoryTypeBits,
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	);
+
+	{
+		vk::ResultValue rv = device_->allocateMemoryUnique(allocInfo);
+		if (rv.result != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("allocateMemoryUnique failed: " + vk::to_string(rv.result));
+		}
+		depthImageMemory_ = std::move(rv.value);
+	}
+
+	{
+		vk::Result res = device_->bindImageMemory(depthImage_.get(), depthImageMemory_.get(), 0);
+		if (res != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("bindImageMemory failed: " + vk::to_string(res));
+		}
+	}
+
+	depthImageView_ = createImageView(
+		depthImage_.get(),
+		depthFormat_,
+		vk::ImageAspectFlagBits::eDepth,
+		1
+	);
+
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
+
+	vk::ImageMemoryBarrier barrier{};
+	barrier.oldLayout = vk::ImageLayout::eUndefined;
+	barrier.newLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+	barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+	barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+	barrier.image = depthImage_.get();
+	barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.srcAccessMask = {};
+	barrier.dstAccessMask =
+		vk::AccessFlagBits::eDepthStencilAttachmentRead |
+		vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+
+	cmd.pipelineBarrier(
+		vk::PipelineStageFlagBits::eTopOfPipe,
+		vk::PipelineStageFlagBits::eEarlyFragmentTests,
+		{},
+		{},
+		{},
+		barrier
+	);
+
+	endSingleTimeCommands(cmd);
+
+	depthImageLayout_ = vk::ImageLayout::eDepthAttachmentOptimal;
+} // end of createDepthResources()
+
 void VulkanMain::createCommandPool()
 {
 	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice_);
@@ -689,6 +790,12 @@ void VulkanMain::cleanupSwapChain()
 	renderFinishedPerImage_.clear();
 	imagesInFlight_.clear();
 
+	depthImageView_.reset();
+	depthImage_.reset();
+	depthImageMemory_.reset();
+	depthFormat_ = vk::Format::eUndefined;
+	depthImageLayout_ = vk::ImageLayout::eUndefined;
+
 	swapChainImageViews_.clear();
 	swapChain_.reset();
 
@@ -714,6 +821,7 @@ void VulkanMain::recreateSwapChain()
 	cleanupSwapChain();
 	createSwapChain();
 	createImageViews();
+	createDepthResources();
 	createPerImageSync();
 
 	framebufferResized_ = false;
