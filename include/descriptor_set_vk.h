@@ -19,6 +19,26 @@ public:
 	DescriptorSetVk(DescriptorSetVk&&) noexcept = default;
 	DescriptorSetVk& operator=(DescriptorSetVk&&) noexcept = default;
 
+	void createLayout(const std::vector<vk::DescriptorSetLayoutBinding>& bindings);
+
+	void createPool(const std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t maxSets = 1);
+
+	void allocate();
+
+	void writeUniformBuffer(
+		uint32_t binding,
+		vk::Buffer buffer,
+		vk::DeviceSize range,
+		vk::DeviceSize offset = 0
+	);
+
+	void writeCombinedImageSampler(
+		uint32_t binding,
+		vk::ImageView imageView,
+		vk::Sampler sampler,
+		vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
+	);
+
 	void createSingleUniformBuffer(
 		uint32_t binding,
 		vk::ShaderStageFlags stageFlags,

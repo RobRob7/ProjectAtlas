@@ -4,7 +4,7 @@
 class Camera;
 class ChunkManager;
 class ILight;
-class CubeMap;
+class ICubemap;
 class Crosshair;
 
 struct RenderInputs
@@ -12,7 +12,7 @@ struct RenderInputs
 	Camera* camera = nullptr;
 	ChunkManager* world = nullptr;
 	ILight* light = nullptr;
-	CubeMap* skybox = nullptr;
+	ICubemap* skybox = nullptr;
 	Crosshair* crosshair = nullptr;
 
 	float time = 0.0f;

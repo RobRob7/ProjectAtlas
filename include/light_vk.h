@@ -20,14 +20,14 @@ public:
 	~LightVk() override;
 	
 	void init() override;
-	void render(const Light_Constants::RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj) override;
+	void render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj) override;
 
 	glm::vec3& getPosition() override { return position_; }
 	const glm::vec3& getPosition() const override { return position_; }
 	glm::vec3& getColor() override { return color_; }
 	const glm::vec3& getColor() const override { return color_; }
 
-	void setPosition(const glm::vec3& pos) override { position_ = pos; }
+	void setPosition(const glm::vec3& pos) override { position_ = pos; } 
 
 	void setColor(const glm::vec3& color) override
 	{

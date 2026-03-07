@@ -8,6 +8,7 @@
 class VulkanMain;
 class Camera;
 class ILight;
+class ICubemap;
 struct RenderInputs;
 struct RenderSettings;
 
@@ -35,6 +36,7 @@ private:
 
 	std::unique_ptr<Camera> camera_;
 	std::unique_ptr<ILight> light_;
+	std::unique_ptr<ICubemap> cubemap_;
 };
 
 #endif

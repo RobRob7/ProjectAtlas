@@ -6,7 +6,7 @@
 #include "render_inputs.h"
 
 #include "camera.h"
-#include "cubeMap.h"
+#include "cubemap_gl.h"
 #include "crosshair.h"
 #include "chunk_manager.h"
 #include "light_gl.h"
@@ -33,7 +33,7 @@ void Scene::init()
 	light_ = std::make_unique<LightGL>(camera_->getCameraPosition() + glm::vec3(0.0f, -10.0f, 0.0f));
 	light_->init();
 
-	skybox_ = std::make_unique<CubeMap>();
+	skybox_ = std::make_unique<CubemapGL>();
 	skybox_->init();
 
 	crosshair_ = std::make_unique<Crosshair>();
@@ -138,7 +138,7 @@ Camera& Scene::getCamera()
 	return *camera_;
 } // end of getCamera()
 
-CubeMap& Scene::getSkybox()
+ICubemap& Scene::getSkybox()
 {
 	return *skybox_;
 } // end of getSkybox()

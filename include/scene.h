@@ -6,7 +6,7 @@
 #include <memory>
 
 class Camera;
-class CubeMap;
+class ICubemap;
 class Crosshair;
 class ChunkManager;
 class ILight;
@@ -35,7 +35,7 @@ public:
 
 	// getters
 	Camera& getCamera() override;
-	CubeMap& getSkybox() override;
+	ICubemap& getSkybox() override;
 	ChunkManager& getWorld() override;
 	ILight& getLight() override;
 
@@ -52,7 +52,7 @@ private:
 
 	// objects
 	std::unique_ptr<Camera> camera_;
-	std::unique_ptr<CubeMap> skybox_;
+	std::unique_ptr<ICubemap> skybox_;
 	std::unique_ptr<Crosshair> crosshair_;
 	std::unique_ptr<ChunkManager> world_;
 	std::unique_ptr<ILight> light_;

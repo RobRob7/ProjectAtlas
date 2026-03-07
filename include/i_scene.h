@@ -5,7 +5,7 @@ class IRenderer;
 class RenderInputs;
 
 class Camera;
-class CubeMap;
+class ICubemap;
 class ChunkManager;
 class ILight;
 
@@ -48,7 +48,7 @@ public:
 
 	// getters
 	virtual Camera& getCamera() = 0;
-	virtual CubeMap& getSkybox() = 0;
+	virtual ICubemap& getSkybox() = 0;
 	virtual ChunkManager& getWorld() = 0;
 	virtual ILight& getLight() = 0;
 };

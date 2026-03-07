@@ -19,7 +19,7 @@ public:
 	~LightGL() override;
 
 	void init() override;
-	void render(const Light_Constants::RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj) override;
+	void render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj) override;
 
 	glm::vec3& getPosition() override { return position_; }
 	const glm::vec3& getPosition() const override { return position_; }
