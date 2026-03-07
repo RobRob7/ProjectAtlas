@@ -3,6 +3,8 @@
 
 #include "i_renderer.h"
 
+#include "chunk_pass_vk.h"
+
 #include <memory>
 
 class VulkanMain;
@@ -34,9 +36,7 @@ private:
 
 	std::unique_ptr<RenderSettings> renderSettings_;
 
-	std::unique_ptr<Camera> camera_;
-	std::unique_ptr<ILight> light_;
-	std::unique_ptr<ICubemap> cubemap_;
+	std::unique_ptr<ChunkPassVk> chunkPass_;
 };
 
 #endif

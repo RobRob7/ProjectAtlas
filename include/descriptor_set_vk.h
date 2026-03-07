@@ -32,6 +32,12 @@ public:
 		vk::DeviceSize offset = 0
 	);
 
+	void writeDynamicUniformBuffer(
+		uint32_t binding,
+		vk::Buffer buffer,
+		vk::DeviceSize range
+	);
+
 	void writeCombinedImageSampler(
 		uint32_t binding,
 		vk::ImageView imageView,

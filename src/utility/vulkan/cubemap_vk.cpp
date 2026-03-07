@@ -38,7 +38,7 @@ void CubemapVk::init()
 	createVertexBuffer();
 	createUBO();
 
-	cubemapTexture_.loadFromFiles(faces_);
+	cubemapTexture_.loadFromFiles(faces_, true);
 	createDescriptorSet();
 
 	createPipeline();

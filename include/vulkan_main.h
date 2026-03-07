@@ -77,6 +77,7 @@ public:
 
     vk::Device getDevice() const { return device_.get(); }
     vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice_; }
+    const vk::PhysicalDeviceProperties& getPhysicalDeviceProperties() const { return physicalDeviceProperties_; }
     vk::Queue getGraphicsQueue() const { return graphicsQueue_; }
     vk::Queue getPresentQueue() const { return presentQueue_; }
     vk::CommandPool getCommandPool() const { return commandPool_.get(); }
@@ -153,6 +154,7 @@ private:
     vk::UniqueSurfaceKHR surface_{};
 
     vk::PhysicalDevice physicalDevice_{};
+    vk::PhysicalDeviceProperties physicalDeviceProperties_;
     vk::UniqueDevice device_{};
 
     vk::Queue graphicsQueue_{};

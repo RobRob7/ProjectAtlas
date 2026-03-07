@@ -116,8 +116,9 @@ TextureCubemapVk::TextureCubemapVk(VulkanMain& vk)
 
 TextureCubemapVk::~TextureCubemapVk() = default;
 
-void TextureCubemapVk::loadFromFiles(const std::array<std::string_view, 6>& faces)
+void TextureCubemapVk::loadFromFiles(const std::array<std::string_view, 6>& faces, const bool needToFlip)
 {
+	stbi_set_flip_vertically_on_load(needToFlip);
 	int texWidth = 0;
 	int texHeight = 0;
 	int texChannels = 0;

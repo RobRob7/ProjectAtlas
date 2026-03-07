@@ -12,8 +12,8 @@ public:
 	~ChunkMeshGPUGL() override;
 
 	void upload(const ChunkMeshData& data) override;
-	void drawOpaque() override;
-	void drawWater() override;
+	void drawOpaque(vk::CommandBuffer cmd) override;
+	void drawWater(vk::CommandBuffer cmd) override;
 
 private:
     // opaque

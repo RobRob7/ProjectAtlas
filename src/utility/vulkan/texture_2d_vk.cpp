@@ -9,6 +9,7 @@
 #include <string_view>
 #include <array>
 #include <stdexcept>
+#include <string>
 
 namespace
 {
@@ -115,13 +116,17 @@ Texture2DVk::Texture2DVk(VulkanMain& vk)
 
 Texture2DVk::~Texture2DVk() = default;
 
-void Texture2DVk::loadFromFile(std::string_view path)
+void Texture2DVk::loadFromFile(std::string_view path, const bool needToFlip)
 {
+	stbi_set_flip_vertically_on_load(needToFlip);
+
 	int texWidth = 0;
 	int texHeight = 0;
 	int texChannels = 0;
 
-	stbi_uc* pixels = stbi_load(path.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	std::string pathToTexture = std::string(RESOURCES_PATH) + "texture/" + std::string(path);
+
+	stbi_uc* pixels = stbi_load(pathToTexture.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	if (!pixels)
 	{
 		throw std::runtime_error("Texture2DVk::loadFromFile - failed to load texture: " + std::string(path));

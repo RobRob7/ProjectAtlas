@@ -27,8 +27,8 @@ SceneVk::~SceneVk() = default;
 
 void SceneVk::init()
 {
-	//world_ = std::make_unique<ChunkManager>();
-	//world_->init(nullptr);
+	world_ = std::make_unique<ChunkManager>();
+	world_->init(&vk_);
 
 	camera_ = std::make_unique<Camera>(width_, height_, glm::vec3(0.0f, CHUNK_SIZE_Y, 3.0f));
 
@@ -46,7 +46,7 @@ void SceneVk::render(IRenderer& renderer, RenderInputs& in)
 {
 	//if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
-	//in.world = world_.get();
+	in.world = world_.get();
 	in.camera = camera_.get();
 	in.light = light_.get();
 	in.skybox = skybox_.get();
@@ -57,20 +57,20 @@ void SceneVk::render(IRenderer& renderer, RenderInputs& in)
 
 void SceneVk::update(float dt, const InputState& in)
 {
-	//if (!camera_ || !world_) return;
+	if (!camera_ || !world_) return;
 
 	saveTimer_ += dt;
-	//if (saveTimer_ >= (autoSaveTime_ * 60.0f))
-	//{
-	//	world_->saveWorld();
-	//	saveTimer_ = 0.0f;
-	//}
+	if (saveTimer_ >= (autoSaveTime_ * 60.0f))
+	{
+		world_->saveWorld();
+		saveTimer_ = 0.0f;
+	}
 
-	//if (in.quitRequested)
-	//{
-	//	world_->saveWorld();
-	//	return;
-	//}
+	if (in.quitRequested)
+	{
+		world_->saveWorld();
+		return;
+	}
 
 	if (in.disableCameraPressed)
 	{
@@ -92,19 +92,19 @@ void SceneVk::update(float dt, const InputState& in)
 		if (in.s) camera_->processKeyboard(CameraMovement::BACKWARD, dt);
 		if (in.d) camera_->processKeyboard(CameraMovement::RIGHT, dt);
 
-		//if (in.removeBlockPressed)
-		//{
-		//	world_->placeOrRemoveBlock(false,
-		//		camera_->getCameraPosition(),
-		//		camera_->getCameraDirection());
-		//}
+		if (in.removeBlockPressed)
+		{
+			world_->placeOrRemoveBlock(false,
+				camera_->getCameraPosition(),
+				camera_->getCameraDirection());
+		}
 
-		//if (in.placeBlockPressed)
-		//{
-		//	world_->placeOrRemoveBlock(true,
-		//		camera_->getCameraPosition(),
-		//		camera_->getCameraDirection());
-		//}
+		if (in.placeBlockPressed)
+		{
+			world_->placeOrRemoveBlock(true,
+				camera_->getCameraPosition(),
+				camera_->getCameraDirection());
+		}
 	}
 } // end of update()
 
