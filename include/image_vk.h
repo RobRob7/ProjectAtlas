@@ -31,6 +31,15 @@ public:
         vk::ImageCreateFlags flags = {}
     );
 
+    void generateMipmaps(
+        vk::Image image,
+        vk::Format imageFormat,
+        int32_t texWidth,
+        int32_t texHeight,
+        uint32_t mipLevels,
+        uint32_t layers = 1
+    );
+
     void createImageView(
         vk::Format format,
         vk::ImageAspectFlags aspectFlags,
@@ -57,6 +66,7 @@ public:
     uint32_t width() const { return width_; }
     uint32_t height() const { return height_; }
     uint32_t layers() const { return layers_; }
+    uint32_t mipLevels() const { return mipLevels_; }
 
 private:
     VulkanMain& vk_;
@@ -70,6 +80,8 @@ private:
     uint32_t width_{ 0 };
     uint32_t height_{ 0 };
     uint32_t layers_{ 0 };
+
+    uint32_t mipLevels_{ 1 };
 
 };
 

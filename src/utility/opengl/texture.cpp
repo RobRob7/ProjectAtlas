@@ -5,6 +5,7 @@
 #include <stb/stb_image.h>
 
 #include <iostream>
+#include <filesystem>
 
 //--- PUBLIC ---//
 Texture::Texture(const std::string& filePath, const bool needToFlip)
@@ -14,7 +15,7 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 	stbi_set_flip_vertically_on_load(needToFlip);
 
 	// texture path
-	std::string pathToTexture = std::string(RESOURCES_PATH) + "texture/" + filePath_;
+	std::filesystem::path pathToTexture = std::filesystem::path(RESOURCES_PATH) / "texture" / filePath_;
 
 #ifdef _DEBUG
 	std::cout << "Loading Texture: " << pathToTexture << "\n";
@@ -22,7 +23,7 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 
 	// load texture
 	int w, h, nrChannels;
-	unsigned char* data = stbi_load(pathToTexture.c_str(), &w, &h, &nrChannels, 0);
+	unsigned char* data = stbi_load(pathToTexture.string().c_str(), &w, &h, &nrChannels, 0);
 
 	// creation failure check
 	if (!data)
@@ -87,8 +88,8 @@ Texture::Texture(const std::array<std::string_view, 6>& textures, const bool nee
 
 	// load first face to determine size/format
 	{
-		std::string path = std::string(RESOURCES_PATH) + std::string(textures[0]);
-		unsigned char* data = stbi_load(path.c_str(), &w, &h, &n, 0);
+		std::filesystem::path path = std::filesystem::path(RESOURCES_PATH) / textures[0];
+		unsigned char* data = stbi_load(path.string().c_str(), &w, &h, &n, 0);
 		if (!data)
 		{
 			std::cerr << "Cubemap face 0 failed to load: " << textures[0] << "\n";
@@ -109,10 +110,10 @@ Texture::Texture(const std::array<std::string_view, 6>& textures, const bool nee
 
 	for (int i = 0; i < 6; ++i)
 	{
-		std::string path = std::string(RESOURCES_PATH) + std::string(textures[i]);
+		std::filesystem::path path = std::filesystem::path(RESOURCES_PATH) / textures[i];
 
 		int fw = 0, fh = 0, fn = 0;
-		unsigned char* data = stbi_load(path.c_str(), &fw, &fh, &fn, 0);
+		unsigned char* data = stbi_load(path.string().c_str(), &fw, &fh, &fn, 0);
 		if (!data)
 		{
 			std::cerr << "Cubemap texture failed to load: " << textures[i] << "\n";
