@@ -1,7 +1,6 @@
-#include "cubemap.h"
+#include "cubemap_gl.h"
 
 #include "texture_bindings.h"
-#include "ubo_bindings.h"
 
 #include "texture.h"
 #include "shader.h"
@@ -10,82 +9,23 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
+#include <cassert>
 
-struct CubemapUBO
-{
-	glm::mat4 view;
-	glm::mat4 proj;
-};
-
-const std::array<float, 108> SkyboxVertices =
-{
-	// positions          
-	-1.0f,  1.0f, -1.0f,
-	-1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-	 1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-
-	-1.0f, -1.0f,  1.0f,
-	-1.0f, -1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f, -1.0f,
-	-1.0f,  1.0f,  1.0f,
-	-1.0f, -1.0f,  1.0f,
-
-	 1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-
-	-1.0f, -1.0f,  1.0f,
-	-1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f, -1.0f,  1.0f,
-	-1.0f, -1.0f,  1.0f,
-
-	-1.0f,  1.0f, -1.0f,
-	 1.0f,  1.0f, -1.0f,
-	 1.0f,  1.0f,  1.0f,
-	 1.0f,  1.0f,  1.0f,
-	-1.0f,  1.0f,  1.0f,
-	-1.0f,  1.0f, -1.0f,
-
-	-1.0f, -1.0f, -1.0f,
-	-1.0f, -1.0f,  1.0f,
-	 1.0f, -1.0f, -1.0f,
-	 1.0f, -1.0f, -1.0f,
-	-1.0f, -1.0f,  1.0f,
-	 1.0f, -1.0f,  1.0f
-};
-
-// cubemap default
-const std::array<std::string_view, 6> DEFAULT_FACES = { {
-	"texture/cubemap/space_alt/right.png",
-	"texture/cubemap/space_alt/left.png",
-	"texture/cubemap/space_alt/top.png",
-	"texture/cubemap/space_alt/bottom.png",
-	"texture/cubemap/space_alt/front.png",
-	"texture/cubemap/space_alt/back.png"
-} };
+using namespace Cubemap_Constants;
 
 //--- PUBLIC ---//
-CubeMap::CubeMap(const std::array<std::string_view, 6>& textures)
+CubemapGL::CubemapGL(const std::array<std::string_view, 6>& textures)
 	: faces_(textures)
 {
 } // end of constructor
 
 // destructor
-CubeMap::~CubeMap()
+CubemapGL::~CubemapGL()
 {
 	destroyGL();
 } // end of destructor
 
-void CubeMap::init()
+void CubemapGL::init()
 {
 	destroyGL();
 
@@ -97,7 +37,7 @@ void CubeMap::init()
 	glCreateBuffers(1, &vbo_);
 
 	// upload vertex data
-	glNamedBufferData(vbo_, SkyboxVertices.size() * sizeof(float), SkyboxVertices.data(), GL_STATIC_DRAW);
+	glNamedBufferData(vbo_, SKYBOX_VERTICES.size() * sizeof(float), SKYBOX_VERTICES.data(), GL_STATIC_DRAW);
 
 	// attach vbo to vao
 	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, 3 * sizeof(float));
@@ -111,9 +51,11 @@ void CubeMap::init()
 	ubo_.init<sizeof(CubemapUBO)>();
 } // end of init()
 
-// render cubemap
-void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const float time)
+// render CubemapGL
+void CubemapGL::render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& projection, const float time)
 {
+	assert(ctx.backend == RenderContext::Backend::OpenGL && "Must be OpenGL render context!");
+
 	if (!shader_ || !texture_ || vao_ == 0)
 		return;
 
@@ -141,7 +83,7 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 	CubemapUBO cubemapUBO{};
 	cubemapUBO.view = viewStrippedTranslation;
 	cubemapUBO.proj = projection;
-	ubo_.update(&cubemapUBO, sizeof(cubemapUBO));
+	ubo_.update(&cubemapUBO, sizeof(CubemapUBO));
 	glBindTextureUnit(TO_API_FORM(TextureBinding::CubemapTex), texture_->ID());
 
 	glBindVertexArray(vao_);
@@ -154,7 +96,7 @@ void CubeMap::render(const glm::mat4& view, const glm::mat4& projection, const f
 
 
 //--- PRIVATE ---//
-void CubeMap::destroyGL()
+void CubemapGL::destroyGL()
 {
 	if (vao_)
 	{

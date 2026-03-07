@@ -7,6 +7,7 @@
 
 #include "camera.h"
 #include "i_light.h"
+#include "i_cubemap.h"
 
 #include <glm/glm.hpp>
 
@@ -147,11 +148,12 @@ void RendererVk::renderFrame(const RenderInputs& in)
 	// BEGIN RENDER
 	cmd.beginRendering(renderingInfo);
 	{
-		Light_Constants::RenderContext ctx{};
-		ctx.backend = Light_Constants::RenderContext::Backend::Vulkan;
+		RenderContext ctx{};
+		ctx.backend = RenderContext::Backend::Vulkan;
 		ctx.nativeCmd = &cmd;
 
 		if (in.light) in.light->render(ctx, view, proj);
+		if (in.skybox) in.skybox->render(ctx, view, proj);
 	}
 
 	// END RENDER

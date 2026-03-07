@@ -7,7 +7,7 @@
 #include "chunk_manager.h"
 #include "camera.h"
 #include "light_gl.h"
-#include "cubeMap.h"
+#include "cubemap_gl.h"
 #include "crosshair.h"
 
 #include "gbuffer_pass.h"
@@ -133,7 +133,7 @@ void RendererGL::renderFrame(const RenderInputs& in)
     chunkPass_->renderOpaque(in, view, proj, width_, height_);
     chunkPass_->renderWater(in, view, proj, width_, height_);
     in.light->render({}, view, proj);
-    in.skybox->render(view, proj, in.time);
+    in.skybox->render({}, view, proj, in.time);
     // --------------- END FORWARD RENDER --------------- //
 
 

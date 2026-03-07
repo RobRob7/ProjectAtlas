@@ -175,7 +175,7 @@ void LightVk::createPipeline()
 	desc.cullMode = vk::CullModeFlagBits::eBack;
 	desc.frontFace = vk::FrontFace::eCounterClockwise;
 	desc.depthTestEnable = true;
-	desc.depthWriteEnable = false;
+	desc.depthWriteEnable = true;
 	desc.depthCompareOp = vk::CompareOp::eLessOrEqual;
 
 	pipeline_.create(desc);

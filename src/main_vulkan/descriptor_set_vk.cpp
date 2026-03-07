@@ -15,6 +15,147 @@ DescriptorSetVk::DescriptorSetVk(VulkanMain& vk)
 
 DescriptorSetVk::~DescriptorSetVk() = default;
 
+void DescriptorSetVk::createLayout(const std::vector<vk::DescriptorSetLayoutBinding>& bindings)
+{
+	if (bindings.empty())
+	{
+		throw std::runtime_error("DescriptorSetVk::createLayout - bindings cannot be empty");
+	}
+
+	vk::Device device = vk_.getDevice();
+
+	vk::DescriptorSetLayoutCreateInfo slci{};
+	slci.bindingCount = static_cast<uint32_t>(bindings.size());
+	slci.pBindings = bindings.data();
+
+	vk::ResultValue rv = device.createDescriptorSetLayoutUnique(slci);
+	if (rv.result != vk::Result::eSuccess)
+	{
+		throw std::runtime_error(
+			"DescriptorSetVk::createLayout - createDescriptorSetLayoutUnique failed: " +
+			vk::to_string(rv.result)
+		);
+	}
+
+	setLayout_ = std::move(rv.value);
+} // end of createLayout()
+
+void DescriptorSetVk::createPool(const std::vector<vk::DescriptorPoolSize>& poolSizes, uint32_t maxSets)
+{
+	if (poolSizes.empty())
+	{
+		throw std::runtime_error("DescriptorSetVk::createPool - poolSizes cannot be empty");
+	}
+
+	vk::Device device = vk_.getDevice();
+
+	vk::DescriptorPoolCreateInfo dpci{};
+	dpci.maxSets = maxSets;
+	dpci.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+	dpci.pPoolSizes = poolSizes.data();
+
+	vk::ResultValue rv = device.createDescriptorPoolUnique(dpci);
+	if (rv.result != vk::Result::eSuccess)
+	{
+		throw std::runtime_error(
+			"DescriptorSetVk::createPool - createDescriptorPoolUnique failed: " +
+			vk::to_string(rv.result)
+		);
+	}
+
+	descPool_ = std::move(rv.value);
+} // end of createPool()
+
+void DescriptorSetVk::allocate()
+{
+	if (!setLayout_)
+	{
+		throw std::runtime_error("DescriptorSetVk::allocate - descriptor set layout not created");
+	}
+
+	if (!descPool_)
+	{
+		throw std::runtime_error("DescriptorSetVk::allocate - descriptor pool not created");
+	}
+
+	vk::Device device = vk_.getDevice();
+
+	vk::DescriptorSetLayout layout = setLayout_.get();
+
+	vk::DescriptorSetAllocateInfo dsai{};
+	dsai.descriptorPool = descPool_.get();
+	dsai.descriptorSetCount = 1;
+	dsai.pSetLayouts = &layout;
+
+	vk::ResultValue rv = device.allocateDescriptorSets(dsai);
+	if (rv.result != vk::Result::eSuccess)
+	{
+		throw std::runtime_error(
+			"DescriptorSetVk::allocate - allocateDescriptorSets failed: " +
+			vk::to_string(rv.result)
+		);
+	}
+
+	descSet_ = rv.value[0];
+} // end of allocate()
+
+void DescriptorSetVk::writeUniformBuffer(
+	uint32_t binding,
+	vk::Buffer buffer,
+	vk::DeviceSize range,
+	vk::DeviceSize offset
+)
+{
+	if (!descSet_)
+	{
+		throw std::runtime_error("DescriptorSetVk::writeUniformBuffer - descriptor set not allocated");
+	}
+
+	vk::DescriptorBufferInfo dbi{};
+	dbi.buffer = buffer;
+	dbi.offset = offset;
+	dbi.range = range;
+
+	vk::WriteDescriptorSet write{};
+	write.dstSet = descSet_;
+	write.dstBinding = binding;
+	write.dstArrayElement = 0;
+	write.descriptorType = vk::DescriptorType::eUniformBuffer;
+	write.descriptorCount = 1;
+	write.pBufferInfo = &dbi;
+
+	vk_.getDevice().updateDescriptorSets(1, &write, 0, nullptr);
+} // end of writeUniformBuffer()
+
+void DescriptorSetVk::writeCombinedImageSampler(
+	uint32_t binding,
+	vk::ImageView imageView,
+	vk::Sampler sampler,
+	vk::ImageLayout imageLayout
+)
+{
+	if (!descSet_)
+	{
+		throw std::runtime_error("DescriptorSetVk::writeCombinedImageSampler - descriptor set not allocated");
+	}
+
+	vk::DescriptorImageInfo dii{};
+	dii.imageLayout = imageLayout;
+	dii.imageView = imageView;
+	dii.sampler = sampler;
+
+	vk::WriteDescriptorSet write{};
+	write.dstSet = descSet_;
+	write.dstBinding = binding;
+	write.dstArrayElement = 0;
+	write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	write.descriptorCount = 1;
+	write.pImageInfo = &dii;
+
+	vk_.getDevice().updateDescriptorSets(1, &write, 0, nullptr);
+} // end of writeCombinedImageSampler()
+
+
 void DescriptorSetVk::createSingleUniformBuffer(
 	uint32_t binding,
 	vk::ShaderStageFlags stageFlags,

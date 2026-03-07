@@ -10,7 +10,7 @@
 #include "chunk_pass_gl.h"
 #include "camera.h"
 #include "light_gl.h"
-#include "cubemap.h"
+#include "cubemap_gl.h"
 #include "texture.h"
 
 #include <glad/glad.h>
@@ -237,7 +237,7 @@ void WaterPass::waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) 
     // render objects (non-UI)
     chunk.renderOpaque(in, reflView, proj, width_, height_);
     in.light->render({}, reflView, proj);
-    in.skybox->render(reflView, proj);
+    in.skybox->render({}, reflView, proj);
 
     // restore camera
     camera.getCameraPosition().y += distance;

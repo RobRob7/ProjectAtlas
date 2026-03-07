@@ -8,7 +8,7 @@
 #include "render_inputs.h"
 
 #include "camera.h"
-#include "cubeMap.h"
+#include "cubemap_vk.h"
 #include "crosshair.h"
 #include "chunk_manager.h"
 #include "light_vk.h"
@@ -35,8 +35,8 @@ void SceneVk::init()
 	light_ = std::make_unique<LightVk>(vk_, camera_->getCameraPosition() + glm::vec3(0.0f, -10.0f, 0.0f));
 	light_->init();
 
-	//skybox_ = std::make_unique<CubeMap>();
-	//skybox_->init();
+	skybox_ = std::make_unique<CubemapVk>(vk_);
+	skybox_->init();
 
 	//crosshair_ = std::make_unique<Crosshair>();
 	//crosshair_->init();
@@ -46,11 +46,11 @@ void SceneVk::render(IRenderer& renderer, RenderInputs& in)
 {
 	//if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
-	in.world = world_.get();
+	//in.world = world_.get();
 	in.camera = camera_.get();
 	in.light = light_.get();
 	in.skybox = skybox_.get();
-	in.crosshair = crosshair_.get();
+	//in.crosshair = crosshair_.get();
 
 	renderer.renderFrame(in);
 } // end of render()
@@ -140,7 +140,7 @@ Camera& SceneVk::getCamera()
 	return *camera_;
 } // end of getCamera()
 
-CubeMap& SceneVk::getSkybox()
+ICubemap& SceneVk::getSkybox()
 {
 	return *skybox_;
 } // end of getSkybox()
