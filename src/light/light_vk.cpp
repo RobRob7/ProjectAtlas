@@ -97,35 +97,16 @@ void LightVk::render(const RenderContext& ctx, const glm::mat4& view, const glm:
 //--- PRIVATE ---//
 void LightVk::createVertexBuffer()
 {
-	// CUBE_VERTICES: 8 floats per vertex (pos3, normal3, uv2)
-	constexpr size_t floatsPerVert = 8;
-	const size_t vertCount = CUBE_VERTICES.size() / floatsPerVert;
+	vertexCount_ = static_cast<uint32_t>(CUBE_VERTICES.size() / 3);
 
-	std::vector<VertexLight> verts;
-	verts.reserve(vertCount);
-
-	for (size_t i = 0; i < vertCount; ++i)
-	{
-		const size_t base = i * floatsPerVert;
-		verts.push_back(VertexLight{
-			glm::vec3{
-				CUBE_VERTICES[base + 0],
-				CUBE_VERTICES[base + 1],
-				CUBE_VERTICES[base + 2]
-			}
-			});
-	}
-
-	vertexCount_ = static_cast<uint32_t>(verts.size());
-
-	const vk::DeviceSize bufferSize = sizeof(VertexLight) * verts.size();
+	const vk::DeviceSize bufferSize = sizeof(float) * CUBE_VERTICES.size();
 	vertexBuffer_.create(
 		bufferSize,
 		vk::BufferUsageFlagBits::eVertexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
 
-	vertexBuffer_.upload(verts.data(), bufferSize);
+	vertexBuffer_.upload(CUBE_VERTICES.data(), bufferSize);
 } // end of createVertexBuffer()
 
 void LightVk::createUBO()
@@ -173,7 +154,7 @@ void LightVk::createPipeline()
 	desc.depthFormat = vk_.getDepthFormat();
 
 	desc.cullMode = vk::CullModeFlagBits::eBack;
-	desc.frontFace = vk::FrontFace::eCounterClockwise;
+	desc.frontFace = vk::FrontFace::eClockwise;
 	desc.depthTestEnable = true;
 	desc.depthWriteEnable = true;
 	desc.depthCompareOp = vk::CompareOp::eLessOrEqual;

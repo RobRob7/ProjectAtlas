@@ -109,9 +109,9 @@ void CubemapVk::render(const RenderContext& ctx, const glm::mat4& view, const gl
 //--- PRIVATE ---//
 void CubemapVk::createVertexBuffer()
 {
-	vertexCount_ = static_cast<uint32_t>(SKYBOX_VERTICES.size());
+	vertexCount_ = static_cast<uint32_t>(SKYBOX_VERTICES.size() / 3);
 
-	const vk::DeviceSize bufferSize = sizeof(VertexCubemap) * SKYBOX_VERTICES.size();
+	const vk::DeviceSize bufferSize = sizeof(float) * SKYBOX_VERTICES.size();
 	vertexBuffer_.create(
 		bufferSize,
 		vk::BufferUsageFlagBits::eVertexBuffer,
@@ -195,8 +195,8 @@ void CubemapVk::createPipeline()
 	desc.colorFormat = vk_.getSwapChainImageFormat();
 	desc.depthFormat = vk_.getDepthFormat();
 
-	desc.cullMode = vk::CullModeFlagBits::eNone;
-	desc.frontFace = vk::FrontFace::eCounterClockwise;
+	desc.cullMode = vk::CullModeFlagBits::eFront;
+	desc.frontFace = vk::FrontFace::eClockwise;
 	desc.depthTestEnable = true;
 	desc.depthWriteEnable = false;
 	desc.depthCompareOp = vk::CompareOp::eLessOrEqual;
