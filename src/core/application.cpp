@@ -44,7 +44,7 @@ static void RunShaderCompilerScript()
 #endif
 
 	std::string cmd =
-		pythonExe + " \"" + scriptPath.string() + "\" \"" + shaderRoot.string() + "\" " + buildMode;
+		pythonExe + " \"" + scriptPath.make_preferred().string() + "\" \"" + shaderRoot.make_preferred().string() + "\" " + buildMode;
 
 	//std::cout << "Running: " << cmd << "\n";
 

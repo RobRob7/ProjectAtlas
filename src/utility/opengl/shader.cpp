@@ -6,6 +6,8 @@
 #include <fstream>
 #include <sstream>
 #include <utility>
+#include <filesystem>
+#include <stdexcept>
 
 //--- PUBLIC ---//
 Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath)
@@ -28,12 +30,14 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
 	try
 	{
 		// preliminary path to shaders
-		const std::string pathToShaders = std::string(RESOURCES_PATH) + "/shader/";
+		std::filesystem::path pathToShaders = std::filesystem::path(RESOURCES_PATH) / "shader";
+		std::filesystem::path vertexFullPath = pathToShaders / vertexPath;
+		std::filesystem::path fragFullPath = pathToShaders / fragmentPath;
 		// open shader files
 		problemFile = "VERTEX";
-		vertexShaderFile.open(pathToShaders + vertexPath);
+		vertexShaderFile.open(vertexFullPath);
 		problemFile = "FRAGMENT";
-		fragmentShaderFile.open(pathToShaders + fragmentPath);
+		fragmentShaderFile.open(fragFullPath);
 
 		// will contain file info as stringstrean for each shader
 		std::stringstream vertexShaderStream;
@@ -58,8 +62,9 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
 		// check for geometry shader
 		if (geometryPath != nullptr)
 		{
+			std::filesystem::path geomFullPath = pathToShaders / geometryPath;
 			problemFile = "GEOMETRY";
-			geometryShaderFile.open(pathToShaders + geometryPath);
+			geometryShaderFile.open(geomFullPath);
 			std::stringstream geometryShaderStream;
 			geometryShaderStream << geometryShaderFile.rdbuf();
 			geometryShaderFile.close();
@@ -68,7 +73,9 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geo
 	}
 	catch (std::ifstream::failure& e)
 	{
-		std::cout << "ERROR::" << problemFile << "_SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
+		throw std::runtime_error(
+			"ERROR::" + problemFile + "_SHADER::FILE_NOT_SUCCESSFULLY_READ: " + std::string(e.what())
+		);
 	}
 
 	// contains the shader code

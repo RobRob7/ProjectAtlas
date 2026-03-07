@@ -10,6 +10,7 @@
 #include <array>
 #include <stdexcept>
 #include <string>
+#include <filesystem>
 
 namespace
 {
@@ -18,7 +19,8 @@ namespace
 		vk::Image image,
 		vk::ImageLayout oldLayout,
 		vk::ImageLayout newLayout,
-		uint32_t layers
+		uint32_t layers,
+		uint32_t mipLevels
 	)
 	{
 		vk::CommandBuffer cmd = vk.beginSingleTimeCommands();
@@ -31,7 +33,7 @@ namespace
 		barrier.image = image;
 		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.levelCount = mipLevels;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = layers;
 
@@ -124,12 +126,13 @@ void Texture2DVk::loadFromFile(std::string_view path, const bool needToFlip)
 	int texHeight = 0;
 	int texChannels = 0;
 
-	std::string pathToTexture = std::string(RESOURCES_PATH) + "texture/" + std::string(path);
+	std::filesystem::path pathToTexture = std::filesystem::path(RESOURCES_PATH) / "texture" / path;
 
-	stbi_uc* pixels = stbi_load(pathToTexture.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	const std::string texPath = pathToTexture.string();
+	stbi_uc* pixels = stbi_load(texPath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	if (!pixels)
 	{
-		throw std::runtime_error("Texture2DVk::loadFromFile - failed to load texture: " + std::string(path));
+		throw std::runtime_error("Texture2DVk::loadFromFile - failed to load texture: " + pathToTexture.string());
 	}
 
 	const vk::DeviceSize imageSize = static_cast<vk::DeviceSize>(texWidth) * texHeight * 4;
@@ -151,13 +154,21 @@ void Texture2DVk::loadFromFile(std::string_view path, const bool needToFlip)
 		vk::SampleCountFlagBits::e1,
 		vk::Format::eR8G8B8A8Srgb,
 		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+		vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 		vk::MemoryPropertyFlagBits::eDeviceLocal
 	);
 
-	transitionImageLayout(vk_, image_.image(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 1);
+	transitionImageLayout(vk_, image_.image(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 1, image_.mipLevels());
 	copyBufferToImage(vk_, staging.getBuffer(), image_.image(), texWidth, texHeight, 1);
-	transitionImageLayout(vk_, image_.image(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, 1);
+	
+	image_.generateMipmaps(
+		image_.image(),
+		vk::Format::eR8G8B8A8Srgb,
+		texWidth,
+		texHeight,
+		image_.mipLevels(),
+		1
+	);
 
 	image_.createImageView(
 		vk::Format::eR8G8B8A8Srgb,
@@ -167,8 +178,8 @@ void Texture2DVk::loadFromFile(std::string_view path, const bool needToFlip)
 	);
 
 	image_.createSampler(
-		vk::Filter::eLinear,
-		vk::Filter::eLinear,
+		vk::Filter::eNearest,
+		vk::Filter::eNearest,
 		vk::SamplerAddressMode::eRepeat
 	);
 } // end of loadFromFile()

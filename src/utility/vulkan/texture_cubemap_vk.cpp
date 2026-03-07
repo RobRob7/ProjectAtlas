@@ -10,6 +10,8 @@
 #include <array>
 #include <stdexcept>
 #include <string>
+#include <filesystem>
+#include <cstring>
 
 namespace
 {
@@ -18,7 +20,8 @@ namespace
 		vk::Image image,
 		vk::ImageLayout oldLayout,
 		vk::ImageLayout newLayout,
-		uint32_t layers
+		uint32_t layers,
+		uint32_t mipLevels
 	)
 	{
 		vk::CommandBuffer cmd = vk.beginSingleTimeCommands();
@@ -31,7 +34,7 @@ namespace
 		barrier.image = image;
 		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.levelCount = mipLevels;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = layers;
 
@@ -132,12 +135,13 @@ void TextureCubemapVk::loadFromFiles(const std::array<std::string_view, 6>& face
 		int h = 0;
 		int c = 0;
 
-		std::string pathToTexture = std::string(RESOURCES_PATH) + std::string(faces[i]);
-		stbi_uc* pixels = stbi_load(pathToTexture.data(), &w, &h, &c, STBI_rgb_alpha);
+		std::filesystem::path pathToTexture = std::filesystem::path(RESOURCES_PATH) / faces[i];
+		const std::string texPath = pathToTexture.string();
+		stbi_uc* pixels = stbi_load(texPath.c_str(), &w, &h, &c, STBI_rgb_alpha);
 		if (!pixels)
 		{
 			for (stbi_uc* p : loadedFaces) stbi_image_free(p);
-			throw std::runtime_error("TextureCubemapVk::loadFromFiles - failed to load face");
+			throw std::runtime_error("TextureCubemapVk::loadFromFiles - failed to load face: " + pathToTexture.string());
 		}
 
 		if (i == 0)
@@ -181,14 +185,22 @@ void TextureCubemapVk::loadFromFiles(const std::array<std::string_view, 6>& face
 		vk::SampleCountFlagBits::e1,
 		vk::Format::eR8G8B8A8Srgb,
 		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+		vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 		vk::MemoryPropertyFlagBits::eDeviceLocal,
 		vk::ImageCreateFlagBits::eCubeCompatible
 	);
 
-	transitionImageLayout(vk_, image_.image(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 6);
+	transitionImageLayout(vk_, image_.image(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 6, image_.mipLevels());
 	copyBufferToImage(vk_, staging.getBuffer(), image_.image(), texWidth, texHeight, 6);
-	transitionImageLayout(vk_, image_.image(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, 6);
+
+	image_.generateMipmaps(
+		image_.image(),
+		vk::Format::eR8G8B8A8Srgb,
+		texWidth,
+		texHeight,
+		image_.mipLevels(),
+		6
+	);
 
 	image_.createImageView(
 		vk::Format::eR8G8B8A8Srgb,
