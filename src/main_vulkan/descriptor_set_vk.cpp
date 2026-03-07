@@ -127,6 +127,28 @@ void DescriptorSetVk::writeUniformBuffer(
 	vk_.getDevice().updateDescriptorSets(1, &write, 0, nullptr);
 } // end of writeUniformBuffer()
 
+void DescriptorSetVk::writeDynamicUniformBuffer(
+	uint32_t binding,
+	vk::Buffer buffer,
+	vk::DeviceSize range
+)
+{
+	vk::DescriptorBufferInfo info{};
+	info.buffer = buffer;
+	info.offset = 0;
+	info.range = range;
+
+	vk::WriteDescriptorSet write{};
+	write.dstSet = descSet_;
+	write.dstBinding = binding;
+	write.dstArrayElement = 0;
+	write.descriptorCount = 1;
+	write.descriptorType = vk::DescriptorType::eUniformBufferDynamic;
+	write.pBufferInfo = &info;
+
+	vk_.getDevice().updateDescriptorSets(1, &write, 0, nullptr);
+} // end of writeDynamicUniformBuffer()
+
 void DescriptorSetVk::writeCombinedImageSampler(
 	uint32_t binding,
 	vk::ImageView imageView,

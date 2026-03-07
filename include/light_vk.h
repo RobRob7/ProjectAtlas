@@ -1,6 +1,8 @@
 #ifndef LIGHT_VK_H
 #define LIGHT_VK_H
 
+#include "constants.h"
+
 #include "i_light.h"
 #include "buffer_vk.h"
 #include "descriptor_set_vk.h"

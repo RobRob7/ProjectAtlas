@@ -22,7 +22,7 @@ public:
     TextureCubemapVk(TextureCubemapVk&&) noexcept = default;
     TextureCubemapVk& operator=(TextureCubemapVk&&) noexcept = default;
 
-    void loadFromFiles(const std::array<std::string_view, 6>& faces);
+    void loadFromFiles(const std::array<std::string_view, 6>& faces, const bool needToFlip = false);
 
     bool valid() const { return image_.valid(); }
 

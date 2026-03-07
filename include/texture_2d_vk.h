@@ -22,7 +22,7 @@ public:
     Texture2DVk(Texture2DVk&&) noexcept = default;
     Texture2DVk& operator=(Texture2DVk&&) noexcept = default;
 
-    void loadFromFile(std::string_view path);
+    void loadFromFile(std::string_view path, const bool needToFlip = false);
 
     bool valid() const { return image_.valid(); }
 

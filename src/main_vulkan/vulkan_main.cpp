@@ -489,6 +489,7 @@ void VulkanMain::pickPhysicalDevice()
 		if (isDeviceSuitable(device)) 
 		{
 			physicalDevice_ = device;
+			physicalDeviceProperties_ = physicalDevice_.getProperties();
 			msaaSamples_ = getMaxUsableSampleCount();
 			break;
 		}

@@ -77,7 +77,7 @@ void ChunkPassGL::renderOpaque(
     {
         chunkOpaqueUBO_.u_chunkOrigin = item.chunkOrigin;
         uboOpaque_.update(&chunkOpaqueUBO_, sizeof(chunkOpaqueUBO_));
-        item.gpu->drawOpaque();
+        item.gpu->drawOpaque({});
     }
 } // end of renderOpaque()
 
@@ -101,7 +101,7 @@ void ChunkPassGL::renderOpaque(
     {
         chunkOrigin = item.chunkOrigin;
         uboGL.update(ubo, uboSize);
-        item.gpu->drawOpaque();
+        item.gpu->drawOpaque({});
     }
 } // end of renderOpaque()
 
@@ -131,7 +131,7 @@ void ChunkPassGL::renderWater(
             item.chunkOrigin);
         chunkWaterUBO_.u_model = model;
         uboWater_.update(&chunkWaterUBO_, sizeof(chunkWaterUBO_));
-        item.gpu->drawWater();
+        item.gpu->drawWater({});
     }
 
     glDepthMask(GL_TRUE);

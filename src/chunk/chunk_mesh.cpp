@@ -321,7 +321,7 @@ void ChunkMesh::buildChunkMesh()
 				// skip opaque blocks
 				if (block != BlockID::Water) continue;
 
-				BlockID above = (y + 1) > CHUNK_SIZE_Y ?
+				BlockID above = (y + 1) >= CHUNK_SIZE_Y ?
 					BlockID::Air :
 					chunkData_.getBlockID(x, y + 1, z);
 

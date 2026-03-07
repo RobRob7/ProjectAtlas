@@ -3,6 +3,8 @@
 
 #include "i_chunk_mesh_gpu.h"
 
+#include "buffer_vk.h"
+
 #include <vulkan/vulkan.hpp>
 
 #include <cstdint>
@@ -17,24 +19,20 @@ public:
 	~ChunkMeshGPUVk() override;
 
 	void upload(const ChunkMeshData& data) override;
-	void drawOpaque() override;
-	void drawWater() override;
+	void drawOpaque(vk::CommandBuffer cmd) override;
+	void drawWater(vk::CommandBuffer cmd) override;
 
 private:
 	VulkanMain& vk_;
 
 	// opaque
-	vk::UniqueBuffer opaqueVB_{};
-	vk::UniqueDeviceMemory opaqueVBMem_{};
-	vk::UniqueBuffer opaqueIB_{};
-	vk::UniqueDeviceMemory opaqueIBMem_{};
+	BufferVk opaqueVB_;
+	BufferVk opaqueIB_;
 	uint32_t opaqueIndexCount_{ 0 };
 
 	// water
-	vk::UniqueBuffer waterVB_{};
-	vk::UniqueDeviceMemory waterVBMem_{};
-	vk::UniqueBuffer waterIB_{};
-	vk::UniqueDeviceMemory waterIBMem_{};
+	BufferVk waterVB_;
+	BufferVk waterIB_;
 	uint32_t waterIndexCount_{ 0 };
 };
 

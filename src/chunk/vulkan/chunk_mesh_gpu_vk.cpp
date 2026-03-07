@@ -4,105 +4,73 @@
 #include "chunk_mesh_data.h"
 
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
 
 //--- PUBLIC ---//
 ChunkMeshGPUVk::ChunkMeshGPUVk(VulkanMain& vk)
-	: vk_(vk)
+	: vk_(vk),
+	opaqueVB_(vk),
+	opaqueIB_(vk),
+	waterVB_(vk),
+	waterIB_(vk)
 {
 } // end of constructor
 
-ChunkMeshGPUVk::~ChunkMeshGPUVk() = default;
+ChunkMeshGPUVk::~ChunkMeshGPUVk()
+{
+	vk_.getDevice().waitIdle();
+}
 
 void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 {
-	vk_.waitIdle();
-
-	vk::Device device = vk_.getDevice();
-
-	//--- OPAQUE ---//
 	opaqueIndexCount_ = static_cast<uint32_t>(data.opaqueIndices.size());
+	waterIndexCount_ = static_cast<uint32_t>(data.waterIndices.size());
+
+	// -------- OPAQUE --------
 	if (!data.opaqueVertices.empty() && !data.opaqueIndices.empty())
 	{
-		vk::DeviceSize vbSize = sizeof(Vertex) * data.opaqueVertices.size();
-		vk::DeviceSize ibSize = sizeof(uint32_t) * data.opaqueIndices.size();
+		const vk::DeviceSize vbSize = sizeof(Vertex) * data.opaqueVertices.size();
+		const vk::DeviceSize ibSize = sizeof(uint32_t) * data.opaqueIndices.size();
 
-		// staging VB
-		vk_.createBuffer(
+		opaqueVB_.create(
 			vbSize,
-			vk::BufferUsageFlagBits::eTransferSrc,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-			opaqueVB_.get(), opaqueVBMem_.get());
-		{
-			auto rv = device.mapMemory(opaqueVBMem_.get(), 0, vbSize);
-			if (rv.result != vk::Result::eSuccess)
-			{
-				throw std::runtime_error("mapMemory failed: " + vk::to_string(rv.result));
-			}
-			std::memcpy(rv.value, data.opaqueVertices.data(), static_cast<size_t>(vbSize));
-		}
-		device.unmapMemory(opaqueVBMem_.get());
+			vk::BufferUsageFlagBits::eVertexBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+		opaqueVB_.upload(data.opaqueVertices.data(), vbSize);
 
-		// staging IB
-		vk_.createBuffer(
+		opaqueIB_.create(
 			ibSize,
-			vk::BufferUsageFlagBits::eTransferSrc,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-			opaqueIB_.get(), opaqueIBMem_.get());
-		{
-			auto rv = device.mapMemory(opaqueIBMem_.get(), 0, vbSize);
-			if (rv.result != vk::Result::eSuccess)
-			{
-				throw std::runtime_error("mapMemory failed: " + vk::to_string(rv.result));
-			}
-			std::memcpy(rv.value, data.opaqueIndices.data(), static_cast<size_t>(vbSize));
-		}
-		device.unmapMemory(opaqueIBMem_.get());
+			vk::BufferUsageFlagBits::eIndexBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+		opaqueIB_.upload(data.opaqueIndices.data(), ibSize);
 	}
 	else
 	{
 		opaqueIndexCount_ = 0;
 	}
 
-
-	//--- WATER ---//
-	waterIndexCount_ = static_cast<uint32_t>(data.waterIndices.size());
+	// -------- WATER --------
 	if (!data.waterVertices.empty() && !data.waterIndices.empty())
 	{
-		vk::DeviceSize vbSize = sizeof(Vertex) * data.waterVertices.size();
-		vk::DeviceSize ibSize = sizeof(uint32_t) * data.waterIndices.size();
+		const vk::DeviceSize vbSize = sizeof(VertexWater) * data.waterVertices.size();
+		const vk::DeviceSize ibSize = sizeof(uint32_t) * data.waterIndices.size();
 
-		// staging VB
-		vk_.createBuffer(
+		waterVB_.create(
 			vbSize,
-			vk::BufferUsageFlagBits::eTransferSrc,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-			waterVB_.get(), waterVBMem_.get());
-		{
-			auto rv = device.mapMemory(waterVBMem_.get(), 0, vbSize);
-			if (rv.result != vk::Result::eSuccess)
-			{
-				throw std::runtime_error("mapMemory failed: " + vk::to_string(rv.result));
-			}
-			std::memcpy(rv.value, data.waterVertices.data(), static_cast<size_t>(vbSize));
-		}
-		device.unmapMemory(waterVBMem_.get());
+			vk::BufferUsageFlagBits::eVertexBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+		waterVB_.upload(data.waterVertices.data(), vbSize);
 
-		// staging IB
-		vk_.createBuffer(
+		waterIB_.create(
 			ibSize,
-			vk::BufferUsageFlagBits::eTransferSrc,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-			waterIB_.get(), waterIBMem_.get());
-		{
-			auto rv = device.mapMemory(waterIBMem_.get(), 0, vbSize);
-			if (rv.result != vk::Result::eSuccess)
-			{
-				throw std::runtime_error("mapMemory failed: " + vk::to_string(rv.result));
-			}
-			std::memcpy(rv.value, data.waterIndices.data(), static_cast<size_t>(vbSize));
-		}
-		device.unmapMemory(waterIBMem_.get());
+			vk::BufferUsageFlagBits::eIndexBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+		waterIB_.upload(data.waterIndices.data(), ibSize);
 	}
 	else
 	{
@@ -110,29 +78,28 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 	}
 } // end of upload()
 
-void ChunkMeshGPUVk::drawOpaque()
+void ChunkMeshGPUVk::drawOpaque(vk::CommandBuffer cmd)
 {
-	//auto cmd = static_cast<VkCommandBuffer>(ctx.backendCmd);
+	if (!cmd || opaqueIndexCount_ == 0 || !opaqueVB_.valid() || !opaqueIB_.valid())
+		return;
 
-	//vk_.
+	vk::Buffer vb = opaqueVB_.getBuffer();
+	vk::DeviceSize offset = 0;
 
-	//if (!cmd || opaqueIndexCount_ == 0) return;
-
-	//vk::DeviceSize offset = 0;
-
-	//vkCmdBindVertexBuffers(cmd, 0, 1, &opaqueVB_, &offset);
-	//vkCmdBindIndexBuffer(cmd, opaqueIB_, 0, VK_INDEX_TYPE_UINT32);
-	//vkCmdDrawIndexed(cmd, opaqueIndexCount_, 1, 0, 0, 0);
+	cmd.bindVertexBuffers(0, 1, &vb, &offset);
+	cmd.bindIndexBuffer(opaqueIB_.getBuffer(), 0, vk::IndexType::eUint32);
+	cmd.drawIndexed(opaqueIndexCount_, 1, 0, 0, 0);
 } // end of drawOpaque()
 
-void ChunkMeshGPUVk::drawWater()
+void ChunkMeshGPUVk::drawWater(vk::CommandBuffer cmd)
 {
-	//auto cmd = static_cast<VkCommandBuffer>(ctx.backendCmd);
+	if (!cmd || waterIndexCount_ == 0 || !waterVB_.valid() || !waterIB_.valid())
+		return;
 
-	//if (!cmd || waterIndexCount_ == 0) return;
+	vk::Buffer vb = waterVB_.getBuffer();
+	vk::DeviceSize offset = 0;
 
-	//VkDeviceSize offset = 0;
-	//vkCmdBindVertexBuffers(cmd, 0, 1, &waterVB_, &offset);
-	//vkCmdBindIndexBuffer(cmd, waterIB_, 0, VK_INDEX_TYPE_UINT32);
-	//vkCmdDrawIndexed(cmd, waterIndexCount_, 1, 0, 0, 0);
+	cmd.bindVertexBuffers(0, 1, &vb, &offset);
+	cmd.bindIndexBuffer(waterIB_.getBuffer(), 0, vk::IndexType::eUint32);
+	cmd.drawIndexed(waterIndexCount_, 1, 0, 0, 0);
 } // end of drawWater()

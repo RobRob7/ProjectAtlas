@@ -8,10 +8,10 @@
 #include "camera.h"
 #include "i_light.h"
 #include "i_cubemap.h"
+#include "chunk_manager.h"
 
 #include <glm/glm.hpp>
 
-#include <algorithm>
 #include <stdexcept>
 
 //--- HELPER ---//
@@ -82,17 +82,23 @@ RendererVk::~RendererVk() = default;
 void RendererVk::init()
 {
 	if (!renderSettings_) renderSettings_ = std::make_unique<RenderSettings>();
+
+	if (!chunkPass_) chunkPass_ = std::make_unique<ChunkPassVk>(vk_);
+	chunkPass_->init();
 } // end of init()
 
 void RendererVk::resize(int w, int h)
 {
-	width_ = std::max(0, w);
-	height_ = std::max(0, h);
+	if (w <= 0 || h <= 0) return;
+	if (w == width_ && h == height_) return;
+
+	width_ = w;
+	height_ = h;
 } // end of resize()
 
 void RendererVk::renderFrame(const RenderInputs& in)
 {
-	//in.world->update(in.camera->getCameraPosition());
+	in.world->update(in.camera->getCameraPosition());
 
 	const glm::mat4 view = in.camera->getViewMatrix();
 	const float aspect = (height_ > 0)
@@ -145,18 +151,35 @@ void RendererVk::renderFrame(const RenderInputs& in)
 	renderingInfo.pColorAttachments = &colorAttach;
 	renderingInfo.pDepthAttachment = &depthAttach;
 
-	// BEGIN RENDER
+	// FORWARD RENDER
 	cmd.beginRendering(renderingInfo);
 	{
+		vk::Viewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(frame.extent.width);
+		viewport.height = static_cast<float>(frame.extent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		cmd.setViewport(0, 1, &viewport);
+
+		vk::Rect2D scissor{};
+		scissor.offset = vk::Offset2D{ 0, 0 };
+		scissor.extent = frame.extent;
+		cmd.setScissor(0, 1, &scissor);
+
 		RenderContext ctx{};
 		ctx.backend = RenderContext::Backend::Vulkan;
 		ctx.nativeCmd = &cmd;
 
+		if (chunkPass_)
+		{
+			chunkPass_->renderOpaque(in, ctx, view, proj, width_, height_);
+			//chunkPass_->renderWater(in, ctx, view, proj, width_, height_);
+		}
 		if (in.light) in.light->render(ctx, view, proj);
 		if (in.skybox) in.skybox->render(ctx, view, proj);
 	}
-
-	// END RENDER
 	cmd.endRendering();
 
 	transitionSwapchainImage(cmd, frame.swapchainImage,
