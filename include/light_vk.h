@@ -2,11 +2,13 @@
 #define LIGHT_VK_H
 
 #include "i_light.h"
-
-#include "vulkan/vulkan.hpp"
+#include "buffer_vk.h"
+#include "descriptor_set_vk.h"
+#include "graphics_pipeline_vk.h"
 
 #include <memory>
 #include <algorithm>
+#include <cstdint>
 
 class VulkanMain;
 class ShaderModuleVk;
@@ -38,28 +40,22 @@ public:
 
 private:
 	void createVertexBuffer();
-	void createPipeline();
 	void createUBO();
-	void createDesciptorSet();
-
+	void createDescriptorSet();
+	void createPipeline();
 private:
 	VulkanMain& vk_;
 
 	std::unique_ptr<ShaderModuleVk> shader_;
 
-	vk::UniqueDescriptorSetLayout setLayout_{};
-	vk::UniqueDescriptorPool descPool_{};
-	vk::DescriptorSet descSet_{};
+	BufferVk uboBuffer_;
+	BufferVk vertexBuffer_;
 
-	vk::UniqueBuffer uboBuffer_{};
-	vk::UniqueDeviceMemory uboMemory_{};
+	uint32_t vertexCount_{};
 
-	vk::UniqueBuffer vertexBuffer_{};
-	vk::UniqueDeviceMemory vertexMemory_{};
-	vk::DeviceSize vertexBufferSize_{};
+	DescriptorSetVk descriptorSet_;
 
-	vk::UniquePipelineLayout pipelineLayout_{};
-	vk::UniquePipeline pipeline_{};
+	GraphicsPipelineVk pipeline_;
 
 	glm::vec3 position_{};
 	glm::vec3 color_{};
