@@ -40,7 +40,7 @@ void Scene::init()
 	crosshair_->init();
 } // end of init
 
-void Scene::render(IRenderer& renderer, RenderInputs& in)
+void Scene::render(IRenderer& renderer, RenderInputs& in, const FrameContext& frame, UIVk* ui)
 {
 	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 
@@ -50,7 +50,7 @@ void Scene::render(IRenderer& renderer, RenderInputs& in)
 	in.skybox = skybox_.get();
 	in.crosshair = crosshair_.get();
 
-	renderer.renderFrame(in);
+	renderer.renderFrame(in, frame, nullptr);
 } // end of render()
 
 void Scene::update(float dt, const InputState& in)

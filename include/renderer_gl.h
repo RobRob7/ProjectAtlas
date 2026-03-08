@@ -24,6 +24,8 @@ class WaterPass;
 class FogPass;
 
 struct RenderInputs;
+struct FrameContext;
+class UIVk;
 
 class RendererGL : public IRenderer
 {
@@ -33,7 +35,7 @@ public:
 
 	void init() override;
 	void resize(int w, int h) override;
-	void renderFrame(const RenderInputs& in) override;
+	void renderFrame(const RenderInputs& in, const FrameContext& frame, UIVk* ui) override;
 
 	RenderSettings& settings() override;
 

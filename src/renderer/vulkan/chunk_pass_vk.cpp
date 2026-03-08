@@ -74,7 +74,7 @@ void ChunkPassVk::renderOpaque(
 		ubo.u_proj = proj;
 		ubo.u_screenSize = glm::vec2(width, height);
 		ubo.u_clipPlane = glm::vec4(0.0f);
-		ubo.u_ambientStrength = 0.2f;
+		ubo.u_ambientStrength = in.world->getAmbientStrength();
 		ubo.u_useSSAO = 0;
 
 		if (in.camera)

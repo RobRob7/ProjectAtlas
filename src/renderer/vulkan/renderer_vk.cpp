@@ -9,6 +9,7 @@
 #include "i_light.h"
 #include "i_cubemap.h"
 #include "chunk_manager.h"
+#include "ui_vk.h"
 
 #include <glm/glm.hpp>
 
@@ -96,7 +97,7 @@ void RendererVk::resize(int w, int h)
 	height_ = h;
 } // end of resize()
 
-void RendererVk::renderFrame(const RenderInputs& in)
+void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, UIVk* ui)
 {
 	in.world->update(in.camera->getCameraPosition());
 
@@ -106,12 +107,6 @@ void RendererVk::renderFrame(const RenderInputs& in)
 		: 1.0f;
 	glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
 	proj[1][1] *= -1.0f;
-
-	FrameContext frame{};
-	if (!vk_.beginFrame(frame))
-	{
-		return;
-	}
 
 	if (frame.extent.width != width_ || frame.extent.height != height_)
 	{
@@ -179,6 +174,11 @@ void RendererVk::renderFrame(const RenderInputs& in)
 		}
 		if (in.light) in.light->render(ctx, view, proj);
 		if (in.skybox) in.skybox->render(ctx, view, proj);
+
+		if (ui)
+		{
+			ui->render(cmd);
+		}
 	}
 	cmd.endRendering();
 
@@ -187,7 +187,7 @@ void RendererVk::renderFrame(const RenderInputs& in)
 		vk::ImageLayout::ePresentSrcKHR);
 
 	vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
-	vk_.endFrame(frame);
+	//vk_.endFrame(frame);
 } // end of renderFrame()
 
 RenderSettings& RendererVk::settings()

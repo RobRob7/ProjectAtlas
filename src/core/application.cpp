@@ -8,6 +8,7 @@
 #include "renderer_gl.h"
 #include "renderer_vk.h"
 #include "ui.h"
+#include "ui_vk.h"
 
 #include <GLFW/glfw3.h>
 
@@ -99,6 +100,9 @@ Application::Application(int width, int height, Backend backend)
 		renderer_->resize(width_, height_);
 
 		setCallbacks();
+
+		// setup UI
+		uivk_ = std::make_unique<UIVk>(*vulkanMain_, window_, renderer_->settings());
 	}
 	else
 	{
@@ -114,6 +118,7 @@ Application::~Application()
 	}
 
 	ui_.reset();
+	uivk_.reset();
 	renderer_.reset();
 	scene_.reset();
 	openglMain_.reset();
@@ -145,10 +150,19 @@ void Application::run()
 		{
 			ui_->init();
 		}
+		if (uivk_)
+		{
+			uivk_->beginFrame();
+		}
 
 		// process user input
 		InputState input = buildInputState();
 		scene_->update(deltaTime_, input);
+
+		if (uivk_)
+		{
+			uivk_->buildUI(deltaTime_, *scene_);
+		}
 
 		// process window close request
 		if (input.quitRequested)
@@ -163,12 +177,20 @@ void Application::run()
 			{
 				ui_->setUIDisplayEnabled(true);
 			}
+			if (uivk_)
+			{
+				uivk_->setUIDisplayEnabled(true);
+			}
 		}
 		if (input.disableImguiPressed)
 		{
 			if (ui_)
 			{
 				ui_->setUIDisplayEnabled(false);
+			}
+			if (uivk_)
+			{
+				uivk_->setUIDisplayEnabled(false);
 			}
 		}
 
@@ -181,6 +203,11 @@ void Application::run()
 				ui_->setCameraModeUIEnabled(true);
 				ui_->setUIInputEnabled(false);
 			}
+			if (uivk_)
+			{
+				uivk_->setCameraModeUIEnabled(true);
+				uivk_->setUIInputEnabled(false);
+			}
 		}
 		if (input.disableCameraPressed)
 		{
@@ -190,20 +217,40 @@ void Application::run()
 				ui_->setCameraModeUIEnabled(false);
 				ui_->setUIInputEnabled(true);
 			}
+			if (uivk_)
+			{
+				uivk_->setCameraModeUIEnabled(false);
+				uivk_->setUIInputEnabled(true);
+			}
 		}
 		///////////////////////////////////
 
 
 		///////////// RENDER ///////////////
 		in_.time = static_cast<float>(glfwGetTime());
-		scene_->render(*renderer_, in_);
 
 		if (openglMain_)
 		{
+			scene_->render(*renderer_, in_, {}, nullptr);
 			// draw UI
 			ui_->drawFullUI(deltaTime_, *scene_);
 			// swap buffers
 			glfwSwapBuffers(window_);
+		}
+		if (vulkanMain_)
+		{
+			FrameContext frame{};
+			if (!vulkanMain_->beginFrame(frame))
+			{
+				continue;
+			}
+
+			in_.time = static_cast<float>(glfwGetTime());
+
+			// render scene using this frame/cmd
+			scene_->render(*renderer_, in_, frame, uivk_.get());
+
+			vulkanMain_->endFrame(frame);
 		}
 		///////////////////////////////////
 	} // end while
