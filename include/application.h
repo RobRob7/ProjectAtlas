@@ -13,6 +13,7 @@ class OpenGLMain;
 class VulkanMain;
 
 class UI;
+class UIVk;
 struct InputState;
 
 enum class Backend
@@ -55,6 +56,8 @@ private:
 
 	std::unique_ptr<IScene> scene_;
 	std::unique_ptr<IRenderer> renderer_;
+
 	std::unique_ptr<UI> ui_;
+	std::unique_ptr<UIVk> uivk_;
 };
 #endif

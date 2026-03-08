@@ -501,6 +501,27 @@ void VulkanMain::pickPhysicalDevice()
 	}
 } // end of pickPhysicalDevice()
 
+void VulkanMain::createImGuiDescriptorPool()
+{
+	std::array<vk::DescriptorPoolSize, 1> poolSizes = {
+	vk::DescriptorPoolSize{ vk::DescriptorType::eCombinedImageSampler, 1000 }
+	};
+
+	vk::DescriptorPoolCreateInfo poolInfo{};
+	poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+	poolInfo.maxSets = 1000;
+	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+	poolInfo.pPoolSizes = poolSizes.data();
+
+	vk::ResultValue rv = device_->createDescriptorPoolUnique(poolInfo, nullptr);
+	if (rv.result != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("createImGuiDescriptorPool failed: " + vk::to_string(rv.result));
+	}
+
+	imguiDescriptorPool_ = std::move(rv.value);
+} // end of createImGuiDescriptorPool()
+
 void VulkanMain::createLogicalDevice()
 {
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice_);

@@ -54,12 +54,12 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 	else if (colorChannels_ == 3)
 	{
 		format = GL_RGB;
-		internalFormat = GL_RGB8;
+		internalFormat = GL_SRGB8;
 	}
 	else if (colorChannels_ == 4)
 	{
 		format = GL_RGBA;
-		internalFormat = GL_RGBA8;
+		internalFormat = GL_SRGB8_ALPHA8;
 	}
 
 	// generate texture OpenGL

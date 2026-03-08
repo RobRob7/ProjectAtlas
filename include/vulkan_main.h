@@ -75,6 +75,22 @@ public:
     vk::Format findDepthFormat() const;
     vk::Format getDepthFormat() const { return depthFormat_; }
 
+    vk::DescriptorPool getImGuiDescriptorPool() const { return imguiDescriptorPool_.get(); }
+
+    uint32_t getGraphicsQueueFamilyIndex()
+    {
+        return findQueueFamilies(physicalDevice_).graphicsFamily.value();
+    } // end of getGraphicsQueueFamilyIndex()
+
+    uint32_t VulkanMain::getMinImageCount()
+    {
+        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice_);
+        return swapChainSupport.capabilities.minImageCount;
+    } // end of getMinImageCount()
+
+    uint32_t getSwapchainImageCount() const { return static_cast<uint32_t>(swapChainImages_.size()); }
+
+
     vk::Device getDevice() const { return device_.get(); }
     vk::PhysicalDevice getPhysicalDevice() const { return physicalDevice_; }
     const vk::PhysicalDeviceProperties& getPhysicalDeviceProperties() const { return physicalDeviceProperties_; }
@@ -102,6 +118,7 @@ private:
     void setupDebugMessenger();
     void createSurface();
     void pickPhysicalDevice();
+    void createImGuiDescriptorPool();
     void createLogicalDevice();
     void createSwapChain();
     void createImageViews();
@@ -181,6 +198,8 @@ private:
 
     std::vector<vk::UniqueSemaphore> renderFinishedPerImage_;
     std::vector<vk::Fence> imagesInFlight_;
+
+    vk::UniqueDescriptorPool imguiDescriptorPool_;
 };
 
 #endif

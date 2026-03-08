@@ -1,21 +1,22 @@
-#include "ui.h"
+#include "ui_vk.h"
+
+#include "vulkan_main.h"
+#include "render_settings.h"
 
 #include "i_scene.h"
-#include "texture.h"
-#include "scene.h"
-#include "renderer_gl.h"
+#include "i_light.h"
 
 #include "chunk_manager.h"
 #include "camera.h"
-#include "light_gl.h"
 
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
-#include <imgui_impl_opengl3.h>
 #include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include <vulkan/vulkan.hpp>
 
 #define NOMINMAX
 #include <windows.h>
@@ -36,13 +37,13 @@ static size_t GetProcessMemoryMB()
 } // end of GetProcessMemoryMB()
 
 //--- PUBLIC ---//
-UI::UI(GLFWwindow* window, RenderSettings& rs)
-	: window_(window), renderSettings_(rs),
+UIVk::UIVk(VulkanMain& vk, GLFWwindow* window, RenderSettings& rs)
+	: vk_(vk), window_(window), renderSettings_(rs),
 	enabled_(true), cameraModeOn_(true)
 {
 	// window top nav bar logo
 	//logoTex_ = (void*)(intptr_t)Texture("blocks.png").ID();
-	logoTex_ = std::make_unique<Texture>("blocks.png");
+	//logoTex_ = std::make_unique<Texture>("blocks.png");
 
 	// ------ imgui init ------ //
 	IMGUI_CHECKVERSION();
@@ -50,32 +51,60 @@ UI::UI(GLFWwindow* window, RenderSettings& rs)
 
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 	ImGui::StyleColorsDark();
 
-	ImGui_ImplGlfw_InitForOpenGL(window_, true);
-	ImGui_ImplOpenGL3_Init("#version 460 core");
+	ImGui_ImplGlfw_InitForVulkan(window_, true);
+
+	ImGui_ImplVulkan_InitInfo initInfo{};
+	initInfo.Instance = static_cast<VkInstance>(vk_.getInstance());
+	initInfo.PhysicalDevice = static_cast<VkPhysicalDevice>(vk_.getPhysicalDevice());
+	initInfo.Device = static_cast<VkDevice>(vk_.getDevice());
+	initInfo.QueueFamily = vk_.getGraphicsQueueFamilyIndex();
+	initInfo.Queue = static_cast<VkQueue>(vk_.getGraphicsQueue());
+	initInfo.PipelineCache = VK_NULL_HANDLE;
+	initInfo.DescriptorPool = static_cast<VkDescriptorPool>(vk_.getImGuiDescriptorPool());
+	initInfo.DescriptorPoolSize = 1000;
+	initInfo.MinImageCount = vk_.getMinImageCount();
+	initInfo.ImageCount = vk_.getSwapchainImageCount();
+	initInfo.Allocator = nullptr;
+	initInfo.CheckVkResultFn = nullptr;
+
+	initInfo.UseDynamicRendering = true;
+	initInfo.PipelineInfoMain.Subpass = 0;
+	initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkFormat colorFormat = static_cast<VkFormat>(vk_.getSwapChainImageFormat());
+
+	VkPipelineRenderingCreateInfoKHR pipelineRenderingInfo{};
+	pipelineRenderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+	pipelineRenderingInfo.colorAttachmentCount = 1;
+	pipelineRenderingInfo.pColorAttachmentFormats = &colorFormat;
+	pipelineRenderingInfo.depthAttachmentFormat = static_cast<VkFormat>(vk_.getDepthFormat());
+	pipelineRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+
+	initInfo.PipelineInfoMain.PipelineRenderingCreateInfo = pipelineRenderingInfo;
+
+	ImGui_ImplVulkan_Init(&initInfo);
 } // end of constructor
 
-UI::~UI()
+UIVk::~UIVk()
 {
 	// imgui shutdown
-	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 } // end of destructor
 
-void UI::init()
+void UIVk::beginFrame()
 {
-	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-} // end of init()
+} // end of beginFrame()
 
-void UI::drawFullUI(float dt, IScene& scene)
+void UIVk::buildUI(float dt, IScene& scene)
 {
-	glDisable(GL_FRAMEBUFFER_SRGB);
 	drawTopBar();
 
 	if (enabled_)
@@ -85,18 +114,17 @@ void UI::drawFullUI(float dt, IScene& scene)
 	}
 
 	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		GLFWwindow* backup = glfwGetCurrentContext();
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
-		glfwMakeContextCurrent(backup);
-	}
 } // end of drawFullUI()
 
-void UI::setUIInputEnabled(bool enabled)
+void UIVk::render(vk::CommandBuffer cmd)
+{
+	ImGui_ImplVulkan_RenderDrawData(
+		ImGui::GetDrawData(), 
+		cmd
+	);
+} // end of render()
+
+void UIVk::setUIInputEnabled(bool enabled)
 {
 	ImGuiIO& io = ImGui::GetIO();
 
@@ -109,19 +137,19 @@ void UI::setUIInputEnabled(bool enabled)
 	io.MouseDrawCursor = enabled;
 } // end of setUIInputEnabled()
 
-void UI::setUIDisplayEnabled(bool enabled)
+void UIVk::setUIDisplayEnabled(bool enabled)
 {
 	enabled_ = enabled;
 } // end of setUIDisplayEnabled()
 
-void UI::setCameraModeUIEnabled(bool enabled)
+void UIVk::setCameraModeUIEnabled(bool enabled)
 {
 	cameraModeOn_ = enabled;
 } // end of setCameraModeUIEnabled()
 
 
 //--- PRIVATE ---//
-void UI::drawTopBar()
+void UIVk::drawTopBar()
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 
@@ -145,10 +173,10 @@ void UI::drawTopBar()
 	ImGui::PopStyleVar();
 
 	// ----- logo -----
-	float h = barHeight;
-	float aspect = static_cast<float>(logoTex_->getWidth()) / static_cast<float>(logoTex_->getHeight());
-	ImGui::Image((void*)(intptr_t)logoTex_->ID(), ImVec2(h * aspect, h));
-	ImGui::SameLine(0.0f, 1.0f);
+	//float h = barHeight;
+	//float aspect = static_cast<float>(logoTex_->getWidth()) / static_cast<float>(logoTex_->getHeight());
+	//ImGui::Image((void*)(intptr_t)logoTex_->ID(), ImVec2(h * aspect, h));
+	//ImGui::SameLine(0.0f, 1.0f);
 
 	// ----- title -----
 	ImGui::TextUnformatted("Project Atlas");
@@ -195,14 +223,14 @@ void UI::drawTopBar()
 	ImGui::End();
 } // end of drawTopBar()
 
-void UI::drawStatsFPS(float dt)
+void UIVk::drawStatsFPS(float dt)
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 
 	const float padding = 10.0f;
 
-	const float renderLeft = vp->Pos.x + INSPECTOR_WIDTH;
-	const float renderTop = vp->Pos.y + TOP_BAR_HEIGHT;
+	const float renderLeft = vp->Pos.x + INSPECTOR_WIDTH1;
+	const float renderTop = vp->Pos.y + TOP_BAR_HEIGHT1;
 	const float renderRight = vp->Pos.x + vp->Size.x;
 
 	ImVec2 anchor = ImVec2(renderRight - padding, renderTop + padding);
@@ -232,18 +260,19 @@ void UI::drawStatsFPS(float dt)
 		ImGui::Text("RAM (Working Set): %zu MB", GetProcessMemoryMB());
 
 		ImGui::Separator();
-		ImGui::Text("Vendor: %s", glGetString(GL_VENDOR));
-		ImGui::Text("Device: %s", glGetString(GL_RENDERER));
+		vk::PhysicalDeviceProperties props = vk_.getPhysicalDeviceProperties();
+		ImGui::Text("Vendor: %s", props.deviceName);
+		ImGui::Text("Device: %s", props.deviceName);
 	}
 	ImGui::End();
 } // end of drawStatsFPS()
 
-void UI::drawInspector(IScene& scene)
+void UIVk::drawInspector(IScene& scene)
 {
 	ImGuiViewport* vp = ImGui::GetMainViewport();
 
-	ImVec2 pos = ImVec2(vp->Pos.x, vp->Pos.y + TOP_BAR_HEIGHT);
-	ImVec2 size = ImVec2(INSPECTOR_WIDTH, vp->Size.y - TOP_BAR_HEIGHT);
+	ImVec2 pos = ImVec2(vp->Pos.x, vp->Pos.y + TOP_BAR_HEIGHT1);
+	ImVec2 size = ImVec2(INSPECTOR_WIDTH1, vp->Size.y - TOP_BAR_HEIGHT1);
 
 	ImGui::SetNextWindowViewport(vp->ID);
 	ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
@@ -304,60 +333,60 @@ void UI::drawInspector(IScene& scene)
 		// VSync toggle
 		if (ImGui::Checkbox("VSync##render", &renderSettings_.enableVsync))
 		{
-			glfwSwapInterval(renderSettings_.enableVsync);
+			//glfwSwapInterval(renderSettings_.enableVsync);
 		}
 
-		// GRAPHICS OPTIONS
-		ImGui::Text("Graphics Options:");
-		// SSAO toggle
-		ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
+		//// GRAPHICS OPTIONS
+		//ImGui::Text("Graphics Options:");
+		//// SSAO toggle
+		//ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
 
-		// FXAA toggle
-		ImGui::Checkbox("FXAA##render", &renderSettings_.useFXAA);
+		//// FXAA toggle
+		//ImGui::Checkbox("FXAA##render", &renderSettings_.useFXAA);
 
-		// Fog toggle
-		ImGui::Checkbox("Fog##render", &renderSettings_.useFog);
+		//// Fog toggle
+		//ImGui::Checkbox("Fog##render", &renderSettings_.useFog);
 
-		ImGui::Separator();
+		//ImGui::Separator();
 	}
 
 	// ------- fog -------
-	if (ImGui::CollapsingHeader("Fog", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		bool changed = false;
+	//if (ImGui::CollapsingHeader("Fog", ImGuiTreeNodeFlags_DefaultOpen))
+	//{
+	//	bool changed = false;
 
-		changed |= ImGui::DragFloat3("Color##fog", glm::value_ptr(renderSettings_.fogSettings.color), 0.1f, 0.0f, 1.0f);
-		if (ImGui::Button("Reset##fog_color"))
-		{
-			renderSettings_.fogSettings.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
-		}
-		changed |= ImGui::DragFloat("Start Pos##fog", &renderSettings_.fogSettings.start, 0.1f, 0.0f, renderSettings_.fogSettings.end);
-		if (ImGui::Button("Reset##fog_start"))
-		{
-			renderSettings_.fogSettings.start = 50.0f;
-		}
-		changed |= ImGui::DragFloat("End Pos##fog", &renderSettings_.fogSettings.end, 0.1f, renderSettings_.fogSettings.start, 2000.0f);
-		if (ImGui::Button("Reset##fog_end"))
-		{
-			renderSettings_.fogSettings.end = 200.0f;
-		}
+	//	changed |= ImGui::DragFloat3("Color##fog", glm::value_ptr(renderSettings_.fogSettings.color), 0.1f, 0.0f, 1.0f);
+	//	if (ImGui::Button("Reset##fog_color"))
+	//	{
+	//		renderSettings_.fogSettings.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+	//	}
+	//	changed |= ImGui::DragFloat("Start Pos##fog", &renderSettings_.fogSettings.start, 0.1f, 0.0f, renderSettings_.fogSettings.end);
+	//	if (ImGui::Button("Reset##fog_start"))
+	//	{
+	//		renderSettings_.fogSettings.start = 50.0f;
+	//	}
+	//	changed |= ImGui::DragFloat("End Pos##fog", &renderSettings_.fogSettings.end, 0.1f, renderSettings_.fogSettings.start, 2000.0f);
+	//	if (ImGui::Button("Reset##fog_end"))
+	//	{
+	//		renderSettings_.fogSettings.end = 200.0f;
+	//	}
 
-		// ensure start + kMinGap <= end ALWAYS
-		if (changed)
-		{
-			const float kMinGap = 100.0f;
-			const float minFogStart = 25.0f;
-			if (renderSettings_.fogSettings.start < minFogStart)
-				renderSettings_.fogSettings.start = minFogStart;
+	//	// ensure start + kMinGap <= end ALWAYS
+	//	if (changed)
+	//	{
+	//		const float kMinGap = 100.0f;
+	//		const float minFogStart = 25.0f;
+	//		if (renderSettings_.fogSettings.start < minFogStart)
+	//			renderSettings_.fogSettings.start = minFogStart;
 
-			if (renderSettings_.fogSettings.start > renderSettings_.fogSettings.end - kMinGap)
-			{
-				renderSettings_.fogSettings.start = std::max(minFogStart, renderSettings_.fogSettings.end - kMinGap);
-				renderSettings_.fogSettings.end = renderSettings_.fogSettings.start + kMinGap;
-			}
-		}
-		ImGui::Separator();
-	}
+	//		if (renderSettings_.fogSettings.start > renderSettings_.fogSettings.end - kMinGap)
+	//		{
+	//			renderSettings_.fogSettings.start = std::max(minFogStart, renderSettings_.fogSettings.end - kMinGap);
+	//			renderSettings_.fogSettings.end = renderSettings_.fogSettings.start + kMinGap;
+	//		}
+	//	}
+	//	ImGui::Separator();
+	//}
 
 	// ------- camera -------
 	if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))

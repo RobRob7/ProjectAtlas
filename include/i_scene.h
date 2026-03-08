@@ -8,6 +8,8 @@ class Camera;
 class ICubemap;
 class ChunkManager;
 class ILight;
+struct FrameContext;
+class UIVk;
 
 struct InputState
 {
@@ -36,7 +38,7 @@ public:
 	virtual void init() = 0;
 
 	// render scene
-	virtual void render(IRenderer& renderer, RenderInputs& in) = 0;
+	virtual void render(IRenderer& renderer, RenderInputs& in, const FrameContext& frame, UIVk* ui) = 0;
 
 	// handle user inputs
 	virtual void update(float dt, const InputState& in) = 0;

@@ -6,7 +6,12 @@ add_library(imgui
     imgui_tables.cpp
     imgui_demo.cpp
     backends/imgui_impl_glfw.cpp
+
+    # OpenGL backend
     backends/imgui_impl_opengl3.cpp
+
+    # Vulkan backend
+    backends/imgui_impl_vulkan.cpp
 )
 
 # include directories for ImGui (core + backends)
@@ -24,4 +29,5 @@ target_compile_definitions(imgui PUBLIC
 target_link_libraries(imgui PUBLIC
     glfw
     glad
+    Vulkan::Vulkan
 )

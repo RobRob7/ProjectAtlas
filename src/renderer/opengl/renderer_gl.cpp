@@ -81,9 +81,11 @@ void RendererGL::resize(int w, int h)
     resizeForwardTargets();
 } // end of resize()
 
-void RendererGL::renderFrame(const RenderInputs& in)
+void RendererGL::renderFrame(const RenderInputs& in, const FrameContext& frame, UIVk* ui)
 {
     if (!in.world || !in.camera || !in.light || !in.skybox || !in.crosshair) return;
+
+    glEnable(GL_FRAMEBUFFER_SRGB);
 
     in.world->update(in.camera->getCameraPosition());
 
