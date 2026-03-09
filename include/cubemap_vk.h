@@ -1,6 +1,8 @@
 #ifndef CUBEMAP_VK_H
 #define CUBEMAP_VK_H
 
+#include "constants.h"
+
 #include "i_cubemap.h"
 
 #include "shader_vk.h"
@@ -9,7 +11,6 @@
 #include "graphics_pipeline_vk.h"
 #include "texture_cubemap_vk.h"
 
-#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
 #include <memory>

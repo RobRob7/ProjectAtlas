@@ -54,7 +54,7 @@ void CubemapGL::init()
 // render CubemapGL
 void CubemapGL::render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& projection, const float time)
 {
-	assert(ctx.backend == RenderContext::Backend::OpenGL && "Must be OpenGL render context!");
+	assert(ctx.backend == Backend::OpenGL && "Must be OpenGL render context!");
 
 	if (!shader_ || !texture_ || vao_ == 0)
 		return;

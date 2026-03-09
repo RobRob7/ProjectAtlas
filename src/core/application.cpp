@@ -59,7 +59,10 @@ static void RunShaderCompilerScript()
 
 //--- PUBLIC ---//
 Application::Application(int width, int height, Backend backend)
-	: width_(width), height_(height), backend_(backend)
+	: width_(width), 
+	height_(height), 
+	backend_(backend), 
+	pendingBackend_(backend)
 {
 	// intialize GLFW
 	if (!glfwInit())
@@ -69,40 +72,11 @@ Application::Application(int width, int height, Backend backend)
 
 	if (backend_ == Backend::OpenGL)
 	{
-		initWindowGL();
-		openglMain_ = std::make_unique<OpenGLMain>();
-		openglMain_->init();
-
-		// setup scene + renderer
-		scene_ = std::make_unique<Scene>(width_, height_);
-		scene_->init();
-		renderer_ = std::make_unique<RendererGL>();
-		renderer_->init();
-		renderer_->resize(width_, height_);
-
-		setCallbacks();
-
-		// setup UI
-		ui_ = std::make_unique<UI>(window_, renderer_->settings());
+		initOpenGL();
 	}
 	else if (backend_ == Backend::Vulkan)
 	{
-		initWindowVk();
-		vulkanMain_ = std::make_unique<VulkanMain>(window_);
-		vulkanMain_->init();
-		RunShaderCompilerScript();
-
-		// setup scene + renderer
-		scene_ = std::make_unique<SceneVk>(*vulkanMain_, width_, height_);
-		scene_->init();
-		renderer_ = std::make_unique<RendererVk>(*vulkanMain_);
-		renderer_->init();
-		renderer_->resize(width_, height_);
-
-		setCallbacks();
-
-		// setup UI
-		uivk_ = std::make_unique<UIVk>(*vulkanMain_, window_, renderer_->settings());
+		initVk();
 	}
 	else
 	{
@@ -112,23 +86,7 @@ Application::Application(int width, int height, Backend backend)
 
 Application::~Application()
 {
-	if (vulkanMain_)
-	{
-		vulkanMain_->waitIdle();
-	}
-
-	ui_.reset();
-	uivk_.reset();
-	renderer_.reset();
-	scene_.reset();
-	openglMain_.reset();
-	vulkanMain_.reset();
-
-	if (window_)
-	{
-		glfwDestroyWindow(window_);
-		window_ = nullptr;
-	}
+	shutdownBackend();
 	glfwTerminate();
 } // end of destructor
 
@@ -145,24 +103,9 @@ void Application::run()
 		// poll user input events
 		glfwPollEvents();
 
-		// UI init
-		if (ui_)
-		{
-			ui_->init();
-		}
-		if (uivk_)
-		{
-			uivk_->beginFrame();
-		}
-
 		// process user input
 		InputState input = buildInputState();
 		scene_->update(deltaTime_, input);
-
-		if (uivk_)
-		{
-			uivk_->buildUI(deltaTime_, *scene_);
-		}
 
 		// process window close request
 		if (input.quitRequested)
@@ -231,32 +174,135 @@ void Application::run()
 
 		if (openglMain_)
 		{
+			ui_->beginFrame();
+
 			scene_->render(*renderer_, in_, {}, nullptr);
-			// draw UI
+
 			ui_->drawFullUI(deltaTime_, *scene_);
-			// swap buffers
+
+			Backend requestedBackend{};
+			if (ui_ && ui_->applyBackendRequest(requestedBackend))
+			{
+				switchBackend(requestedBackend);
+				continue;
+			}
+
 			glfwSwapBuffers(window_);
 		}
 		if (vulkanMain_)
 		{
+			uivk_->beginFrame();
+
 			FrameContext frame{};
 			if (!vulkanMain_->beginFrame(frame))
 			{
 				continue;
 			}
 
-			in_.time = static_cast<float>(glfwGetTime());
+			uivk_->buildUI(deltaTime_, *scene_);
 
-			// render scene using this frame/cmd
 			scene_->render(*renderer_, in_, frame, uivk_.get());
 
 			vulkanMain_->endFrame(frame);
+
+			Backend requestedBackend{};
+			if (uivk_ && uivk_->applyBackendRequest(requestedBackend))
+			{
+				switchBackend(requestedBackend);
+				continue;
+			}
 		}
 		///////////////////////////////////
 	} // end while
 } // end of run()
 
 //--- PRIVATE ---//
+void Application::switchBackend(Backend newBackend)
+{
+	if (newBackend == backend_)
+	{
+		return;
+	}
+
+	shutdownBackend();
+
+	backend_ = newBackend;
+	pendingBackend_ = newBackend;
+
+	if (backend_ == Backend::OpenGL)
+	{
+		initOpenGL();
+	}
+	else if (backend_ == Backend::Vulkan)
+	{
+		initVk();
+	}
+	else
+	{
+		throw std::runtime_error("BACKEND not supported!");
+	}
+} // end of switchBackend()
+
+void Application::shutdownBackend()
+{
+	if (vulkanMain_)
+	{
+		vulkanMain_->waitIdle();
+	}
+
+	ui_.reset();
+	uivk_.reset();
+	renderer_.reset();
+	scene_.reset();
+	openglMain_.reset();
+	vulkanMain_.reset();
+
+	if (window_)
+	{
+		glfwDestroyWindow(window_);
+		window_ = nullptr;
+	}
+} // end of shutdownBackend()
+
+void Application::initVk()
+{
+	initWindowVk();
+	vulkanMain_ = std::make_unique<VulkanMain>(window_);
+	vulkanMain_->init();
+	RunShaderCompilerScript();
+
+	// setup scene + renderer
+	scene_ = std::make_unique<SceneVk>(*vulkanMain_, width_, height_);
+	scene_->init();
+	renderer_ = std::make_unique<RendererVk>(*vulkanMain_);
+	renderer_->init();
+	renderer_->resize(width_, height_);
+
+	setCallbacks();
+
+	// setup UI
+	uivk_ = std::make_unique<UIVk>(*vulkanMain_, window_, renderer_->settings(), backend_);
+} // end of initVk()
+
+void Application::initOpenGL()
+{
+	initWindowGL();
+	openglMain_ = std::make_unique<OpenGLMain>();
+	openglMain_->init();
+
+	// setup scene + renderer
+	scene_ = std::make_unique<Scene>(width_, height_);
+	scene_->init();
+	renderer_ = std::make_unique<RendererGL>();
+	renderer_->init();
+	renderer_->resize(width_, height_);
+
+	setCallbacks();
+
+	// setup UI
+	ui_ = std::make_unique<UI>(window_, renderer_->settings(), backend_);
+} // end of initOpenGL()
+
 void Application::setCallbacks()
 {
 	// set callbacks
@@ -303,6 +349,7 @@ void Application::setCallbacks()
 
 void Application::initWindowGL()
 {
+	glfwDefaultWindowHints();
 	// specify major OpenGL version
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	// specify minor OpenGL version
@@ -332,6 +379,7 @@ void Application::initWindowGL()
 
 void Application::initWindowVk()
 {
+	glfwDefaultWindowHints();
 	// disable top bar
 	glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 	// allow resizing

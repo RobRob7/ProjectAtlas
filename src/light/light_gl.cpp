@@ -49,7 +49,7 @@ void LightGL::init()
 
 void LightGL::render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj)
 {
-	assert(ctx.backend == RenderContext::Backend::OpenGL && "Must be OpenGL render context!");
+	assert(ctx.backend == Backend::OpenGL && "Must be OpenGL render context!");
 
 	if (!shader_ || vao_ == 0)
 		return;

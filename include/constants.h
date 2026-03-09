@@ -7,10 +7,15 @@
 #include <array>
 #include <string_view>
 
+enum class Backend
+{
+	OpenGL,
+	Vulkan,
+	DX12
+};
+
 struct RenderContext
 {
-	enum class Backend { OpenGL, Vulkan };
-
 	Backend backend = Backend::OpenGL;
 	const void* nativeCmd = nullptr;
 };

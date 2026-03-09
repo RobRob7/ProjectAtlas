@@ -54,7 +54,7 @@ void ChunkPassVk::renderOpaque(
 	const glm::mat4& proj,
 	int width, int height)
 {
-	assert(ctx.backend == RenderContext::Backend::Vulkan);
+	assert(ctx.backend == Backend::Vulkan);
 
 	vk::CommandBuffer cmd = *static_cast<const vk::CommandBuffer*>(ctx.nativeCmd);
 

@@ -1,8 +1,11 @@
 #ifndef UI_VK_H
 #define UI_VK_H
 
+#include "constants.h"
+
 #include "vulkan/vulkan.hpp"
 
+#include <string_view>
 #include <memory>
 
 class IScene;
@@ -16,7 +19,7 @@ constexpr float INSPECTOR_WIDTH1 = 400.0f;
 class UIVk
 {
 public:
-	UIVk(VulkanMain& vk, GLFWwindow* window, RenderSettings& rs);
+	UIVk(VulkanMain& vk, GLFWwindow* window, RenderSettings& rs, Backend activeBackend);
 	~UIVk();
 
 	void beginFrame();
@@ -26,11 +29,19 @@ public:
 	void setUIDisplayEnabled(bool enabled);
 	void setCameraModeUIEnabled(bool enabled);
 
+	std::string_view backendToString(Backend backend) const;
+	void setActiveBackend(Backend backend);
+	bool applyBackendRequest(Backend& outBackend);
+
 private:
 	void drawTopBar();
 	void drawStatsFPS(float dt);
 	void drawInspector(IScene& scene);
 private:
+	Backend activeBackend_ = Backend::OpenGL;
+	Backend selectedBackend_ = Backend::OpenGL;
+	bool backendApplyRequested_{ false };
+
 	VulkanMain& vk_;
 
 	GLFWwindow* window_;
