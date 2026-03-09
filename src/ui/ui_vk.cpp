@@ -37,9 +37,11 @@ static size_t GetProcessMemoryMB()
 } // end of GetProcessMemoryMB()
 
 //--- PUBLIC ---//
-UIVk::UIVk(VulkanMain& vk, GLFWwindow* window, RenderSettings& rs)
+UIVk::UIVk(VulkanMain& vk, GLFWwindow* window, RenderSettings& rs, Backend activeBackend)
 	: vk_(vk), window_(window), renderSettings_(rs),
-	enabled_(true), cameraModeOn_(true)
+	enabled_(true), cameraModeOn_(true),
+	activeBackend_(activeBackend),
+	selectedBackend_(activeBackend)
 {
 	// window top nav bar logo
 	//logoTex_ = (void*)(intptr_t)Texture("blocks.png").ID();
@@ -146,6 +148,35 @@ void UIVk::setCameraModeUIEnabled(bool enabled)
 {
 	cameraModeOn_ = enabled;
 } // end of setCameraModeUIEnabled()
+
+std::string_view UIVk::backendToString(Backend backend) const
+{
+	switch (backend)
+	{
+	case Backend::OpenGL: return "OpenGL";
+	case Backend::Vulkan: return "Vulkan";
+	case Backend::DX12:   return "DX12";
+	default:              return "Unknown";
+	}
+} // end of backendToString()
+
+void UIVk::setActiveBackend(Backend backend)
+{
+	activeBackend_ = backend;
+	selectedBackend_ = backend;
+} // end of setActiveBackend()
+
+bool UIVk::applyBackendRequest(Backend& outBackend)
+{
+	if (!backendApplyRequested_)
+	{
+		return false;
+	}
+
+	backendApplyRequested_ = false;
+	outBackend = selectedBackend_;
+	return true;
+} // end of applyBackendRequest()
 
 
 //--- PRIVATE ---//
@@ -261,7 +292,6 @@ void UIVk::drawStatsFPS(float dt)
 
 		ImGui::Separator();
 		vk::PhysicalDeviceProperties props = vk_.getPhysicalDeviceProperties();
-		ImGui::Text("Vendor: %s", props.deviceName);
 		ImGui::Text("Device: %s", props.deviceName);
 	}
 	ImGui::End();
@@ -312,6 +342,51 @@ void UIVk::drawInspector(IScene& scene)
 
 		ImGui::Separator();
 #endif
+
+		// backend mode
+		ImGui::Text("Backend: %s", backendToString(activeBackend_).data());
+
+		int backendIndex = 0;
+		switch (selectedBackend_)
+		{
+		case Backend::OpenGL: backendIndex = 0; break;
+		case Backend::Vulkan: backendIndex = 1; break;
+		case Backend::DX12:   backendIndex = 2; break;
+		}
+
+		const char* backendItems[] = { "OpenGL", "Vulkan" };
+
+		if (ImGui::Combo("Graphics API##render", &backendIndex, backendItems, 2))
+		{
+			switch (backendIndex)
+			{
+			case 0: selectedBackend_ = Backend::OpenGL; break;
+			case 1: selectedBackend_ = Backend::Vulkan; break;
+			}
+		}
+
+		if (selectedBackend_ != activeBackend_)
+		{
+			ImGui::Text("Backend change pending.");
+
+			if (ImGui::Button("Apply Backend"))
+			{
+				// save world
+				scene.getWorld().saveWorld();
+
+				backendApplyRequested_ = true;
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Cancel Backend Change"))
+			{
+				selectedBackend_ = activeBackend_;
+			}
+		}
+
+		ImGui::Separator();
+
 		// camera/cursor mode
 		ImGui::Text("Mode:\n %s", cameraModeOn_ ? "Camera" : "Cursor");
 		ImGui::Separator();

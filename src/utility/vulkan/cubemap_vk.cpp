@@ -46,7 +46,7 @@ void CubemapVk::init()
 
 void CubemapVk::render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& projection, const float time)
 {
-	assert(ctx.backend == RenderContext::Backend::Vulkan && "Must be Vulkan render context!");
+	assert(ctx.backend == Backend::Vulkan && "Must be Vulkan render context!");
 
 	if (!descriptorSet_.valid() || !uboBuffer_.valid() || !vertexBuffer_.valid() || !pipeline_.valid()) return;
 

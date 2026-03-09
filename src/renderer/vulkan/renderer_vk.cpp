@@ -164,7 +164,7 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 		cmd.setScissor(0, 1, &scissor);
 
 		RenderContext ctx{};
-		ctx.backend = RenderContext::Backend::Vulkan;
+		ctx.backend = Backend::Vulkan;
 		ctx.nativeCmd = &cmd;
 
 		if (chunkPass_)
