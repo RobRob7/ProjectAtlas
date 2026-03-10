@@ -120,7 +120,7 @@ private:
     void pickPhysicalDevice();
     void createImGuiDescriptorPool();
     void createLogicalDevice();
-    void createSwapChain();
+    void createSwapChain(vk::SwapchainKHR oldSwapchain);
     void createImageViews();
     void createDepthResources();
     void createCommandPool();

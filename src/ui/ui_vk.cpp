@@ -6,6 +6,8 @@
 #include "i_scene.h"
 #include "i_light.h"
 
+#include "texture_2d_vk.h"
+
 #include "chunk_manager.h"
 #include "camera.h"
 
@@ -44,8 +46,8 @@ UIVk::UIVk(VulkanMain& vk, GLFWwindow* window, RenderSettings& rs, Backend activ
 	selectedBackend_(activeBackend)
 {
 	// window top nav bar logo
-	//logoTex_ = (void*)(intptr_t)Texture("blocks.png").ID();
-	//logoTex_ = std::make_unique<Texture>("blocks.png");
+	logoTex_ = std::make_unique<Texture2DVk>(vk_);
+	logoTex_->loadFromFile("blocks.png", false);
 
 	// ------ imgui init ------ //
 	IMGUI_CHECKVERSION();
@@ -66,7 +68,7 @@ UIVk::UIVk(VulkanMain& vk, GLFWwindow* window, RenderSettings& rs, Backend activ
 	initInfo.Queue = static_cast<VkQueue>(vk_.getGraphicsQueue());
 	initInfo.PipelineCache = VK_NULL_HANDLE;
 	initInfo.DescriptorPool = static_cast<VkDescriptorPool>(vk_.getImGuiDescriptorPool());
-	initInfo.DescriptorPoolSize = 1000;
+	initInfo.DescriptorPoolSize = 0;
 	initInfo.MinImageCount = vk_.getMinImageCount();
 	initInfo.ImageCount = vk_.getSwapchainImageCount();
 	initInfo.Allocator = nullptr;
@@ -88,6 +90,15 @@ UIVk::UIVk(VulkanMain& vk, GLFWwindow* window, RenderSettings& rs, Backend activ
 	initInfo.PipelineInfoMain.PipelineRenderingCreateInfo = pipelineRenderingInfo;
 
 	ImGui_ImplVulkan_Init(&initInfo);
+
+	// logo
+	logoId_ = reinterpret_cast<ImTextureID>(
+		ImGui_ImplVulkan_AddTexture(
+			logoTex_->sampler(),
+			logoTex_->view(),
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		)
+		);
 } // end of constructor
 
 UIVk::~UIVk()
@@ -178,6 +189,11 @@ bool UIVk::applyBackendRequest(Backend& outBackend)
 	return true;
 } // end of applyBackendRequest()
 
+void UIVk::onSwapchainRecreated()
+{
+	ImGui_ImplVulkan_SetMinImageCount(vk_.getMinImageCount());
+} // end of onSwapchainRecreated()
+
 
 //--- PRIVATE ---//
 void UIVk::drawTopBar()
@@ -204,10 +220,10 @@ void UIVk::drawTopBar()
 	ImGui::PopStyleVar();
 
 	// ----- logo -----
-	//float h = barHeight;
-	//float aspect = static_cast<float>(logoTex_->getWidth()) / static_cast<float>(logoTex_->getHeight());
-	//ImGui::Image((void*)(intptr_t)logoTex_->ID(), ImVec2(h * aspect, h));
-	//ImGui::SameLine(0.0f, 1.0f);
+	float h = barHeight;
+	float aspect = static_cast<float>(logoTex_->width()) / static_cast<float>(logoTex_->height());
+	ImGui::Image(logoId_, ImVec2(h * aspect, h));
+	ImGui::SameLine(0.0f, 1.0f);
 
 	// ----- title -----
 	ImGui::TextUnformatted("Project Atlas");

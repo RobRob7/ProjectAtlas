@@ -46,7 +46,8 @@ void VulkanMain::init()
 	createSurface();
 	pickPhysicalDevice();
 	createLogicalDevice();
-	createSwapChain();
+	createImGuiDescriptorPool();
+	createSwapChain(vk::SwapchainKHR{});
 	createImageViews();
 	createCommandPool();
 	createDepthResources();
@@ -70,6 +71,12 @@ void VulkanMain::waitIdle() const
 
 bool VulkanMain::beginFrame(FrameContext& out)
 {
+	if (framebufferResized_)
+	{
+		recreateSwapChain();
+		return false;
+	}
+
 	// wait for this frame fence
 	{
 		vk::Fence f = inFlightFences_[currentFrame_].get();
@@ -99,7 +106,6 @@ bool VulkanMain::beginFrame(FrameContext& out)
 		{
 			throw std::runtime_error("acquireNextImageKHR failed: " + vk::to_string(rv.result));
 		}
-
 		imageIndex = rv.value;
 	}
 
@@ -208,7 +214,12 @@ bool VulkanMain::endFrame(const FrameContext& frame)
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &frame.imageIndex;
 
-	vk::Result res = presentQueue_.presentKHR(presentInfo);
+	VkPresentInfoKHR rawPresentInfo = static_cast<VkPresentInfoKHR>(presentInfo);
+	VkResult rawRes = vkQueuePresentKHR(
+		static_cast<VkQueue>(presentQueue_), 
+		&rawPresentInfo
+	);
+	vk::Result res = static_cast<vk::Result>(rawRes);
 
 	bool needRecreate =
 		framebufferResized_ ||
@@ -586,7 +597,7 @@ void VulkanMain::createLogicalDevice()
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(device_.get());
 } // end of createLogicalDevice()
 
-void VulkanMain::createSwapChain()
+void VulkanMain::createSwapChain(vk::SwapchainKHR oldSwapchain)
 {
 	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice_);
 
@@ -630,7 +641,7 @@ void VulkanMain::createSwapChain()
 	createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
 	createInfo.presentMode = presentMode;
 	createInfo.clipped = VK_TRUE;
-	createInfo.oldSwapchain = nullptr;
+	createInfo.oldSwapchain = oldSwapchain;
 
 	vk::ResultValue rv = device_->createSwapchainKHRUnique(createInfo, nullptr);
 	if (rv.result != vk::Result::eSuccess) 
@@ -874,8 +885,8 @@ void VulkanMain::recreateSwapChain()
 	glfwGetFramebufferSize(window_, &width, &height);
 	while (width == 0 || height == 0)
 	{
-		glfwGetFramebufferSize(window_, &width, &height);
 		glfwWaitEvents();
+		glfwGetFramebufferSize(window_, &width, &height);
 	} // end while
 
 	{
@@ -886,8 +897,24 @@ void VulkanMain::recreateSwapChain()
 		}
 	}
 
-	cleanupSwapChain();
-	createSwapChain();
+	vk::UniqueSwapchainKHR oldSwapchain = std::move(swapChain_);
+
+	renderFinishedPerImage_.clear();
+	imagesInFlight_.clear();
+
+	depthImageView_.reset();
+	depthImage_.reset();
+	depthImageMemory_.reset();
+	depthFormat_ = vk::Format::eUndefined;
+	depthImageLayout_ = vk::ImageLayout::eUndefined;
+
+	swapChainImageViews_.clear();
+	swapChainImages_.clear();
+	swapChainLayouts_.clear();
+	swapChainImageFormat_ = vk::Format::eUndefined;
+	swapChainExtent_ = vk::Extent2D{ 0u, 0u };
+
+	createSwapChain(oldSwapchain ? oldSwapchain.get() : vk::SwapchainKHR{});
 	createImageViews();
 	createDepthResources();
 	createPerImageSync();

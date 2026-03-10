@@ -191,19 +191,34 @@ void Application::run()
 		}
 		if (vulkanMain_)
 		{
-			uivk_->beginFrame();
-
 			FrameContext frame{};
 			if (!vulkanMain_->beginFrame(frame))
 			{
+				if (width_ > 0 && height_ > 0)
+				{
+					if (scene_)		scene_->onResize(width_, height_);
+					if (renderer_)	renderer_->resize(width_, height_);
+					if (uivk_)		uivk_->onSwapchainRecreated();
+				}
 				continue;
 			}
+
+			uivk_->beginFrame();
 
 			uivk_->buildUI(deltaTime_, *scene_);
 
 			scene_->render(*renderer_, in_, frame, uivk_.get());
 
-			vulkanMain_->endFrame(frame);
+			if (!vulkanMain_->endFrame(frame))
+			{
+				if (width_ > 0 && height_ > 0)
+				{
+					if (scene_)		scene_->onResize(width_, height_);
+					if (renderer_)	renderer_->resize(width_, height_);
+					if (uivk_)		uivk_->onSwapchainRecreated();
+				}
+				continue;
+			}
 
 			Backend requestedBackend{};
 			if (uivk_ && uivk_->applyBackendRequest(requestedBackend))
@@ -320,6 +335,15 @@ void Application::setCallbacks()
 			self->width_ = width;
 			self->height_ = height;
 
+			// vulkan path
+			if (self->vulkanMain_)
+			{
+				self->vulkanMain_->notifyFramebufferResized();
+
+				return;
+			}
+
+			// opengl path
 			if (self->scene_)
 			{
 				self->scene_->onResize(self->width_, self->height_);
