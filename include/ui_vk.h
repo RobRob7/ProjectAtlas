@@ -4,6 +4,8 @@
 #include "constants.h"
 
 #include "vulkan/vulkan.hpp"
+#include <imgui.h>
+#include <imgui_impl_vulkan.h>
 
 #include <string_view>
 #include <memory>
@@ -12,6 +14,7 @@ class IScene;
 struct GLFWwindow;
 struct RenderSettings;
 class VulkanMain;
+class Texture2DVk;
 
 constexpr float TOP_BAR_HEIGHT1 = 36.0f;
 constexpr float INSPECTOR_WIDTH1 = 400.0f;
@@ -33,6 +36,8 @@ public:
 	void setActiveBackend(Backend backend);
 	bool applyBackendRequest(Backend& outBackend);
 
+	void onSwapchainRecreated();
+
 private:
 	void drawTopBar();
 	void drawStatsFPS(float dt);
@@ -46,6 +51,9 @@ private:
 
 	GLFWwindow* window_;
 	RenderSettings& renderSettings_;
+
+	std::unique_ptr<Texture2DVk> logoTex_;
+	ImTextureID logoId_;
 
 	bool enabled_;
 	bool cameraModeOn_;

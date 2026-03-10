@@ -42,7 +42,6 @@ private:
 	GLFWwindow* window_;
 	RenderSettings& renderSettings_;
 
-	// window top bar logo
 	std::unique_ptr<Texture> logoTex_;
 
 	bool enabled_;

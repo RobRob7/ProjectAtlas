@@ -101,17 +101,17 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 {
 	in.world->update(in.camera->getCameraPosition());
 
+	if (frame.extent.width != width_ || frame.extent.height != height_)
+	{
+		resize(frame.extent.width, frame.extent.height);
+	}
+
 	const glm::mat4 view = in.camera->getViewMatrix();
 	const float aspect = (height_ > 0)
 		? (static_cast<float>(width_) / static_cast<float>(height_))
 		: 1.0f;
 	glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
 	proj[1][1] *= -1.0f;
-
-	if (frame.extent.width != width_ || frame.extent.height != height_)
-	{
-		resize(frame.extent.width, frame.extent.height);
-	}
 
 	vk::CommandBuffer cmd = frame.cmd;
 
