@@ -126,7 +126,8 @@ namespace VkUtils
 		vk::PipelineStageFlags srcStage;
 		vk::PipelineStageFlags dstStage;
 
-		if (oldLayout == vk::ImageLayout::eUndefined &&
+		if ((oldLayout == vk::ImageLayout::eUndefined ||
+			oldLayout == vk::ImageLayout::ePresentSrcKHR) &&
 			newLayout == vk::ImageLayout::eColorAttachmentOptimal)
 		{
 			barrier.srcAccessMask = {};
@@ -179,6 +180,24 @@ namespace VkUtils
 
 			srcStage = vk::PipelineStageFlagBits::eFragmentShader;
 			dstStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		}
+		else if (oldLayout == vk::ImageLayout::ePresentSrcKHR &&
+			newLayout == vk::ImageLayout::eColorAttachmentOptimal)
+		{
+			barrier.srcAccessMask = {};
+			barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+
+			srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
+			dstStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		}
+		else if (oldLayout == vk::ImageLayout::eColorAttachmentOptimal &&
+			newLayout == vk::ImageLayout::ePresentSrcKHR)
+		{
+			barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+			barrier.dstAccessMask = {};
+
+			srcStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+			dstStage = vk::PipelineStageFlagBits::eBottomOfPipe;
 		}
 		else
 		{

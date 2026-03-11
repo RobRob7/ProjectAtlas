@@ -184,7 +184,9 @@ void GBufferPassVk::createAttachments()
 	gNormalImage_.createSampler(
 		vk::Filter::eNearest,
 		vk::Filter::eNearest,
-		vk::SamplerAddressMode::eClampToEdge
+		vk::SamplerMipmapMode::eNearest,
+		vk::SamplerAddressMode::eClampToEdge,
+		vk::False
 	);
 
 
@@ -209,7 +211,9 @@ void GBufferPassVk::createAttachments()
 	gDepthImage_.createSampler(
 		vk::Filter::eNearest,
 		vk::Filter::eNearest,
-		vk::SamplerAddressMode::eClampToEdge
+		vk::SamplerMipmapMode::eNearest,
+		vk::SamplerAddressMode::eClampToEdge,
+		vk::False
 	);
 
 	// RESET

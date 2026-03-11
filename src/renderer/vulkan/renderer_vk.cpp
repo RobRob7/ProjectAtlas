@@ -1,5 +1,6 @@
 #include "renderer_vk.h"
 
+#include "utils_vk.h"
 #include "vulkan_main.h"
 
 #include "render_settings.h"
@@ -11,66 +12,10 @@
 #include "chunk_manager.h"
 #include "ui_vk.h"
 
+#include "chunk_pass_vk.h"
+#include "gbuffer_pass_vk.h"
+
 #include <glm/glm.hpp>
-
-#include <stdexcept>
-
-//--- HELPER ---//
-static void transitionSwapchainImage(
-	vk::CommandBuffer cmd, 
-	vk::Image image,
-	vk::ImageLayout oldLayout, 
-	vk::ImageLayout newLayout)
-{
-	vk::ImageMemoryBarrier barrier{};
-	barrier.oldLayout = oldLayout;
-	barrier.newLayout = newLayout;
-	barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
-	barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
-	barrier.image = image;
-	barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-
-	vk::PipelineStageFlags sourceStage{};
-	vk::PipelineStageFlags destinationStage{};
-
-	// ---- old -> COLOR_ATTACHMENT_OPTIMAL ----
-	if ((oldLayout == vk::ImageLayout::eUndefined ||
-		oldLayout == vk::ImageLayout::ePresentSrcKHR) &&
-		newLayout == vk::ImageLayout::eColorAttachmentOptimal)
-	{
-		barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-
-		sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
-		destinationStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	}
-	// ---- COLOR_ATTACHMENT_OPTIMAL -> PRESENT ----
-	else if (oldLayout == vk::ImageLayout::eColorAttachmentOptimal &&
-		newLayout == vk::ImageLayout::ePresentSrcKHR)
-	{
-		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-
-		sourceStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		destinationStage = vk::PipelineStageFlagBits::eBottomOfPipe;
-	}
-	else
-	{
-		throw std::runtime_error("Unsupported swapchain layout transition");
-	}
-
-	cmd.pipelineBarrier(
-		sourceStage,
-		destinationStage,
-		vk::DependencyFlags{},
-		{},
-		{},
-		barrier
-	);
-} // end of transitionSwapchainImage()
-
 
 //--- PUBLIC ---//
 RendererVk::RendererVk(VulkanMain& vk)
@@ -131,7 +76,15 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 	}
 
 	vk::ImageLayout old = vk_.getSwapChainLayout(frame.imageIndex);
-	transitionSwapchainImage(cmd, frame.swapchainImage, old, vk::ImageLayout::eColorAttachmentOptimal);
+	VkUtils::TransitionImageLayout(
+		cmd, 
+		frame.swapchainImage, 
+		vk::ImageAspectFlagBits::eColor,
+		old, 
+		vk::ImageLayout::eColorAttachmentOptimal,
+		1,
+		1
+	);
 
 	vk::ClearValue clear{};
 	clear.color.float32[0] = 0.0f;
@@ -197,12 +150,17 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 	}
 	cmd.endRendering();
 
-	transitionSwapchainImage(cmd, frame.swapchainImage,
+	VkUtils::TransitionImageLayout(
+		cmd, 
+		frame.swapchainImage,
+		vk::ImageAspectFlagBits::eColor,
 		vk::ImageLayout::eColorAttachmentOptimal,
-		vk::ImageLayout::ePresentSrcKHR);
+		vk::ImageLayout::ePresentSrcKHR,
+		1,
+		1
+	);
 
 	vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
-	//vk_.endFrame(frame);
 } // end of renderFrame()
 
 RenderSettings& RendererVk::settings()
