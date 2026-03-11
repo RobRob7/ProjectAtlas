@@ -20,6 +20,7 @@ void ImageVk::createImage(
     uint32_t width,
     uint32_t height,
     uint32_t layers,
+    bool autoMipLevels,
     vk::SampleCountFlagBits samples,
     vk::Format format,
     vk::ImageTiling tiling,
@@ -42,7 +43,10 @@ void ImageVk::createImage(
 
 	vk::Device device = vk_.getDevice();
 
-	mipLevels_ = std::floor(std::log2(std::max(width_, height_))) + 1;
+    if (autoMipLevels)
+    {
+        mipLevels_ = std::floor(std::log2(std::max(width_, height_))) + 1;
+    }
 
 	vk::ImageCreateInfo ici{};
 	ici.flags = flags;

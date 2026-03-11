@@ -1,6 +1,7 @@
 #ifndef GBUFFER_PASS_H
 #define GBUFFER_PASS_H
 
+#include "constants.h"
 #include "ubo_gl.h"
 
 #include <glm/glm.hpp>
@@ -8,19 +9,12 @@
 #include <cstdint>
 #include <memory>
 
+using namespace Gbuffer_Constants;
+
 class ChunkPassGL;
 class Shader;
 class ChunkManager;
 struct RenderInputs;
-
-struct GbufferUBO
-{
-	glm::mat4 u_view;
-	glm::mat4 u_proj;
-
-	glm::vec3 u_chunkOrigin;
-	float _pad0;
-};
 
 class GBufferPass
 {

@@ -4,6 +4,8 @@
 
 #include <glad/glad.h>
 
+using namespace World;
+
 //--- PUBLIC ---//
 ChunkMeshGPUGL::ChunkMeshGPUGL()
 {

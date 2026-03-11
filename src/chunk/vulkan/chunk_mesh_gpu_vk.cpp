@@ -3,9 +3,7 @@
 #include "vulkan_main.h"
 #include "chunk_mesh_data.h"
 
-#include <cstring>
-#include <iostream>
-#include <stdexcept>
+using namespace World;
 
 //--- PUBLIC ---//
 ChunkMeshGPUVk::ChunkMeshGPUVk(VulkanMain& vk)

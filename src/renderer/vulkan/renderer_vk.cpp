@@ -85,7 +85,10 @@ void RendererVk::init()
 	if (!renderSettings_) renderSettings_ = std::make_unique<RenderSettings>();
 
 	if (!chunkPass_) chunkPass_ = std::make_unique<ChunkPassVk>(vk_);
+	if (!gbufferPass_) gbufferPass_ = std::make_unique<GBufferPassVk>(vk_);
+
 	chunkPass_->init();
+	gbufferPass_->init();
 } // end of init()
 
 void RendererVk::resize(int w, int h)
@@ -95,6 +98,8 @@ void RendererVk::resize(int w, int h)
 
 	width_ = w;
 	height_ = h;
+
+	if (gbufferPass_) gbufferPass_->resize(width_, height_);
 } // end of resize()
 
 void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, UIVk* ui)
@@ -115,13 +120,23 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 
 	vk::CommandBuffer cmd = frame.cmd;
 
+	RenderContext ctx{};
+	ctx.backend = Backend::Vulkan;
+	ctx.nativeCmd = &cmd;
+
+	// gbuffer pass
+	if (gbufferPass_)
+	{
+		gbufferPass_->render(*chunkPass_, in, ctx, view, proj);
+	}
+
 	vk::ImageLayout old = vk_.getSwapChainLayout(frame.imageIndex);
 	transitionSwapchainImage(cmd, frame.swapchainImage, old, vk::ImageLayout::eColorAttachmentOptimal);
 
 	vk::ClearValue clear{};
-	clear.color.float32[0] = 0.1f;
-	clear.color.float32[1] = 0.1f;
-	clear.color.float32[2] = 0.1f;
+	clear.color.float32[0] = 0.0f;
+	clear.color.float32[1] = 0.0f;
+	clear.color.float32[2] = 0.0f;
 	clear.color.float32[3] = 1.0f;
 
 	vk::RenderingAttachmentInfo colorAttach{};
@@ -163,9 +178,9 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 		scissor.extent = frame.extent;
 		cmd.setScissor(0, 1, &scissor);
 
-		RenderContext ctx{};
-		ctx.backend = Backend::Vulkan;
-		ctx.nativeCmd = &cmd;
+		//RenderContext ctx{};
+		//ctx.backend = Backend::Vulkan;
+		//ctx.nativeCmd = &cmd;
 
 		if (chunkPass_)
 		{
