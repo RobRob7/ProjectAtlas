@@ -97,7 +97,9 @@ void Texture2DVk::loadFromFile(std::string_view path, const bool needToFlip)
 	image_.createSampler(
 		vk::Filter::eNearest,
 		vk::Filter::eNearest,
-		vk::SamplerAddressMode::eRepeat
+		vk::SamplerMipmapMode::eNearest,
+		vk::SamplerAddressMode::eClampToEdge,
+		vk::False
 	);
 } // end of loadFromFile()
 

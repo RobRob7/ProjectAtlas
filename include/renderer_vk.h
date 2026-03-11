@@ -3,9 +3,6 @@
 
 #include "i_renderer.h"
 
-#include "chunk_pass_vk.h"
-#include "gbuffer_pass_vk.h"
-
 #include <memory>
 
 class VulkanMain;
@@ -14,6 +11,9 @@ class ILight;
 class ICubemap;
 struct RenderInputs;
 struct RenderSettings;
+
+class ChunkPassVk;
+class GBufferPassVk;
 
 class RendererVk final : public IRenderer
 {

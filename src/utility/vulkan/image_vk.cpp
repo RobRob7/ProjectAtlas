@@ -241,7 +241,9 @@ void ImageVk::createImageView(
 void ImageVk::createSampler(
     vk::Filter magFilter,
     vk::Filter minFilter,
-    vk::SamplerAddressMode addressMode
+    vk::SamplerMipmapMode mipmapMode,
+    vk::SamplerAddressMode addressMode,
+    bool enableAnisotropy
 )
 {
 	vk::SamplerCreateInfo sci{};
@@ -250,13 +252,18 @@ void ImageVk::createSampler(
 	sci.addressModeU = addressMode;
 	sci.addressModeV = addressMode;
 	sci.addressModeW = addressMode;
-	sci.anisotropyEnable = vk::True;
-	sci.maxAnisotropy = vk_.getPhysicalDeviceProperties().limits.maxSamplerAnisotropy;
+
+	sci.anisotropyEnable = enableAnisotropy;
+	sci.maxAnisotropy = enableAnisotropy
+        ? vk_.getPhysicalDeviceProperties().limits.maxSamplerAnisotropy
+        : 1.0f;
+
 	sci.borderColor = vk::BorderColor::eIntOpaqueBlack;
 	sci.unnormalizedCoordinates = vk::False;
 	sci.compareEnable = vk::False;
 	sci.compareOp = vk::CompareOp::eAlways;
-	sci.mipmapMode = vk::SamplerMipmapMode::eLinear;
+
+	sci.mipmapMode = mipmapMode;
 	sci.minLod = 0.0f;
 	sci.maxLod = static_cast<float>(mipLevels_);
 	sci.mipLodBias = 0.0f;

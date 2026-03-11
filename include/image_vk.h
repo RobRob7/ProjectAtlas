@@ -51,7 +51,9 @@ public:
     void createSampler(
         vk::Filter magFilter = vk::Filter::eLinear,
         vk::Filter minFilter = vk::Filter::eLinear,
-        vk::SamplerAddressMode addressMode = vk::SamplerAddressMode::eRepeat
+        vk::SamplerMipmapMode mipmapMode = vk::SamplerMipmapMode::eLinear,
+        vk::SamplerAddressMode addressMode = vk::SamplerAddressMode::eRepeat,
+        bool enableAnisotropy = false
     );
 
 	void destroy();

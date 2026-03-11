@@ -131,7 +131,9 @@ void TextureCubemapVk::loadFromFiles(const std::array<std::string_view, 6>& face
 	image_.createSampler(
 		vk::Filter::eLinear,
 		vk::Filter::eLinear,
-		vk::SamplerAddressMode::eClampToEdge
+		vk::SamplerMipmapMode::eNearest,
+		vk::SamplerAddressMode::eClampToEdge,
+		vk::False
 	);
 } // end of loadFromFiles()
 
