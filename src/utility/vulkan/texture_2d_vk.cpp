@@ -1,114 +1,15 @@
 #include "texture_2d_vk.h"
 
+#include "utils_vk.h"
 #include "buffer_vk.h"
 #include "vulkan_main.h"
 
 #include <stb/stb_image.h>
 
-#include <vector>
 #include <string_view>
-#include <array>
 #include <stdexcept>
 #include <string>
 #include <filesystem>
-
-namespace
-{
-	void transitionImageLayout(
-		VulkanMain& vk,
-		vk::Image image,
-		vk::ImageLayout oldLayout,
-		vk::ImageLayout newLayout,
-		uint32_t layers,
-		uint32_t mipLevels
-	)
-	{
-		vk::CommandBuffer cmd = vk.beginSingleTimeCommands();
-
-		vk::ImageMemoryBarrier barrier{};
-		barrier.oldLayout = oldLayout;
-		barrier.newLayout = newLayout;
-		barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
-		barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
-		barrier.image = image;
-		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = mipLevels;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = layers;
-
-		vk::PipelineStageFlags srcStage;
-		vk::PipelineStageFlags dstStage;
-
-		if (oldLayout == vk::ImageLayout::eUndefined &&
-			newLayout == vk::ImageLayout::eTransferDstOptimal)
-		{
-			barrier.srcAccessMask = {};
-			barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-
-			srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
-			dstStage = vk::PipelineStageFlagBits::eTransfer;
-		}
-		else if (oldLayout == vk::ImageLayout::eTransferDstOptimal &&
-			newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
-		{
-			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-			srcStage = vk::PipelineStageFlagBits::eTransfer;
-			dstStage = vk::PipelineStageFlagBits::eFragmentShader;
-		}
-		else
-		{
-			throw std::runtime_error("Unsupported cubemap layout transition");
-		}
-
-		cmd.pipelineBarrier(srcStage, dstStage, {}, {}, {}, barrier);
-		vk.endSingleTimeCommands(cmd);
-	}
-
-	void copyBufferToImage(
-		VulkanMain& vk,
-		vk::Buffer buffer,
-		vk::Image image,
-		uint32_t width,
-		uint32_t height,
-		uint32_t layers
-	)
-	{
-		vk::CommandBuffer cmd = vk.beginSingleTimeCommands();
-
-		std::vector<vk::BufferImageCopy> regions;
-		regions.reserve(layers);
-
-		const vk::DeviceSize layerSize = static_cast<vk::DeviceSize>(width) * height * 4;
-
-		for (uint32_t layer = 0; layer < layers; ++layer)
-		{
-			vk::BufferImageCopy region{};
-			region.bufferOffset = layer * layerSize;
-			region.bufferRowLength = 0;
-			region.bufferImageHeight = 0;
-			region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-			region.imageSubresource.mipLevel = 0;
-			region.imageSubresource.baseArrayLayer = layer;
-			region.imageSubresource.layerCount = 1;
-			region.imageOffset = vk::Offset3D{ 0, 0, 0 };
-			region.imageExtent = vk::Extent3D{ width, height, 1 };
-			regions.push_back(region);
-		}
-
-		cmd.copyBufferToImage(
-			buffer,
-			image,
-			vk::ImageLayout::eTransferDstOptimal,
-			static_cast<uint32_t>(regions.size()),
-			regions.data()
-		);
-
-		vk.endSingleTimeCommands(cmd);
-	}
-}
 
 //--- PUBLIC ---//
 Texture2DVk::Texture2DVk(VulkanMain& vk)
@@ -151,6 +52,7 @@ void Texture2DVk::loadFromFile(std::string_view path, const bool needToFlip)
 		static_cast<uint32_t>(texWidth),
 		static_cast<uint32_t>(texHeight),
 		1,
+		true,
 		vk::SampleCountFlagBits::e1,
 		vk::Format::eR8G8B8A8Srgb,
 		vk::ImageTiling::eOptimal,
@@ -158,8 +60,23 @@ void Texture2DVk::loadFromFile(std::string_view path, const bool needToFlip)
 		vk::MemoryPropertyFlagBits::eDeviceLocal
 	);
 
-	transitionImageLayout(vk_, image_.image(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, 1, image_.mipLevels());
-	copyBufferToImage(vk_, staging.getBuffer(), image_.image(), texWidth, texHeight, 1);
+	VkUtils::TransitionImageLayoutImmediate(
+		vk_, 
+		image_.image(), 
+		vk::ImageAspectFlagBits::eColor, 
+		vk::ImageLayout::eUndefined, 
+		vk::ImageLayout::eTransferDstOptimal, 
+		1, 
+		image_.mipLevels()
+	);
+	VkUtils::CopyBufferToImageImmediate(
+		vk_, 
+		staging.getBuffer(), 
+		image_.image(), 
+		texWidth, 
+		texHeight, 
+		1
+	);
 	
 	image_.generateMipmaps(
 		image_.image(),

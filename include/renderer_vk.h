@@ -4,6 +4,7 @@
 #include "i_renderer.h"
 
 #include "chunk_pass_vk.h"
+#include "gbuffer_pass_vk.h"
 
 #include <memory>
 
@@ -37,6 +38,7 @@ private:
 	std::unique_ptr<RenderSettings> renderSettings_;
 
 	std::unique_ptr<ChunkPassVk> chunkPass_;
+	std::unique_ptr<GBufferPassVk> gbufferPass_;
 };
 
 #endif

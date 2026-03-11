@@ -42,6 +42,25 @@ namespace World
 		Sand,
 		Water
 	};
+
+	// world opaque vertices
+	// LAYOUT (32u bits)
+	// 0  - 1   : UV corner index
+	// 2  - 6   : tileY
+	// 7  - 11  : tileX
+	// 12 - 14  : normal index
+	// 15 - 18  : x pos
+	// 19 - 27  : y pos
+	// 28 - 31  : z pos
+	struct Vertex
+	{
+		uint32_t sample;
+	};
+
+	struct VertexWater
+	{
+		glm::vec3 pos;
+	};
 };
 
 namespace Light_Constants
@@ -237,6 +256,18 @@ namespace Chunk_Constants
 
 		glm::vec3 u_lightColor;
 		float u_ambientStrength;
+	};
+};
+
+namespace Gbuffer_Constants
+{
+	struct GbufferUBO
+	{
+		glm::mat4 u_view;
+		glm::mat4 u_proj;
+
+		glm::vec3 u_chunkOrigin;
+		float _pad0;
 	};
 };
 
