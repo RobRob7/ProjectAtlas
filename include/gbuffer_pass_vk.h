@@ -27,6 +27,9 @@ public:
 		const glm::mat4& view,
 		const glm::mat4& proj);
 
+	ImageVk& getNormalImage() { return gNormalImage_; }
+	ImageVk& getDepthImage() { return gDepthImage_; }
+
 	vk::ImageView getNormalImageView() const { return gNormalImage_.view(); }
 	vk::ImageView getDepthImageView() const { return gDepthImage_.view(); }
 

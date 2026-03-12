@@ -10,6 +10,7 @@
 #include "vulkan/vulkan.hpp"
 
 #include <cassert>
+#include <stdexcept>
 
 using namespace Gbuffer_Constants;
 using namespace World;
@@ -37,7 +38,11 @@ void GBufferPassVk::resize(int w, int h)
 	if (w == 0 || h == 0) return;
 	if (w == width_ && h == height_) return;
 
-	vk_.getDevice().waitIdle();
+	vk::Result res = vk_.getDevice().waitIdle();
+	if (res != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("waitIdle failed: " + vk::to_string(res));
+	}
 
 	width_ = w;
 	height_ = h;

@@ -14,6 +14,7 @@ struct RenderSettings;
 
 class ChunkPassVk;
 class GBufferPassVk;
+class DebugPassVk;
 
 class RendererVk final : public IRenderer
 {
@@ -28,8 +29,6 @@ public:
 	RenderSettings& settings();
 
 private:
-
-private:
 	int width_{};
 	int height_{};
 
@@ -39,6 +38,7 @@ private:
 
 	std::unique_ptr<ChunkPassVk> chunkPass_;
 	std::unique_ptr<GBufferPassVk> gbufferPass_;
+	std::unique_ptr<DebugPassVk> debugPass_;
 };
 
 #endif

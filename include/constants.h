@@ -271,4 +271,15 @@ namespace Gbuffer_Constants
 	};
 };
 
+namespace Debug_Constants
+{
+	struct DebugPassUBO
+	{
+		int32_t u_mode;
+		float u_near;
+		float u_far;
+		float _pad0;
+	};
+};
+
 #endif
