@@ -554,14 +554,14 @@ void UIVk::drawInspector(IScene& scene)
 		changed |= ImGui::DragFloat("Ambient Strength##world", &ambientStrength, 0.01f);
 		if (ImGui::Button("Reset##amb"))
 		{
-			ambientStrength = world.MAX_AMBSTR;
+			ambientStrength = World::MAX_AMBSTR;
 			world.setAmbientStrength(ambientStrength);
 		}
 		int viewRadius = world.getViewRadius();
 		changed |= ImGui::DragInt("View Radius##world", &viewRadius, 1);
 		if (ImGui::Button("Reset##radius"))
 		{
-			viewRadius = world.MIN_RADIUS;
+			viewRadius = World::MIN_RADIUS;
 			world.setViewRadius(viewRadius);
 		}
 
