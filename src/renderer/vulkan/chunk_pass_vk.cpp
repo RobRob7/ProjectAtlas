@@ -200,7 +200,7 @@ void ChunkPassVk::createOpaqueResources()
 			(opaqueUBOStride_ + minAlign - 1) & ~(minAlign - 1);
 	}
 
-	constexpr uint32_t MAX_VISIBLE_CHUNKS = 4096;
+	uint32_t MAX_VISIBLE_CHUNKS = (2 * World::MAX_RADIUS + 1) * (2 * World::MAX_RADIUS + 1);
 
 	opaqueUBOBuffer_.create(
 		static_cast<vk::DeviceSize>(opaqueUBOStride_) * MAX_VISIBLE_CHUNKS,
@@ -230,7 +230,7 @@ void ChunkPassVk::createOpaqueGBufferResources()
 			(opaqueGBufferUBOStride_ + minAlign - 1) & ~(minAlign - 1);
 	}
 
-	constexpr uint32_t MAX_VISIBLE_CHUNKS = 4096;
+	uint32_t MAX_VISIBLE_CHUNKS = (2 * World::MAX_RADIUS + 1) * (2 * World::MAX_RADIUS + 1);
 
 	opaqueGBufferUBOBuffer_.create(
 		static_cast<vk::DeviceSize>(opaqueGBufferUBOStride_) * MAX_VISIBLE_CHUNKS,

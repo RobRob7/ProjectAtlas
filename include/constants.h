@@ -29,6 +29,11 @@ namespace World
 	const int CHUNK_SIZE = 15;
 	const int CHUNK_SIZE_Y = 256;
 
+	const int MIN_RADIUS = 5;
+	const int MAX_RADIUS = 100;
+	const float MIN_AMBSTR = 0.05f;
+	const float MAX_AMBSTR = 0.5f;
+
 	// blocks
 	enum class BlockID : uint8_t
 	{

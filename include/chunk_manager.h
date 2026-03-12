@@ -31,11 +31,6 @@ struct BlockHit
 class ChunkManager
 {
 public:
-	static constexpr int MIN_RADIUS = 5;
-	static constexpr int MAX_RADIUS = 100;
-	static constexpr float MIN_AMBSTR = 0.05f;
-	static constexpr float MAX_AMBSTR = 0.5f;
-public:
 	ChunkManager(int viewRadiusInChunks = 15);
 	~ChunkManager();
 
