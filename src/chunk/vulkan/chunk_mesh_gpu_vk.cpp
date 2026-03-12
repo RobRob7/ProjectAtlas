@@ -1,7 +1,11 @@
 #include "chunk_mesh_gpu_vk.h"
 
+#include <vulkan/vulkan.hpp>
+
 #include "vulkan_main.h"
 #include "chunk_mesh_data.h"
+
+#include <stdexcept>
 
 using namespace World;
 
@@ -17,11 +21,24 @@ ChunkMeshGPUVk::ChunkMeshGPUVk(VulkanMain& vk)
 
 ChunkMeshGPUVk::~ChunkMeshGPUVk()
 {
-	vk_.getDevice().waitIdle();
-}
+	vk::Result res = vk_.getDevice().waitIdle();
+	if (res != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("waitIdle failed: " + vk::to_string(res));
+	}
+} // end of destructor
 
 void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 {
+	if (opaqueVB_.valid() || opaqueIB_.valid() || waterVB_.valid() || waterIB_.valid())
+	{
+		vk::Result res = vk_.getDevice().waitIdle();
+		if (res != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("waitIdle failed: " + vk::to_string(res));
+		}
+	}
+
 	opaqueIndexCount_ = static_cast<uint32_t>(data.opaqueIndices.size());
 	waterIndexCount_ = static_cast<uint32_t>(data.waterIndices.size());
 
