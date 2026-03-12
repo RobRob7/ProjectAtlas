@@ -1,0 +1,57 @@
+#ifndef DEBUG_PASS_VK_H
+#define DEBUG_PASS_VK_H
+
+#include "buffer_vk.h"
+#include "descriptor_set_vk.h"
+#include "graphics_pipeline_vk.h"
+
+#include <memory>
+
+class VulkanMain;
+class GBufferPassVk;
+class ShaderModuleVk;
+struct RenderContext;
+class ImageVk;
+class UIVk;
+
+class DebugPassVk
+{
+public:
+	DebugPassVk(VulkanMain& vk, ImageVk& normalImage, ImageVk& depthImage);
+	~DebugPassVk();
+
+	void init();
+	void resize(int w, int h);
+
+	void render(
+		const RenderContext& ctx,
+		vk::Image targetImage,
+		vk::ImageView targetImageView,
+		vk::Extent2D extent,
+		vk::ImageLayout oldLayout,
+		float nearPlane,
+		float farPlane,
+		int mode,
+		UIVk* ui
+	);
+private:
+	void refreshInputs();
+	void createResources();
+	void createDescriptorSet();
+	void createPipeline();
+private:
+	VulkanMain& vk_;
+	ImageVk& normalImage_;
+	ImageVk& depthImage_;
+	
+	std::unique_ptr<ShaderModuleVk> shader_;
+
+	BufferVk uboBuffer_;
+	DescriptorSetVk descriptorSet_;
+	GraphicsPipelineVk pipeline_;
+
+	int width_{};
+	int height_{};
+};
+
+#endif

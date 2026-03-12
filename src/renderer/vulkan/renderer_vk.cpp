@@ -14,6 +14,7 @@
 
 #include "chunk_pass_vk.h"
 #include "gbuffer_pass_vk.h"
+#include "debug_pass_vk.h"
 
 #include <glm/glm.hpp>
 
@@ -31,9 +32,11 @@ void RendererVk::init()
 
 	if (!chunkPass_) chunkPass_ = std::make_unique<ChunkPassVk>(vk_);
 	if (!gbufferPass_) gbufferPass_ = std::make_unique<GBufferPassVk>(vk_);
+	if (!debugPass_) debugPass_ = std::make_unique<DebugPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage());
 
 	chunkPass_->init();
 	gbufferPass_->init();
+	debugPass_->init();
 } // end of init()
 
 void RendererVk::resize(int w, int h)
@@ -45,6 +48,7 @@ void RendererVk::resize(int w, int h)
 	height_ = h;
 
 	if (gbufferPass_) gbufferPass_->resize(width_, height_);
+	if (debugPass_) debugPass_->resize(width_, height_);
 } // end of resize()
 
 void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, UIVk* ui)
@@ -64,7 +68,6 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 	proj[1][1] *= -1.0f;
 
 	vk::CommandBuffer cmd = frame.cmd;
-
 	RenderContext ctx{};
 	ctx.backend = Backend::Vulkan;
 	ctx.nativeCmd = &cmd;
@@ -73,6 +76,26 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 	if (gbufferPass_)
 	{
 		gbufferPass_->render(*chunkPass_, in, ctx, view, proj);
+	}
+
+	// debug pass
+	if (renderSettings_->debugMode == DebugMode::Normals || renderSettings_->debugMode == DebugMode::Depth)
+	{
+		vk::ImageLayout old = vk_.getSwapChainLayout(frame.imageIndex);
+
+		debugPass_->render(
+			ctx,
+			frame.swapchainImage,
+			frame.swapchainImageView,
+			frame.extent,
+			old,
+			in.camera->getNearPlane(),
+			in.camera->getFarPlane(),
+			(renderSettings_->debugMode == DebugMode::Normals) ? 1 : 2,
+			ui
+		);
+		vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
+		return;
 	}
 
 	vk::ImageLayout old = vk_.getSwapChainLayout(frame.imageIndex);
@@ -130,10 +153,6 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 		scissor.offset = vk::Offset2D{ 0, 0 };
 		scissor.extent = frame.extent;
 		cmd.setScissor(0, 1, &scissor);
-
-		//RenderContext ctx{};
-		//ctx.backend = Backend::Vulkan;
-		//ctx.nativeCmd = &cmd;
 
 		if (chunkPass_)
 		{

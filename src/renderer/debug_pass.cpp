@@ -6,6 +6,8 @@
 
 #include <glad/glad.h>
 
+#include <cstdint>
+
 //--- PUBLIC ---//
 DebugPass::DebugPass() = default;
 
@@ -34,7 +36,13 @@ void DebugPass::destroyGL()
 	}
 } // end of destroyGL()
 
-void DebugPass::render(uint32_t normalTex, uint32_t depthTex, float nearPlane, float farPlane, int mode)
+void DebugPass::render(
+	uint32_t normalTex,
+	uint32_t depthTex,
+	float nearPlane,
+	float farPlane,
+	int mode
+)
 {
 	if (!debugShader_ || vao_ == 0) return;
 
