@@ -40,7 +40,12 @@ void Scene::init()
 	crosshair_->init();
 } // end of init
 
-void Scene::render(IRenderer& renderer, RenderInputs& in, const FrameContext& frame, UIVk* ui)
+void Scene::render(
+	IRenderer& renderer,
+	RenderInputs& in,
+	const FrameContext* frame,
+	UIVk* ui
+)
 {
 	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
 

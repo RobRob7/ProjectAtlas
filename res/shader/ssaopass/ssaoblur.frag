@@ -2,13 +2,13 @@
 
 layout (location = 0) in vec2 vUV;
 
-layout (std140, set = 0, binding = 10) uniform UBO
+layout (std140, set = 0, binding = 0) uniform UBO
 {
     vec2 u_texelSize;
     vec2 _pad0;
 };
 
-layout (binding = 7) uniform sampler2D u_ssaoRaw;
+layout (binding = 1) uniform sampler2D u_ssaoRaw;
 
 layout (location = 0) out float FragAO;
 

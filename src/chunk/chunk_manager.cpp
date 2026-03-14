@@ -226,37 +226,37 @@ void ChunkManager::buildOpaqueDrawList(const glm::mat4& view, const glm::mat4& p
 	}
 } // end of buildOpaqueDrawList()
 
-	void ChunkManager::buildWaterDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out)
+void ChunkManager::buildWaterDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out)
+{
+	out.clear();
+
+	// get frustum planes
+	Frustum fr = ExtractFrustumPlanes(proj * view);
+	for (auto& [coord, entry] : chunks_)
 	{
-		out.clear();
+		ChunkMesh* cpu = entry->cpu.get();
 
-		// get frustum planes
-		Frustum fr = ExtractFrustumPlanes(proj * view);
-		for (auto& [coord, entry] : chunks_)
+		// skip empty meshes
+		if (cpu->waterIndexCount() <= 0) continue;
+
+		// chunkX, chunkZ
+		int chunkX = cpu->getChunk().m_chunkX;
+		int chunkZ = cpu->getChunk().m_chunkZ;
+		// set AABB
+		AABB box = ChunkWorldAABB(chunkX, chunkZ);
+		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
 		{
-			ChunkMesh* cpu = entry->cpu.get();
-
-			// skip empty meshes
-			if (cpu->waterIndexCount() <= 0) continue;
-
-			// chunkX, chunkZ
-			int chunkX = cpu->getChunk().m_chunkX;
-			int chunkZ = cpu->getChunk().m_chunkZ;
-			// set AABB
-			AABB box = ChunkWorldAABB(chunkX, chunkZ);
-			if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
-			{
-				continue;
-			}
-
-			ChunkDrawItem item;
-			item.chunkOrigin = glm::vec3(chunkX * CHUNK_SIZE, 0.0f, chunkZ * CHUNK_SIZE);
-			item.gpu = entry->gpu.get();
-			item.waterIndexCount = static_cast<uint32_t>(std::max(0, cpu->waterIndexCount()));
-
-			out.items.push_back(item);
+			continue;
 		}
-	} // end of buildWaterDrawList()
+
+		ChunkDrawItem item;
+		item.chunkOrigin = glm::vec3(chunkX * CHUNK_SIZE, 0.0f, chunkZ * CHUNK_SIZE);
+		item.gpu = entry->gpu.get();
+		item.waterIndexCount = static_cast<uint32_t>(std::max(0, cpu->waterIndexCount()));
+
+		out.items.push_back(item);
+	}
+} // end of buildWaterDrawList()
 
 BlockID ChunkManager::getBlock(int wx, int wy, int wz) const
 {

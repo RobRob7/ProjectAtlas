@@ -1,5 +1,7 @@
 #include "renderer_vk.h"
 
+#include "frame_context_vk.h"
+
 #include "utils_vk.h"
 #include "vulkan_main.h"
 
@@ -15,6 +17,7 @@
 #include "chunk_pass_vk.h"
 #include "gbuffer_pass_vk.h"
 #include "debug_pass_vk.h"
+#include "water_pass_vk.h"
 
 #include <glm/glm.hpp>
 
@@ -33,10 +36,12 @@ void RendererVk::init()
 	if (!chunkPass_) chunkPass_ = std::make_unique<ChunkPassVk>(vk_);
 	if (!gbufferPass_) gbufferPass_ = std::make_unique<GBufferPassVk>(vk_);
 	if (!debugPass_) debugPass_ = std::make_unique<DebugPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage());
+	if (!waterPass_) waterPass_ = std::make_unique<WaterPassVk>(vk_);
 
 	chunkPass_->init();
 	gbufferPass_->init();
 	debugPass_->init();
+	waterPass_->init();
 } // end of init()
 
 void RendererVk::resize(int w, int h)
@@ -49,10 +54,17 @@ void RendererVk::resize(int w, int h)
 
 	if (gbufferPass_) gbufferPass_->resize(width_, height_);
 	if (debugPass_) debugPass_->resize(width_, height_);
+	if (waterPass_) waterPass_->resize(width_, height_);
 } // end of resize()
 
-void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, UIVk* ui)
+void RendererVk::renderFrame(
+	const RenderInputs& in,
+	const FrameContext* pFrame,
+	UIVk* ui
+)
 {
+	FrameContext& frame = *const_cast<FrameContext*>(pFrame);
+
 	in.world->update(in.camera->getCameraPosition());
 
 	if (frame.extent.width != width_ || frame.extent.height != height_)
@@ -68,14 +80,11 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 	proj[1][1] *= -1.0f;
 
 	vk::CommandBuffer cmd = frame.cmd;
-	RenderContext ctx{};
-	ctx.backend = Backend::Vulkan;
-	ctx.nativeCmd = &cmd;
 
 	// gbuffer pass
 	if (gbufferPass_)
 	{
-		gbufferPass_->render(*chunkPass_, in, ctx, view, proj);
+		gbufferPass_->render(*chunkPass_, in, frame, view, proj);
 	}
 
 	// debug pass
@@ -84,10 +93,7 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 		vk::ImageLayout old = vk_.getSwapChainLayout(frame.imageIndex);
 
 		debugPass_->render(
-			ctx,
-			frame.swapchainImage,
-			frame.swapchainImageView,
-			frame.extent,
+			frame,
 			old,
 			in.camera->getNearPlane(),
 			in.camera->getFarPlane(),
@@ -98,16 +104,43 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 		return;
 	}
 
-	vk::ImageLayout old = vk_.getSwapChainLayout(frame.imageIndex);
-	VkUtils::TransitionImageLayout(
-		cmd, 
-		frame.swapchainImage, 
-		vk::ImageAspectFlagBits::eColor,
-		old, 
-		vk::ImageLayout::eColorAttachmentOptimal,
-		1,
-		1
-	);
+	// water refl + refr pass
+	if (waterPass_)
+	{
+		waterPass_->renderOffscreen(
+			frame,
+			*chunkPass_,
+			in
+		);
+	}
+
+	if (frame.colorLayout != vk::ImageLayout::eColorAttachmentOptimal)
+	{
+		VkUtils::TransitionImageLayout(
+			cmd,
+			frame.colorImage,
+			vk::ImageAspectFlagBits::eColor,
+			frame.colorLayout,
+			vk::ImageLayout::eColorAttachmentOptimal,
+			1,
+			1
+		);
+		frame.colorLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	}
+
+	if (frame.depthLayout != vk::ImageLayout::eDepthAttachmentOptimal)
+	{
+		VkUtils::TransitionImageLayout(
+			cmd,
+			frame.depthImage,
+			vk::ImageAspectFlagBits::eDepth,
+			frame.depthLayout,
+			vk::ImageLayout::eDepthAttachmentOptimal,
+			1,
+			1
+		);
+		frame.depthLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+	}
 
 	vk::ClearValue clear{};
 	clear.color.float32[0] = 0.0f;
@@ -116,7 +149,7 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 	clear.color.float32[3] = 1.0f;
 
 	vk::RenderingAttachmentInfo colorAttach{};
-	colorAttach.imageView = frame.swapchainImageView;
+	colorAttach.imageView = frame.colorImageView;
 	colorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	colorAttach.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttach.storeOp = vk::AttachmentStoreOp::eStore;
@@ -156,12 +189,34 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 
 		if (chunkPass_)
 		{
-			chunkPass_->renderOpaque(in, ctx, view, proj, width_, height_);
-			//chunkPass_->renderWater(in, ctx, view, proj, width_, height_);
+			Chunk_Constants::ChunkOpaqueUBO ubo{};
+			chunkPass_->renderOpaque(in, frame, view, proj, width_, height_, ubo);
 		}
-		if (in.light) in.light->render(ctx, view, proj);
-		if (in.skybox) in.skybox->render(ctx, view, proj);
+		if (in.light) in.light->render(&frame, view, proj);
+		if (in.skybox) in.skybox->render(&frame, view, proj);
+	}
+	cmd.endRendering();
 
+	// WATER RENDER
+	if (waterPass_)
+	{
+		waterPass_->renderWater(
+			frame,
+			*chunkPass_,
+			in
+		);
+	}
+
+	// UI RENDER
+	colorAttach.loadOp = vk::AttachmentLoadOp::eLoad;
+	colorAttach.storeOp = vk::AttachmentStoreOp::eStore;
+	depthAttach.loadOp = vk::AttachmentLoadOp::eLoad;
+	depthAttach.storeOp = vk::AttachmentStoreOp::eStore;
+
+	renderingInfo.pColorAttachments = &colorAttach;
+	renderingInfo.pDepthAttachment = &depthAttach;
+	cmd.beginRendering(renderingInfo);
+	{
 		if (ui)
 		{
 			ui->render(cmd);
@@ -169,16 +224,17 @@ void RendererVk::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 	}
 	cmd.endRendering();
 
+
+	// PRESENT
 	VkUtils::TransitionImageLayout(
 		cmd, 
-		frame.swapchainImage,
+		frame.colorImage,
 		vk::ImageAspectFlagBits::eColor,
 		vk::ImageLayout::eColorAttachmentOptimal,
 		vk::ImageLayout::ePresentSrcKHR,
 		1,
 		1
 	);
-
 	vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
 } // end of renderFrame()
 

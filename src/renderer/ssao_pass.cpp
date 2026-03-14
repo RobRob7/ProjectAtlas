@@ -1,10 +1,12 @@
 #include "ssao_pass.h"
 
-#include "texture_bindings.h"
+#include "bindings.h"
 
 #include "shader.h"
 
 #include <glad/glad.h>
+
+#include "glm/glm.hpp"
 
 #include <vector>
 #include <stdexcept>
@@ -63,10 +65,22 @@ void SSAOPass::destroyGL()
 	height_ = 0;
 } // end of destroyGL()
 
-void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& proj)
+void SSAOPass::render(
+	uint32_t normalTex,
+	uint32_t depthTex,
+	const glm::mat4& proj
+)
 {
 	if (!ssaoShader_ || !blurShader_) return;
 	if (!fboRaw_ || !fboBlur_) return;
+
+	// bind reg ubo
+	uboSSAO_.bind();
+
+	// bind reg textures
+	glBindTextureUnit(TO_API_FORM(SSAOPassBinding::GNormalTex), normalTex);
+	glBindTextureUnit(TO_API_FORM(SSAOPassBinding::GDepthTex), depthTex);
+	glBindTextureUnit(TO_API_FORM(SSAOPassBinding::NoiseTex), noiseTexture_);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fboRaw_);
 	glViewport(0, 0, width_, height_);
@@ -83,24 +97,25 @@ void SSAOPass::render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& pr
 	ssaoUBO_.u_noiseScale = glm::vec2(
 		static_cast<float>(width_) / static_cast<float>(kNoiseSize_),
 		static_cast<float>(height_) / static_cast<float>(kNoiseSize_));
-
-	glBindTextureUnit(TO_API_FORM(TextureBinding::GNormalTex), normalTex);
-	glBindTextureUnit(TO_API_FORM(TextureBinding::GDepthTex), depthTex);
-	glBindTextureUnit(TO_API_FORM(TextureBinding::SSAONoiseTex), noiseTexture_);
-	glBindTextureUnit(TO_API_FORM(TextureBinding::SSAOBlurTex), aoBlur_);
 	uboSSAO_.update(&ssaoUBO_, sizeof(ssaoUBO_));
 
 	glBindVertexArray(fsVao_);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
 
 	// blur
 	glBindFramebuffer(GL_FRAMEBUFFER, fboBlur_);
 	glViewport(0, 0, width_, height_);
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	// bind blur ubo
+	uboBlur_.bind();
+
+	// bind blur textures
+	glBindTextureUnit(TO_API_FORM(SSAOBlurBinding::SSAORawTex), aoRaw_);
+
 	blurShader_->use();
 	ssaoBlurUBO_.u_texelSize = glm::vec2(1.0f / width_, 1.0f / height_);
-	glBindTextureUnit(TO_API_FORM(TextureBinding::SSAORaw), aoRaw_);
 	uboBlur_.update(&ssaoBlurUBO_, sizeof(ssaoBlurUBO_));
 
 	glBindVertexArray(fsVao_);
@@ -238,10 +253,11 @@ void SSAOPass::createKernel()
 	for (int i = 0; i < kernelSize_; ++i)
 	{
 		// hemisphere around +z (tangent space)
-		glm::vec3 s{
+		glm::vec4 s{
 			dist01(rng) * 2.0f - 1.0f,
 			dist01(rng) * 2.0f - 1.0f,
-			dist01(rng)
+			dist01(rng),
+			0.0f
 		};
 		s = glm::normalize(s);
 		s *= dist01(rng);
@@ -254,11 +270,14 @@ void SSAOPass::createKernel()
 		samples_[i] = s;
 	} // end for
 
+	// bind ubo
+	uboSSAO_.bind();
+
 	// upload kernel
 	ssaoShader_->use();
 	for (int i = 0; i < kernelSize_; ++i)
 	{
 		ssaoUBO_.u_samples[i] = samples_[i];
-		uboSSAO_.update(&ssaoUBO_, sizeof(ssaoUBO_));
 	} // end for
+	uboSSAO_.update(&ssaoUBO_, sizeof(ssaoUBO_));
 } // end of createKernel()

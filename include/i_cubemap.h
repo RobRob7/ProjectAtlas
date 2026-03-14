@@ -5,6 +5,8 @@
 
 #include <glm/glm.hpp>
 
+struct FrameContext;
+
 class ICubemap
 {
 public:
@@ -18,7 +20,20 @@ public:
 	ICubemap& operator=(ICubemap&&) = default;
 
 	virtual void init() = 0;
-	virtual void render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& projection, const float time = -1.0) = 0;
+	virtual void render(
+		const FrameContext* frame,
+		const glm::mat4& view, 
+		const glm::mat4& projection, 
+		const float time = -1.0
+	) = 0;
+	virtual void renderOffscreen(
+		const FrameContext* frame,
+		const glm::mat4& view,
+		const glm::mat4& projection,
+		const float time = -1.0
+	) 
+	{
+	};
 };
 
 #endif

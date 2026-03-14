@@ -30,57 +30,62 @@ public:
 
 	void renderOpaque(
 		const RenderInputs& in, 
-		const RenderContext& ctx, 
+		const FrameContext& frame, 
 		const glm::mat4& view, 
 		const glm::mat4& proj,
-		int width, int height);
-	void renderWater(
-		const RenderInputs& in, 
-		const RenderContext& ctx, 
-		const glm::mat4& view, 
-		const glm::mat4& proj,
-		int width, int height);
+		int width, int height,
+		Chunk_Constants::ChunkOpaqueUBO& ubo
+	);
+	void renderOpaqueOffscreen(
+		const RenderInputs& in,
+		const FrameContext& frame,
+		const glm::mat4& view,
+		const glm::mat4& projCull,
+		const glm::mat4& projRender,
+		int width, int height,
+		Chunk_Constants::ChunkOpaqueUBO& ubo
+	);
 	void renderOpaqueGBuffer(
 		const RenderInputs& in,
-		const RenderContext& ctx,
+		const FrameContext& frame,
 		const glm::mat4& view,
 		const glm::mat4& proj,
-		int width, int height);
+		int width, int height
+	);
 
 private:
 	void createOpaqueResources();
-	void createWaterResources();
+	void createOpaqueOffscreenResources();
 	void createOpaqueGBufferResources();
 
 	void createOpaqueDescriptorSet();
-	void createWaterDescriptorSet();
+	void createOpaqueOffscreenDescriptorSet();
 	void createOpaqueGBufferDescriptorSet();
 
 	void createOpaquePipeline();
-	void createWaterPipeline();
 	void createOpaqueGBufferPipeline();
 private:
 	VulkanMain& vk_;
 
 	std::unique_ptr<ShaderModuleVk> opaqueShader_;
-	std::unique_ptr<ShaderModuleVk> waterShader_;
 	std::unique_ptr<ShaderModuleVk> opaqueGBufferShader_;
 
 	Texture2DVk atlas_;
 
 	BufferVk opaqueUBOBuffer_;
-	BufferVk waterUBOBuffer_;
+	BufferVk opaqueOffscreenUBOBuffer_;
 	BufferVk opaqueGBufferUBOBuffer_;
 
 	DescriptorSetVk opaqueDescriptorSet_;
-	DescriptorSetVk waterDescriptorSet_;
+	DescriptorSetVk opaqueOffscreenDescriptorSet_;
 	DescriptorSetVk opaqueGBufferDescriptorSet_;
 
 	GraphicsPipelineVk opaquePipeline_;
-	GraphicsPipelineVk waterPipeline_;
+	GraphicsPipelineVk opaquePipelineOffscreen_;
 	GraphicsPipelineVk opaqueGBufferPipeline_;
 
 	uint32_t opaqueUBOStride_{ 0 };
+	uint32_t opaqueOffscreenUBOStride_{ 0 };
 	uint32_t opaqueGBufferUBOStride_{ 0 };
 };
 

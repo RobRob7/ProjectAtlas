@@ -23,7 +23,12 @@ public:
 	void init() override;
 
 	// render scene
-	void render(IRenderer& renderer, RenderInputs& in, const FrameContext& frame, UIVk* ui) override;
+	void render(
+		IRenderer& renderer,
+		RenderInputs& in,
+		const FrameContext* frame,
+		UIVk* ui
+	) override;
 
 	// handle user inputs
 	void update(float dt, const InputState& in) override;

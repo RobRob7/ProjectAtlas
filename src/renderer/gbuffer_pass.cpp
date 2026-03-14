@@ -44,6 +44,9 @@ void GBufferPass::render(
 {
 	if (!gBufferShader_ || !fbo_ || width_ <= 0 || height_ <= 0) return;
 
+	// bind ubo
+	ubo_.bind();
+
 	glViewport(0, 0, width_, height_);
 
 	glEnable(GL_DEPTH_TEST);

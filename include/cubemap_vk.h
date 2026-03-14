@@ -27,7 +27,19 @@ public:
     ~CubemapVk() override;
 
     void init() override;
-    void render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& projection, const float time = -1.0) override;
+
+    void render(
+		const FrameContext* frame,
+		const glm::mat4& view,
+		const glm::mat4& projection,
+		const float time = -1.0
+	) override;
+	void renderOffscreen(
+		const FrameContext* frame,
+		const glm::mat4& view,
+		const glm::mat4& projection,
+		const float time = -1.0
+	);
 
 private:
 	void createVertexBuffer();
@@ -51,6 +63,7 @@ private:
 	DescriptorSetVk descriptorSet_;
 
 	GraphicsPipelineVk pipeline_;
+	GraphicsPipelineVk pipelineOffscreen_;
 };
 
 #endif

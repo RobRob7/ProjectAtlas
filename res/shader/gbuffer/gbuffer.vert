@@ -2,7 +2,7 @@
 
 layout (location = 0) in uint combined;
 
-layout (std140, set = 0, binding = 6) uniform UBO
+layout (std140, set = 0, binding = 0) uniform UBO
 {
 	mat4 u_view;
 	mat4 u_proj;

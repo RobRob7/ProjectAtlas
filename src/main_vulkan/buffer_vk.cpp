@@ -9,7 +9,7 @@
 
 //--- PUBLIC ---//
 BufferVk::BufferVk(VulkanMain& vk)
-	: vk_(vk)
+	: vk_(&vk)
 {
 } // end of constructor
 
@@ -31,7 +31,7 @@ void BufferVk::create(
 	size_ = size;
 	properties_ = properties;
 
-	vk::Device device = vk_.getDevice();
+	vk::Device device = vk_->getDevice();
 
 	vk::BufferCreateInfo bci{};
 	bci.size = size_;
@@ -51,7 +51,7 @@ void BufferVk::create(
 
 	vk::MemoryAllocateInfo mai{};
 	mai.allocationSize = req.size;
-	mai.memoryTypeIndex = vk_.findMemoryType(req.memoryTypeBits, properties);
+	mai.memoryTypeIndex = vk_->findMemoryType(req.memoryTypeBits, properties);
 
 	{
 		vk::ResultValue rv = device.allocateMemoryUnique(mai);
@@ -93,7 +93,7 @@ void BufferVk::upload(const void* data, vk::DeviceSize size, vk::DeviceSize offs
 		throw std::runtime_error("BufferVk::upload - write exceeds buffer size");
 	}
 
-	vk::Device device = vk_.getDevice();
+	vk::Device device = vk_->getDevice();
 
 	vk::ResultValue rv = device.mapMemory(memory_.get(), offset, size);
 	if (rv.result != vk::Result::eSuccess)

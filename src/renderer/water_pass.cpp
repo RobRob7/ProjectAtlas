@@ -1,13 +1,19 @@
 #include "water_pass.h"
 
-#include "texture_bindings.h"
+#include "bindings.h"
 
 #include "constants.h"
 
+#include "chunk_draw_list.h"
+
+#include "i_chunk_mesh_gpu.h"
+
 #include "render_inputs.h"
+#include "render_settings.h"
 #include "shader.h"
 
 #include "chunk_pass_gl.h"
+#include "chunk_manager.h"
 #include "camera.h"
 #include "light_gl.h"
 #include "cubemap_gl.h"
@@ -15,9 +21,13 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <stdexcept>
 #include <algorithm>
+#include <memory>
+
+using namespace Chunk_Constants;
 
 //--- PUBLIC ---//
 WaterPass::WaterPass() = default;
@@ -29,6 +39,9 @@ WaterPass::~WaterPass()
 
 void WaterPass::init()
 {
+    shader_ = std::make_unique<Shader>("water/water.vert", "water/water.frag");
+    ubo_.init<sizeof(ChunkWaterUBO)>();
+
     dudvTex_ = std::make_unique<Texture>("dudv.png");
     dudvTex_->setWrapRepeat();
     dudvTex_->setNoMipmapsLinear();
@@ -51,6 +64,25 @@ void WaterPass::resize(int w, int h)
     createTargets();
 } // end of resize()
 
+void WaterPass::updateShader(
+    const RenderInputs& in,
+    const RenderSettings& rs,
+    const int w, const int h
+)
+{
+    // update uniforms of water shader
+    shader_->use();
+    waterUBO_.u_time = in.time;
+    waterUBO_.u_near = in.camera->getNearPlane();
+    waterUBO_.u_far = in.camera->getFarPlane();
+    waterUBO_.u_screenSize = glm::vec2{ w, h };
+    waterUBO_.u_viewPos = in.camera->getCameraPosition();
+    waterUBO_.u_lightPos = in.light->getPosition();
+    waterUBO_.u_lightColor = in.light->getColor();
+    waterUBO_.u_ambientStrength = in.world->getAmbientStrength();
+    ubo_.update(&waterUBO_, sizeof(waterUBO_));
+} // end of updateShader()
+
 void WaterPass::destroyGL()
 {
     destroyTargets();
@@ -59,17 +91,54 @@ void WaterPass::destroyGL()
     height_ = 0;
 } // end of destroyGL()
 
-void WaterPass::render(ChunkPassGL& chunk, const RenderInputs& in)
+void WaterPass::renderOffscreen(ChunkPassGL& chunk, const RenderInputs& in)
 {
-    // bind textures
-    glBindTextureUnit(TO_API_FORM(TextureBinding::WaterReflColorTex), getReflColorTex());
-    glBindTextureUnit(TO_API_FORM(TextureBinding::WaterRefrColorTex), getRefrColorTex());
-    glBindTextureUnit(TO_API_FORM(TextureBinding::WaterRefrDepthTex), getRefrDepthTex());
-    glBindTextureUnit(TO_API_FORM(TextureBinding::DudvTex), getDuDVTex());
-    glBindTextureUnit(TO_API_FORM(TextureBinding::WaterNormalTex), getNormalTex());
-
     waterPass(chunk, in);
 } // end of render()
+
+void WaterPass::renderWater(
+    const RenderInputs& in,
+    const glm::mat4& view,
+    const glm::mat4& proj,
+    int width, int height
+)
+{
+    // bind ubo
+    ubo_.bind();
+
+    // bind textures
+    glBindTextureUnit(TO_API_FORM(WaterBinding::ReflColorTex), getReflColorTex());
+    glBindTextureUnit(TO_API_FORM(WaterBinding::RefrColorTex), getRefrColorTex());
+    glBindTextureUnit(TO_API_FORM(WaterBinding::RefrDepthTex), getRefrDepthTex());
+    glBindTextureUnit(TO_API_FORM(WaterBinding::DudvTex), getDuDVTex());
+    glBindTextureUnit(TO_API_FORM(WaterBinding::NormalTex), getNormalTex());
+
+    ChunkDrawList list;
+    in.world->buildWaterDrawList(view, proj, list);
+
+    shader_->use();
+    waterUBO_.u_view = view;
+    waterUBO_.u_proj = proj;
+    waterUBO_.u_screenSize = glm::vec2{ width, height };
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_DEPTH_TEST);
+
+    for (const auto& item : list.items)
+    {
+        glm::mat4 model = glm::translate(
+            glm::mat4(1.0f),
+            item.chunkOrigin);
+        waterUBO_.u_model = model;
+        ubo_.update(&waterUBO_, sizeof(waterUBO_));
+        item.gpu->drawWater({});
+    }
+
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+} // end of renderWater()
 
 uint32_t WaterPass::getReflColorTex() const
 {
@@ -235,9 +304,9 @@ void WaterPass::waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) 
     chunkOpaqueUBO.u_viewPos = camera.getCameraPosition();
 
     // render objects (non-UI)
-    chunk.renderOpaque(in, reflView, proj, width_, height_);
-    in.light->render({}, reflView, proj);
-    in.skybox->render({}, reflView, proj);
+    chunk.renderOpaque(0, in, reflView, proj, width_, height_);
+    in.light->render(nullptr, reflView, proj);
+    in.skybox->render(nullptr, reflView, proj);
 
     // restore camera
     camera.getCameraPosition().y += distance;
@@ -275,8 +344,8 @@ void WaterPass::waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) 
     chunkOpaqueUBO.u_viewPos = in.camera->getCameraPosition();
 
     // render objects (non-UI)
-    chunk.renderOpaque(in, view, proj, width_, height_);
-    in.light->render({}, view, proj);
+    chunk.renderOpaque(0, in, view, proj, width_, height_);
+    in.light->render(nullptr, view, proj);
 
     // restore opaque UBO
     chunkOpaqueUBO = chunkOpaqueUBOCopy;

@@ -1,9 +1,11 @@
 #include "light_vk.h"
 
+#include "bindings.h"
+
+#include "frame_context_vk.h"
+
 #include "vulkan_main.h"
 #include "shader_vk.h"
-
-#include "ubo_bindings.h"
 
 #include <vulkan/vulkan.hpp>
 
@@ -23,6 +25,7 @@ LightVk::LightVk(VulkanMain& vk, const glm::vec3& pos, const glm::vec3& color)
 	vertexBuffer_(vk),
 	descriptorSet_(vk),
 	pipeline_(vk),
+	pipelineOffscreen_(vk),
 	position_(pos)
 {
 	setColor(color);
@@ -40,13 +43,17 @@ void LightVk::init()
 	createPipeline();
 } // end of init()
 
-void LightVk::render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj)
+void LightVk::render(
+	const FrameContext* frame,
+	const glm::mat4& view,
+	const glm::mat4& proj
+)
 {
-	assert(ctx.backend == Backend::Vulkan && "Must be Vulkan render context!");
+	assert(frame->cmd && "Must be valid Vulkan frame context!");
 
 	if (!descriptorSet_.valid() || !uboBuffer_.valid() || !vertexBuffer_.valid() || !pipeline_.valid()) return;
 
-	vk::CommandBuffer cmd = *static_cast<const vk::CommandBuffer*>(ctx.nativeCmd);
+	vk::CommandBuffer cmd = frame->cmd;
 
 	vk::Extent2D extent = vk_.getSwapChainExtent();
 
@@ -93,6 +100,63 @@ void LightVk::render(const RenderContext& ctx, const glm::mat4& view, const glm:
 	cmd.draw(vertexCount_, 1, 0, 0);
 } // end of render()
 
+void LightVk::renderOffscreen(
+	const FrameContext* frame,
+	const glm::mat4& view,
+	const glm::mat4& proj
+)
+{
+	assert(frame->cmd && "Must be valid Vulkan frame context!");
+
+	if (!descriptorSet_.valid() || !uboBuffer_.valid() || !vertexBuffer_.valid() || !pipeline_.valid()) return;
+
+	vk::CommandBuffer cmd = frame->cmd;
+
+	vk::Extent2D extent = vk_.getSwapChainExtent();
+
+	vk::Viewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(extent.width);
+	viewport.height = static_cast<float>(extent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	vk::Rect2D scissor{};
+	scissor.offset = vk::Offset2D{ 0, 0 };
+	scissor.extent = extent;
+
+	cmd.setViewport(0, 1, &viewport);
+	cmd.setScissor(0, 1, &scissor);
+
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelineOffscreen_.getPipeline());
+
+	vk::Buffer vertBuffer = vertexBuffer_.getBuffer();
+	vk::DeviceSize offset = 0;
+	cmd.bindVertexBuffers(0, 1, &vertBuffer, &offset);
+
+	glm::mat4 model = glm::translate(glm::mat4(1.0f), position_);
+
+	LightUBO ubo{};
+	ubo.model = model;
+	ubo.view = view;
+	ubo.proj = proj;
+	ubo.color = glm::vec4(color_, 1.0f);
+
+	uboBuffer_.upload(&ubo, sizeof(LightUBO));
+
+	vk::DescriptorSet descSet = descriptorSet_.getSet();
+	cmd.bindDescriptorSets(
+		vk::PipelineBindPoint::eGraphics,
+		pipelineOffscreen_.getLayout(),
+		0,
+		1, &descSet,
+		0, nullptr
+	);
+
+	cmd.draw(vertexCount_, 1, 0, 0);
+} // end of renderOffscreen()
+
 
 //--- PRIVATE ---//
 void LightVk::createVertexBuffer()
@@ -121,7 +185,7 @@ void LightVk::createUBO()
 void LightVk::createDescriptorSet()
 {
 	descriptorSet_.createSingleUniformBuffer(
-		TO_API_FORM(UBOBinding::Light),
+		TO_API_FORM(LightBinding::UBO),
 		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 		uboBuffer_.getBuffer(),
 		sizeof(LightUBO)
@@ -130,6 +194,7 @@ void LightVk::createDescriptorSet()
 
 void LightVk::createPipeline()
 {
+	// normal pipeline
 	vk::VertexInputBindingDescription binding{};
 	binding.binding = 0;
 	binding.stride = sizeof(VertexLight);
@@ -160,4 +225,11 @@ void LightVk::createPipeline()
 	desc.depthCompareOp = vk::CompareOp::eLessOrEqual;
 
 	pipeline_.create(desc);
+
+
+	// offscreen pipeline
+	desc.colorFormat = vk::Format::eR16G16B16A16Sfloat;
+	desc.depthFormat = vk::Format::eD32Sfloat;
+
+	pipelineOffscreen_.create(desc);
 } // end of createPipeline()

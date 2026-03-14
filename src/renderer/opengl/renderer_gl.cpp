@@ -1,7 +1,5 @@
 #include "renderer_gl.h"
 
-#include "texture_bindings.h"
-
 #include "chunk_pass_gl.h"
 
 #include "chunk_manager.h"
@@ -81,7 +79,11 @@ void RendererGL::resize(int w, int h)
     resizeForwardTargets();
 } // end of resize()
 
-void RendererGL::renderFrame(const RenderInputs& in, const FrameContext& frame, UIVk* ui)
+void RendererGL::renderFrame(
+    const RenderInputs& in,
+    const FrameContext* frame,
+    UIVk* ui
+)
 {
     if (!in.world || !in.camera || !in.light || !in.skybox || !in.crosshair) return;
 
@@ -91,6 +93,7 @@ void RendererGL::renderFrame(const RenderInputs& in, const FrameContext& frame, 
 
     // update opaque + water shader
     chunkPass_->updateShader(in, *renderSettings_, width_, height_);
+    waterPass_->updateShader(in, *renderSettings_, width_, height_);
 
     const glm::mat4 view = in.camera->getViewMatrix();
     const float aspect = (height_ > 0)
@@ -122,7 +125,7 @@ void RendererGL::renderFrame(const RenderInputs& in, const FrameContext& frame, 
     }
 
     // water pass
-    waterPass_->render(*chunkPass_, in);
+    waterPass_->renderOffscreen(*chunkPass_, in);
     // --------------- END PASSES --------------- //
 
 
@@ -132,10 +135,10 @@ void RendererGL::renderFrame(const RenderInputs& in, const FrameContext& frame, 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // render objects (non-UI)
-    chunkPass_->renderOpaque(in, view, proj, width_, height_);
-    chunkPass_->renderWater(in, view, proj, width_, height_);
-    in.light->render({}, view, proj);
-    in.skybox->render({}, view, proj, in.time);
+    chunkPass_->renderOpaque(ssaoPass_->aoBlurTexture(), in, view, proj, width_, height_);
+    waterPass_->renderWater(in, view, proj, width_, height_);
+    in.light->render(nullptr, view, proj);
+    in.skybox->render(nullptr, view, proj, in.time);
     // --------------- END FORWARD RENDER --------------- //
 
 

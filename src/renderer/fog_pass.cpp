@@ -2,8 +2,6 @@
 
 #include "render_settings.h"
 
-#include "texture_bindings.h"
-
 #include "shader.h"
 
 #include <glad/glad.h>
@@ -40,11 +38,23 @@ void FogPass::resize(int w, int h)
 	height_ = h;
 } // end of resize()
 
-void FogPass::render(uint32_t sceneColorTex, uint32_t sceneDepthTex, 
-	float nearPlane, float farPlane, float ambStr)
+void FogPass::render(
+	uint32_t sceneColorTex,
+	uint32_t sceneDepthTex,
+	float nearPlane,
+	float farPlane,
+	float ambStr
+)
 {
 	if (!shader_ || !sceneColorTex || !sceneDepthTex || fsVao_ == 0)
 		return;
+
+	// bind ubo
+	ubo_.bind();
+
+	// bind textures
+	glBindTextureUnit(TO_API_FORM(FogPassBinding::ForwardColorTex), sceneColorTex);
+	glBindTextureUnit(TO_API_FORM(FogPassBinding::ForwardDepthTex), sceneDepthTex);
 
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
@@ -61,9 +71,6 @@ void FogPass::render(uint32_t sceneColorTex, uint32_t sceneDepthTex,
 	fogPassUBO_.u_fogEnd = fogEnd_;
 	fogPassUBO_.u_ambStr = ambStr;
 	ubo_.update(&fogPassUBO_, sizeof(fogPassUBO_));
-
-	glBindTextureUnit(TO_API_FORM(TextureBinding::ForwardColorTex), sceneColorTex);
-	glBindTextureUnit(TO_API_FORM(TextureBinding::ForwardDepthTex), sceneDepthTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 

@@ -1,10 +1,12 @@
 #include "present_pass.h"
 
-#include "texture_bindings.h"
+#include "bindings.h"
 
 #include "shader.h"
 
 #include <glad/glad.h>
+
+#include <glm/glm.hpp>
 
 //--- PUBLIC ---//
 PresentPass::PresentPass() = default;
@@ -37,6 +39,9 @@ void PresentPass::render(uint32_t finalColorTex)
 	if (!shader_ || !finalColorTex || width_ <= 0 || height_ <= 0 || fsVao_ == 0)
 		return;
 
+	// bind textures
+	glBindTextureUnit(TO_API_FORM(PresentPassBinding::ForwardColorTex), finalColorTex);
+
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
 	glViewport(0, 0, width_, height_);
@@ -46,8 +51,6 @@ void PresentPass::render(uint32_t finalColorTex)
 	glDisable(GL_DEPTH_TEST);
 
 	shader_->use();
-	glBindTextureUnit(TO_API_FORM(TextureBinding::ForwardColorTex), finalColorTex);
-
 	glBindVertexArray(fsVao_);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);

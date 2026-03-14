@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec2 vUV;
 
-layout (binding = 14) uniform sampler2D u_forwardColorTex;
+layout (binding = 1) uniform sampler2D u_forwardColorTex;
 
 layout (location = 0) out vec4 FragColor;
 

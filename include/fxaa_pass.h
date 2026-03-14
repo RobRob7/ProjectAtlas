@@ -1,6 +1,8 @@
 #ifndef FXAA_PASS_H
 #define FXAA_PASS_H
 
+#include "bindings.h"
+
 #include "ubo_gl.h"
 
 #include <glm/glm.hpp>
@@ -29,6 +31,7 @@ public:
 
     void init();
     void resize(int w, int h);
+
     void render(uint32_t sceneColorTex);
 
     void setSharpnessQuality(float v);
@@ -51,7 +54,7 @@ private:
 
     std::unique_ptr<Shader> shader_;
 
-    UBOGL ubo_{ UBOBinding::FXAAPass };
+    UBOGL ubo_{ TO_API_FORM(FXAAPassBinding::UBO) };
     FXAAPassUBO fxaaPassUBO_;
 private:
     void createTargets();

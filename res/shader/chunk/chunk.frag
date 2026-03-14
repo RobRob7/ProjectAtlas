@@ -31,8 +31,8 @@ layout (std140, set = 0, binding = 0) uniform UBO
     int _pad3;
 };
 
-layout (binding = 4) uniform sampler2D u_atlasTex;
-layout (binding = 7) uniform sampler2D u_ssaoRaw;
+layout (binding = 1) uniform sampler2D u_atlasTex;
+layout (binding = 2) uniform sampler2D u_ssaoRaw;
 
 layout(location = 0) out vec4 FragColor;
 

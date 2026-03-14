@@ -5,13 +5,27 @@
 
 #include <glm/glm.hpp>
 
+struct FrameContext;
+
 class ILight
 {
 public:
 	virtual ~ILight() = default;
 
 	virtual void init() = 0;
-	virtual void render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj) = 0;
+
+	virtual void render(
+		const FrameContext* frame,
+		const glm::mat4& view, 
+		const glm::mat4& proj
+	) = 0;
+	virtual void renderOffscreen(
+		const FrameContext* frame,
+		const glm::mat4& view,
+		const glm::mat4& proj
+	)
+	{
+	}
 
 	virtual glm::vec3& getPosition() = 0;
 	virtual const glm::vec3& getPosition() const = 0;

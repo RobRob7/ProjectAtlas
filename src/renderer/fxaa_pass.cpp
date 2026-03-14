@@ -1,6 +1,6 @@
 #include "fxaa_pass.h"
 
-#include "texture_bindings.h"
+#include "bindings.h"
 
 #include "shader.h"
 
@@ -48,6 +48,12 @@ void FXAAPass::render(uint32_t sceneColorTex)
 	if (!shader_ || !sceneColorTex || width_ <= 0 || height_ <= 0 || fsVao_ == 0 || fxaaFBO_ == 0)
 		return;
 
+	// bind ubo
+	ubo_.bind();
+
+	// bind textures
+	glBindTextureUnit(TO_API_FORM(FXAAPassBinding::ForwardColorTex), sceneColorTex);
+
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
 	glViewport(0, 0, width_, height_);
@@ -62,8 +68,6 @@ void FXAAPass::render(uint32_t sceneColorTex)
 	fxaaPassUBO_.u_edgeThresholdMax = edgeThresholdMax_;
 	fxaaPassUBO_.u_edgeThresholdMin = edgeThresholdMin_;
 	ubo_.update(&fxaaPassUBO_, sizeof(fxaaPassUBO_));
-
-	glBindTextureUnit(TO_API_FORM(TextureBinding::ForwardColorTex), sceneColorTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 

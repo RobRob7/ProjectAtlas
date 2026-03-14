@@ -8,6 +8,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include <cstdint>
+#include <vector>
 
 class VulkanMain;
 struct ChunkMeshData;
@@ -23,7 +24,9 @@ public:
 	void drawWater(vk::CommandBuffer cmd) override;
 
 private:
-	VulkanMain& vk_;
+	void retireCurrentBuffers(uint32_t frameIndex);
+private:
+	VulkanMain* vk_{};
 
 	// opaque
 	BufferVk opaqueVB_;

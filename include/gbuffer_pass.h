@@ -2,6 +2,7 @@
 #define GBUFFER_PASS_H
 
 #include "constants.h"
+#include "bindings.h"
 #include "ubo_gl.h"
 
 #include <glm/glm.hpp>
@@ -45,7 +46,7 @@ private:
 	uint32_t gNormalTexture_{};
 	uint32_t gDepthTexture_{};
 
-	UBOGL ubo_{ UBOBinding::Gbuffer };
+	UBOGL ubo_{ TO_API_FORM(GbufferBinding::UBO) };
 	GbufferUBO gbufferUBO_{};
 private:
 	void createTargets();
