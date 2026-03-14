@@ -1,12 +1,20 @@
 #ifndef WATER_PASS_H
 #define WATER_PASS_H
 
+#include "constants.h"
+#include "bindings.h"
+#include "ubo_gl.h"
+
+#include <glm/glm.hpp>
+
 #include <cstdint>
 #include <memory>
 
 class ChunkPassGL;
 class Texture;
 struct RenderInputs;
+struct RenderSettings;
+class Shader;
 
 class WaterPass
 {
@@ -16,8 +24,22 @@ public:
 
 	void init();
 	void resize(int w, int h);
+
+	void updateShader(
+		const RenderInputs& in,
+		const RenderSettings& rs,
+		const int w, const int h
+	);
+
 	void destroyGL();
-	void render(ChunkPassGL& chunk, const RenderInputs& in);
+
+	void renderOffscreen(ChunkPassGL& chunk, const RenderInputs& in);
+	void renderWater(
+		const RenderInputs& in,
+		const glm::mat4& view,
+		const glm::mat4& proj,
+		int width, int height
+	);
 
 	uint32_t getReflColorTex() const;
 	uint32_t getRefrColorTex() const;
@@ -27,11 +49,22 @@ public:
 	uint32_t getNormalTex() const;
 
 private:
+	void createTargets();
+	void destroyTargets();
+	void waterPass(ChunkPassGL& chunk, const RenderInputs& in);
+	void waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) const;
+	void waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) const;
+private:
 	int factor_{ 2 };
 	int width_{ 0 };
 	int height_{ 0 };
 	int fullW_{ 0 };
 	int fullH_{ 0 };
+
+	std::unique_ptr<Shader> shader_;
+
+	UBOGL ubo_{ TO_API_FORM(WaterBinding::UBO) };
+	Chunk_Constants::ChunkWaterUBO waterUBO_;
 
 	uint32_t reflFBO_{0};
 	uint32_t reflColorTex_{0};
@@ -43,12 +76,6 @@ private:
 
 	std::unique_ptr<Texture> dudvTex_;
 	std::unique_ptr<Texture> normalTex_;
-private:
-	void createTargets();
-	void destroyTargets();
-	void waterPass(ChunkPassGL& chunk, const RenderInputs& in);
-	void waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) const;
-	void waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) const;
 };
 
 #endif

@@ -1,30 +1,17 @@
 #ifndef VULKAN_MAIN_H
 #define VULKAN_MAIN_H
 
+#include "buffer_vk.h"
+
 #include <vulkan/vulkan.hpp>
 
 #include <vector>
 #include <cstdint>
 #include <optional>
+#include <array>
 
 struct GLFWwindow;
-
-struct FrameContext
-{
-    vk::CommandBuffer cmd{};
-
-    uint32_t frameIndex = 0;
-    uint32_t imageIndex = 0;
-
-    vk::Image depthImage{};
-    vk::ImageView depthImageView{};
-
-    vk::Image swapchainImage{};
-    vk::ImageView swapchainImageView{};
-
-    vk::Extent2D extent{};
-    vk::Format format{ vk::Format::eUndefined };
-};
+struct FrameContext;
 
 struct QueueFamilyIndices
 {
@@ -42,6 +29,14 @@ struct SwapChainSupportDetails
     vk::SurfaceCapabilitiesKHR capabilities{};
     std::vector<vk::SurfaceFormatKHR> formats;
     std::vector<vk::PresentModeKHR> presentModes;
+};
+
+struct RetiredChunkBuffers
+{
+    BufferVk opaqueVB;
+    BufferVk opaqueIB;
+    BufferVk waterVB;
+    BufferVk waterIB;
 };
 
 class VulkanMain
@@ -82,7 +77,7 @@ public:
         return findQueueFamilies(physicalDevice_).graphicsFamily.value();
     } // end of getGraphicsQueueFamilyIndex()
 
-    uint32_t VulkanMain::getMinImageCount()
+    uint32_t getMinImageCount()
     {
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice_);
         return swapChainSupport.capabilities.minImageCount;
@@ -112,6 +107,25 @@ public:
     void setSwapChainLayout(uint32_t imageIndex, vk::ImageLayout layout) { swapChainLayouts_[imageIndex] = layout; }
 
     uint32_t getMaxFramesInFlight() const { return MAX_FRAMES_IN_FLIGHT; }
+
+    uint32_t currentFrameIndex() const { return currentFrame_; }
+
+    void retireChunkBuffers(
+        uint32_t frameIndex,
+        BufferVk&& opaqueVB,
+        BufferVk&& opaqueIB,
+        BufferVk&& waterVB,
+        BufferVk&& waterIB)
+    {
+        retiredChunkBuffers_[frameIndex].push_back(
+            RetiredChunkBuffers{
+                std::move(opaqueVB),
+                std::move(opaqueIB),
+                std::move(waterVB),
+                std::move(waterIB)
+            }
+        );
+    }
 
 private:
     void createInstance();
@@ -150,6 +164,8 @@ private:
 
     void createPerImageSync();
 
+    void flushRetiredResources();
+
 private:
     const std::vector<const char*> validationLayers_ = { "VK_LAYER_KHRONOS_validation" };
     const std::vector<const char*> deviceExtensions_ = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
@@ -158,6 +174,8 @@ private:
     bool initialized_{ false };
 
     static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
+    std::array<std::vector<RetiredChunkBuffers>, MAX_FRAMES_IN_FLIGHT> retiredChunkBuffers_;
 
     bool framebufferResized_{ false };
     uint32_t currentFrame_ = 0;

@@ -1,10 +1,11 @@
 #ifndef LIGHT_GL_H
 #define LIGHT_GL_H
 
+#include "bindings.h"
+
 #include "i_light.h"
 
 #include "ubo_gl.h"
-#include "ubo_bindings.h"
 
 #include <cstdint>
 #include <memory>
@@ -19,7 +20,12 @@ public:
 	~LightGL() override;
 
 	void init() override;
-	void render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj) override;
+
+	void render(
+		const FrameContext* frame,
+		const glm::mat4& view,
+		const glm::mat4& proj
+	) override;
 
 	glm::vec3& getPosition() override { return position_; }
 	const glm::vec3& getPosition() const override { return position_; }
@@ -43,7 +49,8 @@ private:
 	std::unique_ptr<Shader> shader_;
 	uint32_t vao_{};
 	uint32_t vbo_{};
-	UBOGL ubo_{UBOBinding::Light};
+
+	UBOGL ubo_{ TO_API_FORM(LightBinding::UBO) };
 
 	glm::vec3 position_{};
 	glm::vec3 color_{};

@@ -217,6 +217,11 @@ glm::vec3 Camera::getCameraUp() const
 	return up_;
 } // end of getCameraUp()
 
+glm::vec3 Camera::getCameraFront() const
+{
+	return front_;
+} // end of getCameraFront()
+
 float Camera::getNearPlane() const
 {
 	return nearPlane_;

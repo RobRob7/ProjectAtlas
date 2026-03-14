@@ -2,6 +2,7 @@
 #define DEBUG_PASS_H
 
 #include "constants.h"
+#include "bindings.h"
 
 #include "ubo_gl.h"
 
@@ -32,7 +33,7 @@ private:
 	uint32_t vao_{};
 	std::unique_ptr<Shader> debugShader_;
 
-	UBOGL ubo_{ UBOBinding::DebugPass };
+	UBOGL ubo_{ TO_API_FORM(DebugBinding::UBO) };
 	DebugPassUBO debugPassUBO_{};
 };
 

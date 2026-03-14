@@ -1,5 +1,7 @@
 #include "vulkan_main.h"
 
+#include "frame_context_vk.h"
+
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 #include <GLFW/glfw3.h>
@@ -35,7 +37,10 @@ VulkanMain::VulkanMain(GLFWwindow* window)
 #endif
 } // end of constructor
 
-VulkanMain::~VulkanMain() = default;
+VulkanMain::~VulkanMain()
+{
+	flushRetiredResources();
+} // end of destructor
 
 void VulkanMain::init()
 {
@@ -138,6 +143,8 @@ bool VulkanMain::beginFrame(FrameContext& out)
 		}
 	}
 
+	retiredChunkBuffers_[currentFrame_].clear();
+
 	// reset + begin command buffer
 	vk::CommandBuffer cmd = commandBuffers_[currentFrame_];
 
@@ -165,13 +172,17 @@ bool VulkanMain::beginFrame(FrameContext& out)
 	out.frameIndex = currentFrame_;
 	out.imageIndex = imageIndex;
 
+	out.extent = swapChainExtent_;
+
+	out.colorImage = swapChainImages_[imageIndex];
+	out.colorImageView = swapChainImageViews_[imageIndex].get();
+	out.colorFormat = swapChainImageFormat_;
+	out.colorLayout = swapChainLayouts_[imageIndex];
+
 	out.depthImage = depthImage_.get();
 	out.depthImageView = depthImageView_.get();
-
-	out.swapchainImage = swapChainImages_[imageIndex];
-	out.swapchainImageView = swapChainImageViews_[imageIndex].get();
-	out.extent = swapChainExtent_;
-	out.format = swapChainImageFormat_;
+	out.depthFormat = depthFormat_;
+	out.depthLayout = depthImageLayout_;
 
 	return true;
 } // end of beginFrame()
@@ -1008,6 +1019,7 @@ bool VulkanMain::isDeviceSuitable(vk::PhysicalDevice device)
 		&& swapChainAdequate 
 		&& feats2.features.samplerAnisotropy 
 		&& feats2.features.sampleRateShading 
+		&& feats2.features.shaderClipDistance
 		&& dyn.dynamicRendering;
 } // end of isDeviceSuitable()
 
@@ -1208,3 +1220,16 @@ void VulkanMain::createPerImageSync()
 		renderFinishedPerImage_.push_back(std::move(rv.value));
 	} // end for
 } // end of createPerImageSync()
+
+void VulkanMain::flushRetiredResources()
+{
+	if (device_)
+	{
+		waitIdle();
+	}
+
+	for (auto& retired : retiredChunkBuffers_)
+	{
+		retired.clear();
+	}
+} // end of flushRetiredResources()

@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec2 vUV;
 
-layout (std140, set = 0, binding = 3) uniform UBO
+layout (std140, set = 0, binding = 0) uniform UBO
 {
     int u_mode;
     float u_near;
@@ -10,8 +10,8 @@ layout (std140, set = 0, binding = 3) uniform UBO
     float _pad0;
 };
 
-layout (binding = 0) uniform sampler2D u_gNormal;
-layout (binding = 1) uniform sampler2D u_gDepth;
+layout (binding = 1) uniform sampler2D u_gNormal;
+layout (binding = 2) uniform sampler2D u_gDepth;
 
 layout (location = 0) out vec4 FragColor;
 

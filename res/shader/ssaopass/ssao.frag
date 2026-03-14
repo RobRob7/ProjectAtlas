@@ -4,7 +4,7 @@ layout (location = 0) in vec2 vUV;
 
 #define MAX_KERNEL_SIZE 64
 
-layout (std140, set = 0, binding = 9) uniform UBO
+layout (std140, set = 0, binding = 0) uniform UBO
 {
     mat4 u_proj;
     mat4 u_invProj;
@@ -17,12 +17,12 @@ layout (std140, set = 0, binding = 9) uniform UBO
     float _pad0;
 	vec2 _pad1;
 
-    vec3 u_samples[MAX_KERNEL_SIZE];
+    vec4 u_samples[MAX_KERNEL_SIZE];
 };
 
-layout (binding = 0) uniform sampler2D u_gNormal;
-layout (binding = 1) uniform sampler2D u_gDepth;
-layout (binding = 6) uniform sampler2D u_ssaoNoiseTex;
+layout (binding = 1) uniform sampler2D u_gNormal;
+layout (binding = 2) uniform sampler2D u_gDepth;
+layout (binding = 3) uniform sampler2D u_ssaoNoiseTex;
 
 layout (location = 0) out float FragAO;
 
@@ -59,7 +59,7 @@ void main()
 
     for (int i = 0; i < u_kernelSize; ++i)
     {
-        vec3 sampleVS = P + (TBN * u_samples[i]) * u_radius;
+        vec3 sampleVS = P + (TBN * u_samples[i].xyz) * u_radius;
 
         // get screen space (depth)
         vec4 offset = u_proj * vec4(sampleVS, 1.0);

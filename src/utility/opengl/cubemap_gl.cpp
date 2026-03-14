@@ -1,6 +1,7 @@
 #include "cubemap_gl.h"
 
-#include "texture_bindings.h"
+#include "constants.h"
+#include "bindings.h"
 
 #include "texture.h"
 #include "shader.h"
@@ -52,12 +53,21 @@ void CubemapGL::init()
 } // end of init()
 
 // render CubemapGL
-void CubemapGL::render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& projection, const float time)
+void CubemapGL::render(
+	const FrameContext* frame,
+	const glm::mat4& view,
+	const glm::mat4& projection,
+	const float time
+)
 {
-	assert(ctx.backend == Backend::OpenGL && "Must be OpenGL render context!");
-
 	if (!shader_ || !texture_ || vao_ == 0)
 		return;
+
+	// bind ubo
+	ubo_.bind();
+
+	// bind textures
+	glBindTextureUnit(TO_API_FORM(CubemapBinding::SkyboxTex), texture_->ID());
 
 	// remove translation from camera view
 	glm::mat4 viewStrippedTranslation = glm::mat4(glm::mat3(view));
@@ -84,7 +94,6 @@ void CubemapGL::render(const RenderContext& ctx, const glm::mat4& view, const gl
 	cubemapUBO.view = viewStrippedTranslation;
 	cubemapUBO.proj = projection;
 	ubo_.update(&cubemapUBO, sizeof(CubemapUBO));
-	glBindTextureUnit(TO_API_FORM(TextureBinding::CubemapTex), texture_->ID());
 
 	glBindVertexArray(vao_);
 

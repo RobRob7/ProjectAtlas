@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec2 vUV;
 
-layout (std140, set = 0, binding = 5) uniform UBO
+layout (std140, set = 0, binding = 0) uniform UBO
 {
     vec2 u_inverseScreenSize;
     float u_edgeSharpnessQuality;
@@ -13,7 +13,7 @@ layout (std140, set = 0, binding = 5) uniform UBO
     vec2 _pad1;
 };
 
-layout (binding = 14) uniform sampler2D u_forwardColorTex;
+layout (binding = 1) uniform sampler2D u_forwardColorTex;
 
 layout (location = 0) out vec4 FragColor;
 

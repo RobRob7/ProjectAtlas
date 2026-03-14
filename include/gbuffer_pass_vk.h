@@ -8,7 +8,7 @@
 class VulkanMain;
 class ShaderModuleVk;
 struct RenderInputs;
-struct RenderContext;
+struct FrameContext;
 class ChunkPassVk;
 
 class GBufferPassVk
@@ -23,7 +23,7 @@ public:
 	void render(
 		ChunkPassVk& chunk,
 		const RenderInputs& in,
-		const RenderContext& ctx,
+		const FrameContext& frame,
 		const glm::mat4& view,
 		const glm::mat4& proj);
 

@@ -6,7 +6,7 @@ layout (location = 0) in VS_OUT {
     vec2 waterUV;
 } fs_in;
 
-layout (std140, set = 0, binding = 11) uniform UBO
+layout (std140, set = 0, binding = 0) uniform UBO
 {
     // vert
     mat4 u_model;
@@ -35,12 +35,12 @@ layout (std140, set = 0, binding = 11) uniform UBO
     float u_ambientStrength;
 };
 
-layout (binding = 8) uniform sampler2D u_waterReflColorTex;
-layout (binding = 9) uniform sampler2D u_waterRefrColorTex;
-layout (binding = 10) uniform sampler2D u_waterRefrDepthTex;
+layout (binding = 1) uniform sampler2D u_waterReflColorTex;
+layout (binding = 2) uniform sampler2D u_waterRefrColorTex;
+layout (binding = 3) uniform sampler2D u_waterRefrDepthTex;
 
-layout (binding = 11) uniform sampler2D u_waterDUDVTex;
-layout (binding = 12) uniform sampler2D u_waterNormalTex;
+layout (binding = 4) uniform sampler2D u_waterDUDVTex;
+layout (binding = 5) uniform sampler2D u_waterNormalTex;
 
 layout (location = 0) out vec4 FragColor;
 
@@ -168,4 +168,8 @@ void main()
     // output color
     vec3 finalColor = base + (ambient + diffuse + specular);
     FragColor = vec4(finalColor, 1.0);
+    // FragColor = vec4(refraction, 1.0);
+    // FragColor = vec4(reflection, 1.0);
+    // FragColor = vec4(1.0);
+
 }

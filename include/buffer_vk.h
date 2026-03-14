@@ -38,7 +38,7 @@ private:
 	void destroy();
 
 private:
-	VulkanMain& vk_;
+	VulkanMain* vk_;
 
 	vk::UniqueBuffer buffer_{};
 	vk::UniqueDeviceMemory memory_{};

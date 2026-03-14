@@ -218,7 +218,7 @@ namespace Chunk_Constants
 		glm::mat4 u_proj;
 
 		// frag
-		glm::vec4 u_clipPlane;
+		glm::vec4 u_clipPlane = glm::vec4(0.0f);
 
 		glm::vec3 u_viewPos;
 		float _pad1;
@@ -230,7 +230,7 @@ namespace Chunk_Constants
 		float u_ambientStrength;
 
 		glm::vec2 u_screenSize;
-		int32_t u_useSSAO;
+		int32_t u_useSSAO = 0;
 		int32_t _pad3;
 	};
 

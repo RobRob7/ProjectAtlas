@@ -1,0 +1,87 @@
+#ifndef BINDINGS_H
+#define BINDINGS_H
+
+#include <cstdint>
+
+template<typename E>
+constexpr uint32_t TO_API_FORM(E e)
+{
+    return static_cast<uint32_t>(e);
+}
+
+enum class ChunkBinding : uint32_t
+{
+    UBO = 0,
+    AtlasTex = 1,
+    SSAOTex = 2,
+};
+
+enum class WaterBinding : uint32_t
+{
+    UBO = 0,
+    ReflColorTex = 1,
+    RefrColorTex = 2,
+    RefrDepthTex = 3,
+    DudvTex = 4,
+    NormalTex = 5,
+};
+
+enum class DebugBinding : uint32_t
+{
+    UBO = 0,
+    GNormalTex = 1,
+    GDepthTex = 2,
+};
+
+enum class FogPassBinding : uint32_t
+{
+    UBO = 0,
+    ForwardColorTex = 1,
+    ForwardDepthTex = 2,
+};
+
+enum class GbufferBinding : uint32_t
+{
+    UBO = 0,
+    ForwardColorTex = 1,
+    ForwardDepthTex = 2,
+};
+
+enum class CubemapBinding : uint32_t
+{
+    UBO = 0,
+    SkyboxTex = 1,
+};
+
+enum class FXAAPassBinding : uint32_t
+{
+    UBO = 0,
+    ForwardColorTex = 1,
+};
+
+enum class LightBinding : uint32_t
+{
+    UBO = 0,
+};
+
+enum class SSAOBlurBinding : uint32_t
+{
+    UBO = 0,
+    SSAORawTex = 1,
+};
+
+enum class SSAOPassBinding : uint32_t
+{
+    UBO = 0,
+    GNormalTex = 1,
+    GDepthTex = 2,
+    NoiseTex = 3,
+};
+
+enum class PresentPassBinding : uint32_t
+{
+    UBO = 0,
+    ForwardColorTex = 1,
+};
+
+#endif

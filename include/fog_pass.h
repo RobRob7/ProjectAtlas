@@ -1,6 +1,8 @@
 #ifndef FOG_PASS_H
 #define FOG_PASS_H
 
+#include "bindings.h"
+
 #include "ubo_gl.h"
 
 #include <glm/glm.hpp>
@@ -34,8 +36,14 @@ public:
 
     void init(RenderSettings& rs);
     void resize(int w, int h);
-    void render(uint32_t sceneColorTex, uint32_t sceneDepthTex,
-        float nearPlane, float farPlane, float ambStr);
+
+    void render(
+        uint32_t sceneColorTex, 
+        uint32_t sceneDepthTex,
+        float nearPlane, 
+        float farPlane, 
+        float ambStr
+    );
 
     void setFogColor(glm::vec3 v);
     void setFogStart(float v);
@@ -53,7 +61,7 @@ private:
     uint32_t fsVao_{};
     std::unique_ptr<Shader> shader_;
 
-    UBOGL ubo_{ UBOBinding::FogPass };
+    UBOGL ubo_{ TO_API_FORM(FogPassBinding::UBO) };
     FogPassUBO fogPassUBO_;
 };
 

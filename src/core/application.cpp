@@ -1,5 +1,7 @@
 ﻿#include "application.h"
 
+#include "frame_context_vk.h"
+
 #include "opengl_main.h"
 #include "vulkan_main.h"
 
@@ -207,7 +209,7 @@ void Application::run()
 
 			uivk_->buildUI(deltaTime_, *scene_);
 
-			scene_->render(*renderer_, in_, frame, uivk_.get());
+			scene_->render(*renderer_, in_, &frame, uivk_.get());
 
 			if (!vulkanMain_->endFrame(frame))
 			{

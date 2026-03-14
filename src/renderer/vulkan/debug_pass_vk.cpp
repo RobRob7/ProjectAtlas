@@ -1,10 +1,10 @@
 #include "debug_pass_vk.h"
 
+#include "frame_context_vk.h"
 #include "utils_vk.h"
 
 #include "constants.h"
-#include "ubo_bindings.h"
-#include "texture_bindings.h"
+#include "bindings.h"
 
 #include "image_vk.h"
 #include "shader_vk.h"
@@ -18,7 +18,6 @@
 #include <vulkan/vulkan.hpp>
 
 #include <memory>
-#include <cassert>
 
 using namespace Debug_Constants;
 
@@ -57,11 +56,7 @@ void DebugPassVk::resize(int w, int h)
 	if (w == 0 || h == 0) return;
 	if (w == width_ && h == height_) return;
 
-	vk::Result res = vk_.getDevice().waitIdle();
-	if (res != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("waitIdle failed: " + vk::to_string(res));
-	}
+	vk_.waitIdle();
 
 	width_ = w;
 	height_ = h;
@@ -70,10 +65,7 @@ void DebugPassVk::resize(int w, int h)
 } // end of resize()
 
 void DebugPassVk::render(
-	const RenderContext& ctx,
-	vk::Image targetImage,
-	vk::ImageView targetImageView,
-	vk::Extent2D extent,
+	const FrameContext& frame,
 	vk::ImageLayout oldLayout,
 	float nearPlane,
 	float farPlane,
@@ -81,9 +73,7 @@ void DebugPassVk::render(
 	UIVk* ui
 )
 {
-	assert(ctx.backend == Backend::Vulkan);
-
-	vk::CommandBuffer cmd = *static_cast<const vk::CommandBuffer*>(ctx.nativeCmd);
+	vk::CommandBuffer cmd = frame.cmd;
 
 	DebugPassUBO ubo{};
 	ubo.u_near = nearPlane;
@@ -94,7 +84,7 @@ void DebugPassVk::render(
 
 	VkUtils::TransitionImageLayout(
 		cmd,
-		targetImage,
+		frame.colorImage,
 		vk::ImageAspectFlagBits::eColor,
 		oldLayout,
 		vk::ImageLayout::eColorAttachmentOptimal,
@@ -109,7 +99,7 @@ void DebugPassVk::render(
 	clear.color.float32[3] = 1.0f;
 
 	vk::RenderingAttachmentInfo colorAttachment{};
-	colorAttachment.imageView = targetImageView;
+	colorAttachment.imageView = frame.colorImageView;
 	colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
@@ -117,7 +107,7 @@ void DebugPassVk::render(
 
 	vk::RenderingInfo renderingInfo{};
 	renderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
-	renderingInfo.renderArea.extent = extent;
+	renderingInfo.renderArea.extent = frame.extent;
 	renderingInfo.layerCount = 1;
 	renderingInfo.colorAttachmentCount = 1;
 	renderingInfo.pColorAttachments = &colorAttachment;
@@ -127,15 +117,15 @@ void DebugPassVk::render(
 		vk::Viewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(extent.width);
-		viewport.height = static_cast<float>(extent.height);
+		viewport.width = static_cast<float>(frame.extent.width);
+		viewport.height = static_cast<float>(frame.extent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		cmd.setViewport(0, 1, &viewport);
 
 		vk::Rect2D scissor{};
 		scissor.offset = vk::Offset2D{ 0, 0 };
-		scissor.extent = extent;
+		scissor.extent = frame.extent;
 		cmd.setScissor(0, 1, &scissor);
 
 		vk::DescriptorSet set = descriptorSet_.getSet();
@@ -158,7 +148,7 @@ void DebugPassVk::render(
 	
 	VkUtils::TransitionImageLayout(
 		cmd,
-		targetImage,
+		frame.colorImage,
 		vk::ImageAspectFlagBits::eColor,
 		vk::ImageLayout::eColorAttachmentOptimal,
 		vk::ImageLayout::ePresentSrcKHR,
@@ -172,13 +162,13 @@ void DebugPassVk::render(
 void DebugPassVk::refreshInputs()
 {
 	descriptorSet_.writeCombinedImageSampler(
-		TO_API_FORM(TextureBinding::GNormalTex),
+		TO_API_FORM(DebugBinding::GNormalTex),
 		normalImage_.view(),
 		normalImage_.sampler()
 	);
 
 	descriptorSet_.writeCombinedImageSampler(
-		TO_API_FORM(TextureBinding::GDepthTex),
+		TO_API_FORM(DebugBinding::GDepthTex),
 		depthImage_.view(),
 		depthImage_.sampler()
 	);
@@ -196,19 +186,19 @@ void DebugPassVk::createResources()
 void DebugPassVk::createDescriptorSet()
 {
 	vk::DescriptorSetLayoutBinding uboBinding{};
-	uboBinding.binding = TO_API_FORM(UBOBinding::DebugPass);
+	uboBinding.binding = TO_API_FORM(DebugBinding::UBO);
 	uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 	uboBinding.descriptorCount = 1;
 	uboBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 	vk::DescriptorSetLayoutBinding normalBinding{};
-	normalBinding.binding = TO_API_FORM(TextureBinding::GNormalTex);
+	normalBinding.binding = TO_API_FORM(DebugBinding::GNormalTex);
 	normalBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	normalBinding.descriptorCount = 1;
 	normalBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 	vk::DescriptorSetLayoutBinding depthBinding{};
-	depthBinding.binding = TO_API_FORM(TextureBinding::GDepthTex);
+	depthBinding.binding = TO_API_FORM(DebugBinding::GDepthTex);
 	depthBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	depthBinding.descriptorCount = 1;
 	depthBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
@@ -231,19 +221,19 @@ void DebugPassVk::createDescriptorSet()
 	descriptorSet_.allocate();
 
 	descriptorSet_.writeUniformBuffer(
-		TO_API_FORM(UBOBinding::DebugPass),
+		TO_API_FORM(DebugBinding::UBO),
 		uboBuffer_.getBuffer(),
 		sizeof(DebugPassUBO)
 	);
 
 	descriptorSet_.writeCombinedImageSampler(
-		TO_API_FORM(TextureBinding::GNormalTex),
+		TO_API_FORM(DebugBinding::GNormalTex),
 		normalImage_.view(),
 		normalImage_.sampler()
 	);
 
 	descriptorSet_.writeCombinedImageSampler(
-		TO_API_FORM(TextureBinding::GDepthTex),
+		TO_API_FORM(DebugBinding::GDepthTex),
 		depthImage_.view(),
 		depthImage_.sampler()
 	);

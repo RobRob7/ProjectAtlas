@@ -1,6 +1,8 @@
 #ifndef SSAO_PASS_H
 #define SSAO_PASS_H
 
+#include "bindings.h"
+
 #include "ubo_gl.h"
 
 #include <glm/glm.hpp>
@@ -31,7 +33,7 @@ struct SSAOUBO
 	float _pad0;
 	glm::vec2 _pad1;
 
-	glm::vec3 u_samples[MAX_KERNEL_SIZE];
+	glm::vec4 u_samples[MAX_KERNEL_SIZE];
 };
 
 class SSAOPass
@@ -43,7 +45,12 @@ public:
 	void init();
 	void resize(int w, int h);
 	void destroyGL();
-	void render(uint32_t normalTex, uint32_t depthTex, const glm::mat4& proj);
+
+	void render(
+		uint32_t normalTex, 
+		uint32_t depthTex, 
+		const glm::mat4& proj
+	);
 
 	uint32_t aoRawTexture() const;
 	uint32_t aoBlurTexture() const;
@@ -67,16 +74,16 @@ private:
 	std::unique_ptr<Shader> ssaoShader_;
 	std::unique_ptr<Shader> blurShader_;
 
-	UBOGL uboBlur_{ UBOBinding::SSAOBlur };
-	SSAOBlurUBO ssaoBlurUBO_;
-	UBOGL uboSSAO_{ UBOBinding::SSAOPass };
-	SSAOUBO ssaoUBO_;
+	UBOGL uboBlur_{ TO_API_FORM(SSAOBlurBinding::UBO) };
+	SSAOBlurUBO ssaoBlurUBO_{};
+	UBOGL uboSSAO_{ TO_API_FORM(SSAOPassBinding::UBO) };
+	SSAOUBO ssaoUBO_{};
 
 	static constexpr int kNoiseSize_ = 4;
 	float radius_ = 5.0f;
 	float bias_ = 0.05f;
 	int kernelSize_ = 64;
-	std::array<glm::vec3, MAX_KERNEL_SIZE> samples_{};
+	std::array<glm::vec4, MAX_KERNEL_SIZE> samples_{};
 
 private:
 	void createTargets();

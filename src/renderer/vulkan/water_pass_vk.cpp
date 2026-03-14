@@ -1,0 +1,809 @@
+#include "water_pass_vk.h"
+
+#include "frame_context_vk.h"
+#include "constants.h"
+#include "render_inputs.h"
+#include "bindings.h"
+#include "chunk_draw_list.h"
+#include "i_chunk_mesh_gpu.h"
+
+#include "chunk_pass_vk.h"
+#include "camera.h"
+#include "light_vk.h"
+#include "cubemap_vk.h"
+#include "chunk_manager.h"
+
+#include "utils_vk.h"
+#include "vulkan_main.h"
+
+#include "vulkan/vulkan.hpp"
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <algorithm>
+#include <memory>
+
+using namespace Chunk_Constants;
+using namespace World;
+
+//--- PUBLIC ---//
+WaterPassVk::WaterPassVk(VulkanMain& vk)
+	: vk_(vk),
+	reflColorImage_(vk), reflDepthImage_(vk),
+	refrColorImage_(vk), refrDepthImage_(vk),
+	dudvTex_(vk), normalTex_(vk),
+	uboBuffer_(vk),
+	descriptorSet_(vk),
+	pipeline_(vk)
+{
+} // end of constructor
+
+WaterPassVk::~WaterPassVk() = default;
+
+void WaterPassVk::init()
+{
+	shader_ = std::make_unique<ShaderModuleVk>(
+		vk_.getDevice(),
+		"water/water.vert.spv",
+		"water/water.frag.spv"
+	);
+	fullW_ = static_cast<int>(vk_.getSwapChainExtent().width);
+	fullH_ = static_cast<int>(vk_.getSwapChainExtent().height);
+
+	width_ = std::max(1, fullW_ / factor_);
+	height_ = std::max(1, fullH_ / factor_);
+
+	dudvTex_.loadFromFile("dudv.png", true);
+	normalTex_.loadFromFile("waternormal.png", true);
+
+	createAttachments();
+	createResources();
+	createDescriptorSet();
+	createPipeline();
+} // end of init()
+
+void WaterPassVk::resize(int w, int h)
+{
+	if (w <= 0 || h <= 0) return;
+	if (w == fullW_ && h == fullH_) return;
+
+	vk_.waitIdle();
+
+	fullW_ = w;
+	fullH_ = h;
+	width_ = std::max(1, w / factor_);
+	height_ = std::max(1, h / factor_);
+
+	createAttachments();
+	createDescriptorSet();
+} // end of resize()
+
+void WaterPassVk::renderOffscreen(
+	const FrameContext& frame,
+	ChunkPassVk& chunk,
+	const RenderInputs& in
+)
+{
+	// refl + refr passes
+	waterPass(frame, chunk, in);
+} // end of renderOffscreen()
+
+void WaterPassVk::renderWater(
+	FrameContext& frame,
+	ChunkPassVk& chunk,
+	const RenderInputs& in
+)
+{
+	// render water
+	vk::CommandBuffer cmd = frame.cmd;
+
+	if (frame.colorLayout != vk::ImageLayout::eColorAttachmentOptimal)
+	{
+		VkUtils::TransitionImageLayout(
+			cmd,
+			frame.colorImage,
+			vk::ImageAspectFlagBits::eColor,
+			frame.colorLayout,
+			vk::ImageLayout::eColorAttachmentOptimal,
+			1,
+			1
+		);
+		frame.colorLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	}
+
+	if (frame.depthLayout != vk::ImageLayout::eDepthAttachmentOptimal)
+	{
+		VkUtils::TransitionImageLayout(
+			cmd,
+			frame.depthImage,
+			vk::ImageAspectFlagBits::eDepth,
+			frame.depthLayout,
+			vk::ImageLayout::eDepthAttachmentOptimal,
+			1,
+			1
+		);
+		frame.depthLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+	}
+
+	vk::RenderingAttachmentInfo colorAttachment{};
+	colorAttachment.imageView = frame.colorImageView;
+	colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+
+	vk::RenderingAttachmentInfo depthAttachment{};
+	depthAttachment.imageView = frame.depthImageView;
+	depthAttachment.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+	depthAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+	depthAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+
+	vk::RenderingInfo renderingInfo{};
+	renderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
+	renderingInfo.renderArea.extent = frame.extent;
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachment;
+	renderingInfo.pDepthAttachment = &depthAttachment;
+
+	cmd.beginRendering(renderingInfo);
+	{
+		vk::Viewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(frame.extent.width);
+		viewport.height = static_cast<float>(frame.extent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		cmd.setViewport(0, 1, &viewport);
+
+		vk::Rect2D scissor{};
+		scissor.offset = vk::Offset2D{ 0, 0 };
+		scissor.extent = frame.extent;
+		cmd.setScissor(0, 1, &scissor);
+
+		// render water
+		const glm::mat4 view = in.camera->getViewMatrix();
+		const float aspect = (fullH_ > 0)
+			? (static_cast<float>(fullW_) / static_cast<float>(fullH_))
+			: 1.0f;
+		glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
+		proj[1][1] *= -1.0f;
+
+		ChunkDrawList list;
+		in.world->buildWaterDrawList(view, proj, list);
+
+		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.getPipeline());
+
+		vk::DescriptorSet set = descriptorSet_.getSet();
+
+		ChunkWaterUBO ubo{};
+		ubo.u_time = in.time;
+		ubo.u_view = view;
+		ubo.u_proj = proj;
+		ubo.u_screenSize = glm::vec2(fullW_, fullH_);
+		ubo.u_ambientStrength = in.world->getAmbientStrength();
+
+		ubo.u_near = in.camera->getNearPlane();
+		ubo.u_far = in.camera->getFarPlane();
+		ubo.u_viewPos = in.camera->getCameraPosition();
+
+		ubo.u_lightPos = in.light->getPosition();
+		ubo.u_lightColor = in.light->getColor();
+
+		uint32_t drawIndex = 0;
+		for (const auto& item : list.items)
+		{
+			glm::mat4 model = glm::translate(
+				glm::mat4(1.0f),
+				item.chunkOrigin);
+			ubo.u_model = model;
+
+			vk::DeviceSize offset =
+				static_cast<vk::DeviceSize>(drawIndex) * waterUBOStride_;
+
+			uboBuffer_.upload(&ubo, sizeof(ubo), offset);
+
+			uint32_t dynamicOffset = static_cast<uint32_t>(offset);
+
+			cmd.bindDescriptorSets(
+				vk::PipelineBindPoint::eGraphics,
+				pipeline_.getLayout(),
+				0,
+				1, &set,
+				1, &dynamicOffset
+			);
+
+			item.gpu->drawWater(cmd);
+			++drawIndex;
+		} // end for
+	}
+	cmd.endRendering();
+} // end of renderWater()
+
+
+//--- PRIVATE ---//
+void WaterPassVk::createAttachments()
+{
+	/////////////////////////////////
+	// REFLECTION COLOR
+	reflColorImage_.createImage(
+		width_,
+		height_,
+		1,
+		false,
+		vk::SampleCountFlagBits::e1,
+		colorFormat_,
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	);
+	reflColorImage_.createImageView(
+		colorFormat_,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
+		1
+	);
+	reflColorImage_.createSampler(
+		vk::Filter::eNearest,
+		vk::Filter::eNearest,
+		vk::SamplerMipmapMode::eNearest,
+		vk::SamplerAddressMode::eClampToEdge,
+		vk::False
+	);
+
+	// REFLECTION DEPTH
+	reflDepthImage_.createImage(
+		width_,
+		height_,
+		1,
+		false,
+		vk::SampleCountFlagBits::e1,
+		depthFormat_,
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	);
+	reflDepthImage_.createImageView(
+		depthFormat_,
+		vk::ImageAspectFlagBits::eDepth,
+		vk::ImageViewType::e2D,
+		1
+	);
+	reflDepthImage_.createSampler(
+		vk::Filter::eNearest,
+		vk::Filter::eNearest,
+		vk::SamplerMipmapMode::eNearest,
+		vk::SamplerAddressMode::eClampToEdge,
+		vk::False
+	);
+
+	// RESET
+	reflColorLayout_ = vk::ImageLayout::eUndefined;
+	reflDepthLayout_ = vk::ImageLayout::eUndefined;
+	/////////////////////////////////
+
+	/////////////////////////////////
+	// REFRACTION COLOR
+	refrColorImage_.createImage(
+		width_,
+		height_,
+		1,
+		false,
+		vk::SampleCountFlagBits::e1,
+		colorFormat_,
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	);
+	refrColorImage_.createImageView(
+		colorFormat_,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
+		1
+	);
+	refrColorImage_.createSampler(
+		vk::Filter::eNearest,
+		vk::Filter::eNearest,
+		vk::SamplerMipmapMode::eNearest,
+		vk::SamplerAddressMode::eClampToEdge,
+		vk::False
+	);
+
+	// REFRACTION DEPTH
+	refrDepthImage_.createImage(
+		width_,
+		height_,
+		1,
+		false,
+		vk::SampleCountFlagBits::e1,
+		depthFormat_,
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	);
+	refrDepthImage_.createImageView(
+		depthFormat_,
+		vk::ImageAspectFlagBits::eDepth,
+		vk::ImageViewType::e2D,
+		1
+	);
+	refrDepthImage_.createSampler(
+		vk::Filter::eNearest,
+		vk::Filter::eNearest,
+		vk::SamplerMipmapMode::eNearest,
+		vk::SamplerAddressMode::eClampToEdge,
+		vk::False
+	);
+
+	// RESET
+	refrColorLayout_ = vk::ImageLayout::eUndefined;
+	refrDepthLayout_ = vk::ImageLayout::eUndefined;
+	/////////////////////////////////
+} // end of createAttachments()
+
+void WaterPassVk::createResources()
+{
+	const uint32_t minAlign =
+		vk_.getPhysicalDeviceProperties().limits.minUniformBufferOffsetAlignment;
+
+	waterUBOStride_ = sizeof(ChunkWaterUBO);
+	if (minAlign > 0)
+	{
+		waterUBOStride_ =
+			(waterUBOStride_ + minAlign - 1) & ~(minAlign - 1);
+	}
+
+	uint32_t MAX_VISIBLE_CHUNKS = (2 * World::MAX_RADIUS + 1) * (2 * World::MAX_RADIUS + 1);
+
+	uboBuffer_.create(
+		static_cast<vk::DeviceSize>(waterUBOStride_) * MAX_VISIBLE_CHUNKS,
+		vk::BufferUsageFlagBits::eUniformBuffer,
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+	);
+} // end of createResources()
+
+void WaterPassVk::createDescriptorSet()
+{
+	vk::DescriptorSetLayoutBinding uboBinding{};
+	uboBinding.binding = TO_API_FORM(WaterBinding::UBO);
+	uboBinding.descriptorType = vk::DescriptorType::eUniformBufferDynamic;
+	uboBinding.descriptorCount = 1;
+	uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+
+	vk::DescriptorSetLayoutBinding reflColorBinding{};
+	reflColorBinding.binding = TO_API_FORM(WaterBinding::ReflColorTex);
+	reflColorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	reflColorBinding.descriptorCount = 1;
+	reflColorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	vk::DescriptorSetLayoutBinding refrColorBinding{};
+	refrColorBinding.binding = TO_API_FORM(WaterBinding::RefrColorTex);
+	refrColorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	refrColorBinding.descriptorCount = 1;
+	refrColorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	vk::DescriptorSetLayoutBinding refrDepthBinding{};
+	refrDepthBinding.binding = TO_API_FORM(WaterBinding::RefrDepthTex);
+	refrDepthBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	refrDepthBinding.descriptorCount = 1;
+	refrDepthBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	vk::DescriptorSetLayoutBinding dudvBinding{};
+	dudvBinding.binding = TO_API_FORM(WaterBinding::DudvTex);
+	dudvBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	dudvBinding.descriptorCount = 1;
+	dudvBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	vk::DescriptorSetLayoutBinding normalBinding{};
+	normalBinding.binding = TO_API_FORM(WaterBinding::NormalTex);
+	normalBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	normalBinding.descriptorCount = 1;
+	normalBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	descriptorSet_.createLayout({ 
+		uboBinding,
+		reflColorBinding, refrColorBinding, refrDepthBinding,
+		dudvBinding, normalBinding});
+
+	vk::DescriptorPoolSize uboPool{};
+	uboPool.type = vk::DescriptorType::eUniformBufferDynamic;
+	uboPool.descriptorCount = 1;
+
+	vk::DescriptorPoolSize reflColorPool{};
+	reflColorPool.type = vk::DescriptorType::eCombinedImageSampler;
+	reflColorPool.descriptorCount = 1;
+
+	vk::DescriptorPoolSize refrColorPool{};
+	refrColorPool.type = vk::DescriptorType::eCombinedImageSampler;
+	refrColorPool.descriptorCount = 1;
+
+	vk::DescriptorPoolSize refrDepthPool{};
+	refrDepthPool.type = vk::DescriptorType::eCombinedImageSampler;
+	refrDepthPool.descriptorCount = 1;
+
+	vk::DescriptorPoolSize dudvPool{};
+	dudvPool.type = vk::DescriptorType::eCombinedImageSampler;
+	dudvPool.descriptorCount = 1;
+
+	vk::DescriptorPoolSize normalPool{};
+	normalPool.type = vk::DescriptorType::eCombinedImageSampler;
+	normalPool.descriptorCount = 1;
+
+	descriptorSet_.createPool({ 
+		uboPool, 
+		reflColorPool, refrColorPool, refrDepthPool,
+		dudvPool, normalPool}, 1);
+	descriptorSet_.allocate();
+
+	descriptorSet_.writeDynamicUniformBuffer(
+		TO_API_FORM(WaterBinding::UBO),
+		uboBuffer_.getBuffer(),
+		sizeof(ChunkWaterUBO)
+	);
+
+	descriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(WaterBinding::ReflColorTex),
+		reflColorImage_.view(),
+		reflColorImage_.sampler()
+	);
+
+	descriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(WaterBinding::RefrColorTex),
+		refrColorImage_.view(),
+		refrColorImage_.sampler()
+	);
+
+	descriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(WaterBinding::RefrDepthTex),
+		refrDepthImage_.view(),
+		refrDepthImage_.sampler()
+	);
+
+	descriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(WaterBinding::DudvTex),
+		dudvTex_.view(),
+		dudvTex_.sampler()
+	);
+
+	descriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(WaterBinding::NormalTex),
+		normalTex_.view(),
+		normalTex_.sampler()
+	);
+} // end of createDescriptorSet()
+
+void WaterPassVk::createPipeline()
+{
+	GraphicsPipelineDescVk desc{};
+	desc.vertShader = shader_->vertShader();
+	desc.fragShader = shader_->fragShader();
+
+	desc.setLayouts = { descriptorSet_.getLayout() };
+
+	desc.colorFormat = vk_.getSwapChainImageFormat();
+	desc.depthFormat = vk_.getDepthFormat();
+
+	desc.cullMode = vk::CullModeFlagBits::eBack;
+	desc.frontFace = vk::FrontFace::eClockwise;
+	desc.depthTestEnable = true;
+	desc.depthWriteEnable = false;
+	desc.depthCompareOp = vk::CompareOp::eLessOrEqual;
+
+	vk::VertexInputBindingDescription binding{};
+	binding.binding = 0;
+	binding.stride = sizeof(VertexWater);
+	binding.inputRate = vk::VertexInputRate::eVertex;
+
+	vk::VertexInputAttributeDescription attr{};
+	attr.location = 0;
+	attr.binding = 0;
+	attr.format = vk::Format::eR32G32B32Sfloat;
+	attr.offset = offsetof(VertexWater, pos);
+
+	desc.vertexBinding = binding;
+	desc.vertexAttributes = { attr };
+
+	pipeline_.create(desc);
+} // end of createPipeline()
+
+void WaterPassVk::waterPass(
+	const FrameContext& frame,
+	ChunkPassVk& chunk, 
+	const RenderInputs& in
+)
+{
+	vk::CommandBuffer cmd = frame.cmd;
+
+	// REFLECTION
+	VkUtils::TransitionImageLayout(
+		cmd,
+		reflColorImage_.image(),
+		vk::ImageAspectFlagBits::eColor,
+		reflColorLayout_,
+		vk::ImageLayout::eColorAttachmentOptimal,
+		1,
+		1
+	);
+	reflColorLayout_ = vk::ImageLayout::eColorAttachmentOptimal;
+
+	VkUtils::TransitionImageLayout(
+		cmd,
+		reflDepthImage_.image(),
+		vk::ImageAspectFlagBits::eDepth,
+		reflDepthLayout_,
+		vk::ImageLayout::eDepthAttachmentOptimal,
+		1,
+		1
+	);
+	reflDepthLayout_ = vk::ImageLayout::eDepthAttachmentOptimal;
+
+	waterReflectionPass(frame, chunk, in);
+
+	VkUtils::TransitionImageLayout(
+		cmd,
+		reflColorImage_.image(),
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageLayout::eColorAttachmentOptimal,
+		vk::ImageLayout::eShaderReadOnlyOptimal,
+		1,
+		1
+	);
+	reflColorLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+	VkUtils::TransitionImageLayout(
+		cmd,
+		reflDepthImage_.image(),
+		vk::ImageAspectFlagBits::eDepth,
+		vk::ImageLayout::eDepthAttachmentOptimal,
+		vk::ImageLayout::eShaderReadOnlyOptimal,
+		1,
+		1
+	);
+	reflDepthLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+
+	// REFRACTION
+	VkUtils::TransitionImageLayout(
+		cmd,
+		refrColorImage_.image(),
+		vk::ImageAspectFlagBits::eColor,
+		refrColorLayout_,
+		vk::ImageLayout::eColorAttachmentOptimal,
+		1,
+		1
+	);
+	refrColorLayout_ = vk::ImageLayout::eColorAttachmentOptimal;
+
+	VkUtils::TransitionImageLayout(
+		cmd,
+		refrDepthImage_.image(),
+		vk::ImageAspectFlagBits::eDepth,
+		refrDepthLayout_,
+		vk::ImageLayout::eDepthAttachmentOptimal,
+		1,
+		1
+	);
+	refrDepthLayout_ = vk::ImageLayout::eDepthAttachmentOptimal;
+
+	waterRefractionPass(frame, chunk, in);
+
+	VkUtils::TransitionImageLayout(
+		cmd,
+		refrColorImage_.image(),
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageLayout::eColorAttachmentOptimal,
+		vk::ImageLayout::eShaderReadOnlyOptimal,
+		1,
+		1
+	);
+	refrColorLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+	VkUtils::TransitionImageLayout(
+		cmd,
+		refrDepthImage_.image(),
+		vk::ImageAspectFlagBits::eDepth,
+		vk::ImageLayout::eDepthAttachmentOptimal,
+		vk::ImageLayout::eShaderReadOnlyOptimal,
+		1,
+		1
+	);
+	refrDepthLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
+} // end of waterPass()
+
+void WaterPassVk::waterReflectionPass(
+	const FrameContext& frame,
+	ChunkPassVk& chunk, 
+	const RenderInputs& in
+) const
+{
+	vk::CommandBuffer cmd = frame.cmd;
+
+	vk::ClearValue normalClear{};
+	normalClear.color.float32[0] = 0.0f;
+	normalClear.color.float32[1] = 0.0f;
+	normalClear.color.float32[2] = 0.0f;
+	normalClear.color.float32[3] = 1.0f;
+
+	vk::ClearValue depthClear{};
+	depthClear.depthStencil = vk::ClearDepthStencilValue{ 1.0f, 0 };
+
+	vk::RenderingAttachmentInfo colorAttachment{};
+	colorAttachment.imageView = reflColorImage_.view();
+	colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.clearValue = normalClear;
+
+	vk::RenderingAttachmentInfo depthAttachment{};
+	depthAttachment.imageView = reflDepthImage_.view();
+	depthAttachment.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+	depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	depthAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	depthAttachment.clearValue = depthClear;
+
+	vk::RenderingInfo renderingInfo{};
+	renderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
+	renderingInfo.renderArea.extent = vk::Extent2D{
+		static_cast<uint32_t>(width_),
+		static_cast<uint32_t>(height_)
+	};
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachment;
+	renderingInfo.pDepthAttachment = &depthAttachment;
+
+	cmd.beginRendering(renderingInfo);
+	{
+		vk::Viewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(width_);
+		viewport.height = static_cast<float>(height_);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		cmd.setViewport(0, 1, &viewport);
+
+		vk::Rect2D scissor{};
+		scissor.offset = vk::Offset2D{ 0, 0 };
+		scissor.extent = vk::Extent2D{
+			static_cast<uint32_t>(width_),
+			static_cast<uint32_t>(height_)
+		};
+		cmd.setScissor(0, 1, &scissor);
+
+		// build reflected view matrix
+		const float waterHeight = static_cast<float>(World::SEA_LEVEL) + 0.9f;
+		const Camera& camera = *in.camera;
+
+		glm::mat4 view = camera.getViewMatrix();
+
+		glm::vec3 reflectedPos = camera.getCameraPosition();
+		reflectedPos.y = 2.0f * waterHeight - reflectedPos.y;
+
+		glm::vec3 reflectedFront = camera.getCameraFront();
+		reflectedFront.y *= -1.0f;
+
+		glm::vec3 reflectedUp = camera.getCameraUp();
+		reflectedUp.y *= -1.0f;
+
+		glm::mat4 reflView = glm::lookAt(
+			reflectedPos,
+			reflectedPos + reflectedFront,
+			reflectedUp
+		);
+
+		//float distance = 2.0f * (camera.getCameraPosition().y - waterHeight);
+		//glm::mat4 view = camera.getViewMatrix();
+		//camera.getCameraPosition().y -= distance;
+		//camera.invertPitch();
+		//glm::mat4 reflView = camera.getViewMatrix();
+
+
+		// set clip plane (clip everything below water)
+		glm::vec4 clipPlane{ 0, 1, 0, -(waterHeight) };
+
+		const float aspect = (height_ > 0)
+			? (static_cast<float>(width_) / static_cast<float>(height_))
+			: 1.0f;
+		const glm::mat4 projCull = camera.getProjectionMatrix(aspect);
+		glm::mat4 projRender = projCull;
+		projRender[1][1] *= -1.0f;
+
+		ChunkOpaqueUBO ubo{};
+		ubo.u_clipPlane = clipPlane;
+		ubo.u_useSSAO = 0;
+		ubo.u_viewPos = reflectedPos;
+
+		// render world
+		chunk.renderOpaqueOffscreen(in, frame, reflView, projCull, projRender, width_, height_, ubo);
+		if (in.light) in.light->renderOffscreen(&frame, reflView, projRender);
+		if (in.skybox) in.skybox->renderOffscreen(&frame, reflView, projRender);
+	}
+	cmd.endRendering();
+} // end of waterReflectionPass()
+
+void WaterPassVk::waterRefractionPass(
+	const FrameContext& frame,
+	ChunkPassVk& chunk, 
+	const RenderInputs& in
+) const
+{
+	vk::CommandBuffer cmd = frame.cmd;
+
+	// set clip plane (clip everything above water)
+	float waterHeight = static_cast<float>(World::SEA_LEVEL) + 0.9f;
+	glm::vec4 clipPlane{ 0, -1, 0, (waterHeight) };
+
+	const glm::mat4 view = in.camera->getViewMatrix();
+
+	const float aspect = (height_ > 0)
+		? (static_cast<float>(width_) / static_cast<float>(height_))
+		: 1.0f;
+	glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
+	proj[1][1] *= -1.0f;
+
+	ChunkOpaqueUBO ubo{};
+	ubo.u_clipPlane = clipPlane;
+	ubo.u_useSSAO = 0;
+	ubo.u_viewPos = in.camera->getCameraPosition();
+
+	vk::ClearValue normalClear{};
+	normalClear.color.float32[0] = 0.0f;
+	normalClear.color.float32[1] = 0.0f;
+	normalClear.color.float32[2] = 0.0f;
+	normalClear.color.float32[3] = 1.0f;
+
+	vk::ClearValue depthClear{};
+	depthClear.depthStencil = vk::ClearDepthStencilValue{ 1.0f, 0 };
+
+	vk::RenderingAttachmentInfo colorAttachment{};
+	colorAttachment.imageView = refrColorImage_.view();
+	colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.clearValue = normalClear;
+
+	vk::RenderingAttachmentInfo depthAttachment{};
+	depthAttachment.imageView = refrDepthImage_.view();
+	depthAttachment.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+	depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	depthAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	depthAttachment.clearValue = depthClear;
+
+	vk::RenderingInfo renderingInfo{};
+	renderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
+	renderingInfo.renderArea.extent = vk::Extent2D{
+		static_cast<uint32_t>(width_),
+		static_cast<uint32_t>(height_)
+	};
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachment;
+	renderingInfo.pDepthAttachment = &depthAttachment;
+
+	cmd.beginRendering(renderingInfo);
+	{
+		vk::Viewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(width_);
+		viewport.height = static_cast<float>(height_);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		cmd.setViewport(0, 1, &viewport);
+
+		vk::Rect2D scissor{};
+		scissor.offset = vk::Offset2D{ 0, 0 };
+		scissor.extent = vk::Extent2D{
+			static_cast<uint32_t>(width_),
+			static_cast<uint32_t>(height_)
+		};
+		cmd.setScissor(0, 1, &scissor);
+
+		// render world
+		chunk.renderOpaqueOffscreen(in, frame, view, proj, proj, width_, height_, ubo);
+		if (in.light) in.light->renderOffscreen(&frame, view, proj);
+	}
+	cmd.endRendering();
+} // end of waterRefractionPass()

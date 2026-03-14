@@ -2,11 +2,12 @@
 
 #include "shader.h"
 
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>
 
 #include <cstddef>
-#include <cassert>
+#include <memory>
 
 using namespace Light_Constants;
 
@@ -47,12 +48,17 @@ void LightGL::init()
 	ubo_.init<sizeof(LightUBO)>();
 } // end of init()
 
-void LightGL::render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& proj)
+void LightGL::render(
+	const FrameContext* frame,
+	const glm::mat4& view,
+	const glm::mat4& proj
+)
 {
-	assert(ctx.backend == Backend::OpenGL && "Must be OpenGL render context!");
-
 	if (!shader_ || vao_ == 0)
 		return;
+
+	// bind ubo
+	ubo_.bind();
 
 	shader_->use();
 	glm::mat4 model = glm::mat4(1.0f);

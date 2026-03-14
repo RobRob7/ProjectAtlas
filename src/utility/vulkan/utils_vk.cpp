@@ -181,15 +181,6 @@ namespace VkUtils
 			srcStage = vk::PipelineStageFlagBits::eFragmentShader;
 			dstStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 		}
-		else if (oldLayout == vk::ImageLayout::ePresentSrcKHR &&
-			newLayout == vk::ImageLayout::eColorAttachmentOptimal)
-		{
-			barrier.srcAccessMask = {};
-			barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-
-			srcStage = vk::PipelineStageFlagBits::eTopOfPipe;
-			dstStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		}
 		else if (oldLayout == vk::ImageLayout::eColorAttachmentOptimal &&
 			newLayout == vk::ImageLayout::ePresentSrcKHR)
 		{

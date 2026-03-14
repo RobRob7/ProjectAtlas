@@ -10,7 +10,7 @@
 class VulkanMain;
 class GBufferPassVk;
 class ShaderModuleVk;
-struct RenderContext;
+struct FrameContext;
 class ImageVk;
 class UIVk;
 
@@ -24,16 +24,14 @@ public:
 	void resize(int w, int h);
 
 	void render(
-		const RenderContext& ctx,
-		vk::Image targetImage,
-		vk::ImageView targetImageView,
-		vk::Extent2D extent,
+		const FrameContext& frame,
 		vk::ImageLayout oldLayout,
 		float nearPlane,
 		float farPlane,
 		int mode,
 		UIVk* ui
 	);
+
 private:
 	void refreshInputs();
 	void createResources();

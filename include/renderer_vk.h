@@ -15,6 +15,7 @@ struct RenderSettings;
 class ChunkPassVk;
 class GBufferPassVk;
 class DebugPassVk;
+class WaterPassVk;
 
 class RendererVk final : public IRenderer
 {
@@ -24,7 +25,12 @@ public:
 
 	void init() override;
 	void resize(int w, int h) override;
-	void renderFrame(const RenderInputs& in, const FrameContext& frame, UIVk* ui) override;
+
+	void renderFrame(
+		const RenderInputs& in,
+		const FrameContext* pFrame,
+		UIVk* ui
+	) override;
 
 	RenderSettings& settings();
 
@@ -39,6 +45,7 @@ private:
 	std::unique_ptr<ChunkPassVk> chunkPass_;
 	std::unique_ptr<GBufferPassVk> gbufferPass_;
 	std::unique_ptr<DebugPassVk> debugPass_;
+	std::unique_ptr<WaterPassVk> waterPass_;
 };
 
 #endif

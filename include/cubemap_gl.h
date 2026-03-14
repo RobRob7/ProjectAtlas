@@ -1,6 +1,8 @@
 #ifndef CUBEMAP_GL_H
 #define CUBEMAP_GL_H
 
+#include "bindings.h"
+
 #include "i_cubemap.h"
 
 #include "ubo_gl.h"
@@ -22,7 +24,13 @@ public:
     ~CubemapGL() override;
 
     void init() override;
-    void render(const RenderContext& ctx, const glm::mat4& view, const glm::mat4& projection, const float time = -1.0) override;
+
+    void render(
+        const FrameContext* frame,
+        const glm::mat4& view,
+        const glm::mat4& projection,
+        const float time = -1.0
+    ) override;
 
 private:
     void destroyGL();
@@ -32,7 +40,7 @@ private:
 
     uint32_t vao_{};
     uint32_t vbo_{};
-    UBOGL ubo_{ UBOBinding::Cubemap };
+    UBOGL ubo_{ TO_API_FORM(CubemapBinding::UBO) };
 
     std::array<std::string_view, 6> faces_;
 };

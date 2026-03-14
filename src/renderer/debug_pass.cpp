@@ -1,6 +1,6 @@
 #include "debug_pass.h"
 
-#include "texture_bindings.h"
+#include "bindings.h"
 
 #include "shader.h"
 
@@ -46,6 +46,13 @@ void DebugPass::render(
 {
 	if (!debugShader_ || vao_ == 0) return;
 
+	// bind ubo
+	ubo_.bind();
+
+	// bind textures
+	glBindTextureUnit(TO_API_FORM(DebugBinding::GNormalTex), normalTex);
+	glBindTextureUnit(TO_API_FORM(DebugBinding::GDepthTex), depthTex);
+
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -56,9 +63,6 @@ void DebugPass::render(
 	debugPassUBO_.u_near = nearPlane;
 	debugPassUBO_.u_far = farPlane;
 	ubo_.update(&debugPassUBO_, sizeof(debugPassUBO_));
-
-	glBindTextureUnit(TO_API_FORM(TextureBinding::GNormalTex), normalTex);
-	glBindTextureUnit(TO_API_FORM(TextureBinding::GDepthTex), depthTex);
 
 	glBindVertexArray(vao_);
 	glDrawArrays(GL_TRIANGLES, 0, 3);

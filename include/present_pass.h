@@ -14,6 +14,7 @@ public:
 
 	void init();
 	void resize(int w, int h);
+
 	void render(uint32_t finalColorTex);
 
 private:

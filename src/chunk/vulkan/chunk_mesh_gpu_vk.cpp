@@ -5,13 +5,11 @@
 #include "vulkan_main.h"
 #include "chunk_mesh_data.h"
 
-#include <stdexcept>
-
 using namespace World;
 
 //--- PUBLIC ---//
 ChunkMeshGPUVk::ChunkMeshGPUVk(VulkanMain& vk)
-	: vk_(vk),
+	: vk_(&vk),
 	opaqueVB_(vk),
 	opaqueIB_(vk),
 	waterVB_(vk),
@@ -21,76 +19,77 @@ ChunkMeshGPUVk::ChunkMeshGPUVk(VulkanMain& vk)
 
 ChunkMeshGPUVk::~ChunkMeshGPUVk()
 {
-	vk::Result res = vk_.getDevice().waitIdle();
-	if (res != vk::Result::eSuccess)
+	if (vk_)
 	{
-		throw std::runtime_error("waitIdle failed: " + vk::to_string(res));
+		retireCurrentBuffers(vk_->currentFrameIndex());
 	}
 } // end of destructor
 
 void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 {
-	if (opaqueVB_.valid() || opaqueIB_.valid() || waterVB_.valid() || waterIB_.valid())
-	{
-		vk::Result res = vk_.getDevice().waitIdle();
-		if (res != vk::Result::eSuccess)
-		{
-			throw std::runtime_error("waitIdle failed: " + vk::to_string(res));
-		}
-	}
+	BufferVk newOpaqueVB(*vk_);
+	BufferVk newOpaqueIB(*vk_);
+	BufferVk newWaterVB(*vk_);
+	BufferVk newWaterIB(*vk_);
 
-	opaqueIndexCount_ = static_cast<uint32_t>(data.opaqueIndices.size());
-	waterIndexCount_ = static_cast<uint32_t>(data.waterIndices.size());
+	uint32_t newOpaqueIndexCount = 0;
+	uint32_t newWaterIndexCount = 0;
 
 	// -------- OPAQUE --------
 	if (!data.opaqueVertices.empty() && !data.opaqueIndices.empty())
 	{
-		const vk::DeviceSize vbSize = sizeof(Vertex) * data.opaqueVertices.size();
-		const vk::DeviceSize ibSize = sizeof(uint32_t) * data.opaqueIndices.size();
+		vk::DeviceSize vbSize = sizeof(Vertex) * data.opaqueVertices.size();
+		vk::DeviceSize ibSize = sizeof(uint32_t) * data.opaqueIndices.size();
 
-		opaqueVB_.create(
+		newOpaqueVB.create(
 			vbSize,
 			vk::BufferUsageFlagBits::eVertexBuffer,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 		);
-		opaqueVB_.upload(data.opaqueVertices.data(), vbSize);
+		newOpaqueVB.upload(data.opaqueVertices.data(), vbSize);
 
-		opaqueIB_.create(
+		newOpaqueIB.create(
 			ibSize,
 			vk::BufferUsageFlagBits::eIndexBuffer,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 		);
-		opaqueIB_.upload(data.opaqueIndices.data(), ibSize);
-	}
-	else
-	{
-		opaqueIndexCount_ = 0;
+		newOpaqueIB.upload(data.opaqueIndices.data(), ibSize);
+
+		newOpaqueIndexCount = static_cast<uint32_t>(data.opaqueIndices.size());
 	}
 
 	// -------- WATER --------
 	if (!data.waterVertices.empty() && !data.waterIndices.empty())
 	{
-		const vk::DeviceSize vbSize = sizeof(VertexWater) * data.waterVertices.size();
-		const vk::DeviceSize ibSize = sizeof(uint32_t) * data.waterIndices.size();
+		vk::DeviceSize vbSize = sizeof(VertexWater) * data.waterVertices.size();
+		vk::DeviceSize ibSize = sizeof(uint32_t) * data.waterIndices.size();
 
-		waterVB_.create(
+		newWaterVB.create(
 			vbSize,
 			vk::BufferUsageFlagBits::eVertexBuffer,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 		);
-		waterVB_.upload(data.waterVertices.data(), vbSize);
+		newWaterVB.upload(data.waterVertices.data(), vbSize);
 
-		waterIB_.create(
+		newWaterIB.create(
 			ibSize,
 			vk::BufferUsageFlagBits::eIndexBuffer,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 		);
-		waterIB_.upload(data.waterIndices.data(), ibSize);
+		newWaterIB.upload(data.waterIndices.data(), ibSize);
+
+		newWaterIndexCount = static_cast<uint32_t>(data.waterIndices.size());
 	}
-	else
-	{
-		waterIndexCount_ = 0;
-	}
+
+	retireCurrentBuffers(vk_->currentFrameIndex());
+
+	opaqueVB_ = std::move(newOpaqueVB);
+	opaqueIB_ = std::move(newOpaqueIB);
+	waterVB_ = std::move(newWaterVB);
+	waterIB_ = std::move(newWaterIB);
+
+	opaqueIndexCount_ = newOpaqueIndexCount;
+	waterIndexCount_ = newWaterIndexCount;
 } // end of upload()
 
 void ChunkMeshGPUVk::drawOpaque(vk::CommandBuffer cmd)
@@ -118,3 +117,22 @@ void ChunkMeshGPUVk::drawWater(vk::CommandBuffer cmd)
 	cmd.bindIndexBuffer(waterIB_.getBuffer(), 0, vk::IndexType::eUint32);
 	cmd.drawIndexed(waterIndexCount_, 1, 0, 0, 0);
 } // end of drawWater()
+
+
+//--- PRIVATE ---//
+void ChunkMeshGPUVk::retireCurrentBuffers(uint32_t frameIndex)
+{
+	if (!opaqueVB_.valid() && !opaqueIB_.valid() &&
+		!waterVB_.valid() && !waterIB_.valid())
+	{
+		return;
+	}
+
+	vk_->retireChunkBuffers(
+		frameIndex,
+		std::move(opaqueVB_),
+		std::move(opaqueIB_),
+		std::move(waterVB_),
+		std::move(waterIB_)
+	);
+} // end of retireCurrentBuffers()

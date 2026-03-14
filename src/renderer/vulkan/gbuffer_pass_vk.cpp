@@ -1,6 +1,6 @@
 #include "gbuffer_pass_vk.h"
 
-#include "constants.h"
+#include "frame_context_vk.h"
 
 #include "chunk_pass_vk.h"
 
@@ -8,9 +8,6 @@
 #include "vulkan_main.h"
 
 #include "vulkan/vulkan.hpp"
-
-#include <cassert>
-#include <stdexcept>
 
 using namespace Gbuffer_Constants;
 using namespace World;
@@ -38,11 +35,7 @@ void GBufferPassVk::resize(int w, int h)
 	if (w == 0 || h == 0) return;
 	if (w == width_ && h == height_) return;
 
-	vk::Result res = vk_.getDevice().waitIdle();
-	if (res != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("waitIdle failed: " + vk::to_string(res));
-	}
+	vk_.waitIdle();
 
 	width_ = w;
 	height_ = h;
@@ -53,13 +46,11 @@ void GBufferPassVk::resize(int w, int h)
 void GBufferPassVk::render(
 	ChunkPassVk& chunk,
 	const RenderInputs& in,
-	const RenderContext& ctx,
+	const FrameContext& frame,
 	const glm::mat4& view,
 	const glm::mat4& proj)
 {
-	assert(ctx.backend == Backend::Vulkan);
-
-	vk::CommandBuffer cmd = *static_cast<const vk::CommandBuffer*>(ctx.nativeCmd);
+	vk::CommandBuffer cmd = frame.cmd;
 
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -137,7 +128,7 @@ void GBufferPassVk::render(
 		cmd.setScissor(0, 1, &scissor);
 
 		// render world
-		chunk.renderOpaqueGBuffer(in, ctx, view, proj, width_, height_);
+		chunk.renderOpaqueGBuffer(in, frame, view, proj, width_, height_);
 	}
 	cmd.endRendering();
 	
