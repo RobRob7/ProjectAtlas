@@ -29,8 +29,10 @@ ChunkPassVk::ChunkPassVk(VulkanMain& vk)
 	opaqueGBufferUBOBuffer_(vk),
 	opaqueGBufferDescriptorSet_(vk),
 	opaqueGBufferPipeline_(vk),
-	opaqueOffscreenUBOBuffer_(vk),
-	opaqueOffscreenDescriptorSet_(vk),
+	opaqueOffscreenUBOBufferReflection_(vk),
+	opaqueOffscreenUBOBufferRefraction_(vk),
+	opaqueOffscreenDescriptorSetReflection_(vk),
+	opaqueOffscreenDescriptorSetRefraction_(vk),
 	opaquePipelineOffscreen_(vk)
 {
 } // end of constructor
@@ -121,27 +123,26 @@ void ChunkPassVk::renderOpaqueOffscreen(
 	const RenderInputs& in,
 	const FrameContext& frame,
 	const glm::mat4& view,
-	const glm::mat4& projCull,
-	const glm::mat4& projRender,
+	const glm::mat4& proj,
 	int width, int height,
-	Chunk_Constants::ChunkOpaqueUBO& ubo
+	ChunkOpaqueUBO& ubo,
+	DescriptorSetVk& descriptorSet,
+	BufferVk& uboBuffer
 )
 {
 	vk::CommandBuffer cmd = frame.cmd;
 
 	ChunkDrawList list;
-	in.world->buildOpaqueDrawList(view, projCull, list);
+	in.world->buildOpaqueDrawList(view, proj, list);
 
 	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, opaquePipelineOffscreen_.getPipeline());
 
-	vk::DescriptorSet set = opaqueOffscreenDescriptorSet_.getSet();
+	vk::DescriptorSet set = descriptorSet.getSet();
 
 	ubo.u_view = view;
-	ubo.u_proj = projRender;
+	ubo.u_proj = proj;
 	ubo.u_screenSize = glm::vec2(width, height);
 	ubo.u_ambientStrength = in.world->getAmbientStrength();
-	ubo.u_lightPos = in.light->getPosition();
-	ubo.u_lightColor = in.light->getColor();
 
 	uint32_t drawIndex = 0;
 	for (const auto& item : list.items)
@@ -151,7 +152,7 @@ void ChunkPassVk::renderOpaqueOffscreen(
 		vk::DeviceSize offset =
 			static_cast<vk::DeviceSize>(drawIndex) * opaqueOffscreenUBOStride_;
 
-		opaqueOffscreenUBOBuffer_.upload(&ubo, sizeof(ubo), offset);
+		uboBuffer.upload(&ubo, sizeof(ubo), offset);
 
 		uint32_t dynamicOffset = static_cast<uint32_t>(offset);
 
@@ -252,8 +253,17 @@ void ChunkPassVk::createOpaqueOffscreenResources()
 	uint32_t MAX_VISIBLE_CHUNKS =
 		(2 * World::MAX_RADIUS + 1) * (2 * World::MAX_RADIUS + 1);
 
-	opaqueOffscreenUBOBuffer_.create(
-		static_cast<vk::DeviceSize>(opaqueOffscreenUBOStride_) * MAX_VISIBLE_CHUNKS,
+	vk::DeviceSize bufferSize =
+		static_cast<vk::DeviceSize>(opaqueOffscreenUBOStride_) * MAX_VISIBLE_CHUNKS;
+
+	opaqueOffscreenUBOBufferReflection_.create(
+		bufferSize,
+		vk::BufferUsageFlagBits::eUniformBuffer,
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+	);
+
+	opaqueOffscreenUBOBufferRefraction_.create(
+		bufferSize,
 		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
@@ -356,7 +366,8 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 	ssaoBinding.descriptorCount = 1;
 	ssaoBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	opaqueOffscreenDescriptorSet_.createLayout({ uboBinding, atlasBinding, ssaoBinding });
+	// Reflection descriptor set
+	opaqueOffscreenDescriptorSetReflection_.createLayout({ uboBinding, atlasBinding, ssaoBinding });
 
 	vk::DescriptorPoolSize uboPool{};
 	uboPool.type = vk::DescriptorType::eUniformBufferDynamic;
@@ -370,22 +381,45 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 	ssaoPool.type = vk::DescriptorType::eCombinedImageSampler;
 	ssaoPool.descriptorCount = 1;
 
-	opaqueOffscreenDescriptorSet_.createPool({ uboPool, atlasPool, ssaoPool }, 1);
-	opaqueOffscreenDescriptorSet_.allocate();
+	opaqueOffscreenDescriptorSetReflection_.createPool({ uboPool, atlasPool, ssaoPool }, 1);
+	opaqueOffscreenDescriptorSetReflection_.allocate();
 
-	opaqueOffscreenDescriptorSet_.writeDynamicUniformBuffer(
+	opaqueOffscreenDescriptorSetReflection_.writeDynamicUniformBuffer(
 		TO_API_FORM(ChunkBinding::UBO),
-		opaqueOffscreenUBOBuffer_.getBuffer(),
+		opaqueOffscreenUBOBufferReflection_.getBuffer(),
 		sizeof(ChunkOpaqueUBO)
 	);
 
-	opaqueOffscreenDescriptorSet_.writeCombinedImageSampler(
+	opaqueOffscreenDescriptorSetReflection_.writeCombinedImageSampler(
 		TO_API_FORM(ChunkBinding::AtlasTex),
 		atlas_.view(),
 		atlas_.sampler()
 	);
 
-	opaqueOffscreenDescriptorSet_.writeCombinedImageSampler(
+	opaqueOffscreenDescriptorSetReflection_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::SSAOTex),
+		atlas_.view(),
+		atlas_.sampler()
+	);
+
+	// Refraction descriptor set
+	opaqueOffscreenDescriptorSetRefraction_.createLayout({ uboBinding, atlasBinding, ssaoBinding });
+	opaqueOffscreenDescriptorSetRefraction_.createPool({ uboPool, atlasPool, ssaoPool }, 1);
+	opaqueOffscreenDescriptorSetRefraction_.allocate();
+
+	opaqueOffscreenDescriptorSetRefraction_.writeDynamicUniformBuffer(
+		TO_API_FORM(ChunkBinding::UBO),
+		opaqueOffscreenUBOBufferRefraction_.getBuffer(),
+		sizeof(ChunkOpaqueUBO)
+	);
+
+	opaqueOffscreenDescriptorSetRefraction_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::AtlasTex),
+		atlas_.view(),
+		atlas_.sampler()
+	);
+
+	opaqueOffscreenDescriptorSetRefraction_.writeCombinedImageSampler(
 		TO_API_FORM(ChunkBinding::SSAOTex),
 		atlas_.view(),
 		atlas_.sampler()
@@ -452,7 +486,7 @@ void ChunkPassVk::createOpaquePipeline()
 
 
 	// offscreen pipeline
-	desc.setLayouts = { opaqueOffscreenDescriptorSet_.getLayout() };
+	desc.setLayouts = { opaqueOffscreenDescriptorSetReflection_.getLayout() };
 	desc.colorFormat = vk::Format::eR16G16B16A16Sfloat;
 	desc.depthFormat = vk::Format::eD32Sfloat;
 

@@ -22,6 +22,8 @@ struct RenderContext
 
 namespace World
 {
+	const int WATER_TEX_FACTOR = 2;
+
 	const int MIN_GROUND = 100.0;
 	const int MAX_TERRAIN = MIN_GROUND;
 	const int SEA_LEVEL = MIN_GROUND + 40;

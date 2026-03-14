@@ -30,7 +30,10 @@
 using namespace Chunk_Constants;
 
 //--- PUBLIC ---//
-WaterPass::WaterPass() = default;
+WaterPass::WaterPass()
+    : factor_(WATER_TEX_FACTOR)
+{
+} // end of constructor
 
 WaterPass::~WaterPass()
 {

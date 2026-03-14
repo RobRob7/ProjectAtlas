@@ -22,9 +22,11 @@ using namespace Cubemap_Constants;
 //--- PUBLIC ---//
 CubemapVk::CubemapVk(VulkanMain& vk, const std::array<std::string_view, 6>& textures)
 	: vk_(vk),
-	uboBuffer_(vk),
 	vertexBuffer_(vk),
+	uboBuffer_(vk),
+	uboBufferOffscreen_(vk),
 	descriptorSet_(vk),
+	descriptorSetOffscreen_(vk),
 	pipeline_(vk),
 	pipelineOffscreen_(vk),
 	faces_(textures),
@@ -116,28 +118,28 @@ void CubemapVk::renderOffscreen(
 	const FrameContext* frame,
 	const glm::mat4& view,
 	const glm::mat4& projection,
+	uint32_t width,
+	uint32_t height,
 	const float time
 )
 {
 	assert(frame->cmd && "Must be valid Vulkan frame context!");
 
-	if (!descriptorSet_.valid() || !uboBuffer_.valid() || !vertexBuffer_.valid() || !pipeline_.valid()) return;
+	if (!descriptorSetOffscreen_.valid() || !uboBufferOffscreen_.valid() || !vertexBuffer_.valid() || !pipelineOffscreen_.valid()) return;
 
 	vk::CommandBuffer cmd = frame->cmd;
-
-	vk::Extent2D extent = vk_.getSwapChainExtent();
 
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(extent.width);
-	viewport.height = static_cast<float>(extent.height);
+	viewport.width = static_cast<float>(width);
+	viewport.height = static_cast<float>(height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	vk::Rect2D scissor{};
 	scissor.offset = vk::Offset2D{ 0, 0 };
-	scissor.extent = extent;
+	scissor.extent = vk::Extent2D{ width, height };
 
 	cmd.setViewport(0, 1, &viewport);
 	cmd.setScissor(0, 1, &scissor);
@@ -164,9 +166,9 @@ void CubemapVk::renderOffscreen(
 	ubo.view = viewStrippedTranslation;
 	ubo.proj = projection;
 
-	uboBuffer_.upload(&ubo, sizeof(CubemapUBO));
+	uboBufferOffscreen_.upload(&ubo, sizeof(CubemapUBO));
 
-	vk::DescriptorSet descSet = descriptorSet_.getSet();
+	vk::DescriptorSet descSet = descriptorSetOffscreen_.getSet();
 	cmd.bindDescriptorSets(
 		vk::PipelineBindPoint::eGraphics,
 		pipelineOffscreen_.getLayout(),
@@ -201,10 +203,17 @@ void CubemapVk::createUBO()
 		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
+
+	uboBufferOffscreen_.create(
+		sizeof(CubemapUBO),
+		vk::BufferUsageFlagBits::eUniformBuffer,
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+	);
 } // end of createUBO()
 
 void CubemapVk::createDescriptorSet()
 {
+	// normal descriptor set
 	vk::DescriptorSetLayoutBinding uboBinding{};
 	uboBinding.binding = TO_API_FORM(CubemapBinding::UBO);
 	uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -237,6 +246,24 @@ void CubemapVk::createDescriptorSet()
 	);
 
 	descriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(CubemapBinding::SkyboxTex),
+		cubemapTexture_.view(),
+		cubemapTexture_.sampler()
+	);
+
+	// offscreen descriptor set
+	descriptorSetOffscreen_.createLayout({ uboBinding, samplerBinding });
+
+	descriptorSetOffscreen_.createPool({ uboPool, samplerPool }, 1);
+	descriptorSetOffscreen_.allocate();
+
+	descriptorSetOffscreen_.writeUniformBuffer(
+		TO_API_FORM(CubemapBinding::UBO),
+		uboBufferOffscreen_.getBuffer(),
+		sizeof(CubemapUBO)
+	);
+
+	descriptorSetOffscreen_.writeCombinedImageSampler(
 		TO_API_FORM(CubemapBinding::SkyboxTex),
 		cubemapTexture_.view(),
 		cubemapTexture_.sampler()

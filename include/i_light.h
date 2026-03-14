@@ -22,7 +22,10 @@ public:
 	virtual void renderOffscreen(
 		const FrameContext* frame,
 		const glm::mat4& view,
-		const glm::mat4& proj
+		const glm::mat4& proj,
+		const glm::vec3& position,
+		uint32_t width,
+		uint32_t height
 	)
 	{
 	}
