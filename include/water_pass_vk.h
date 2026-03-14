@@ -67,7 +67,7 @@ private:
 private:
 	VulkanMain& vk_;
 
-	int factor_{ 1 };
+	int factor_{};
 
 	int width_{ 0 };
 	int height_{ 0 };

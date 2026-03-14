@@ -38,6 +38,8 @@ public:
 		const FrameContext* frame,
 		const glm::mat4& view,
 		const glm::mat4& projection,
+		uint32_t width,
+		uint32_t height,
 		const float time = -1.0
 	);
 
@@ -55,12 +57,14 @@ private:
 
 	TextureCubemapVk cubemapTexture_;
 
-	BufferVk uboBuffer_;
 	BufferVk vertexBuffer_;
+	BufferVk uboBuffer_;
+	BufferVk uboBufferOffscreen_;
 
 	uint32_t vertexCount_{};
 
 	DescriptorSetVk descriptorSet_;
+	DescriptorSetVk descriptorSetOffscreen_;
 
 	GraphicsPipelineVk pipeline_;
 	GraphicsPipelineVk pipelineOffscreen_;

@@ -21,9 +21,11 @@ using namespace Light_Constants;
 //--- PUBLIC ---//
 LightVk::LightVk(VulkanMain& vk, const glm::vec3& pos, const glm::vec3& color)
 	: vk_(vk),
-	uboBuffer_(vk),
 	vertexBuffer_(vk),
+	uboBuffer_(vk),
+	uboBufferOffscreen_(vk),
 	descriptorSet_(vk),
+	descriptorSetOffscreen_(vk),
 	pipeline_(vk),
 	pipelineOffscreen_(vk),
 	position_(pos)
@@ -103,28 +105,29 @@ void LightVk::render(
 void LightVk::renderOffscreen(
 	const FrameContext* frame,
 	const glm::mat4& view,
-	const glm::mat4& proj
+	const glm::mat4& proj,
+	const glm::vec3& position,
+	uint32_t width,
+	uint32_t height
 )
 {
 	assert(frame->cmd && "Must be valid Vulkan frame context!");
 
-	if (!descriptorSet_.valid() || !uboBuffer_.valid() || !vertexBuffer_.valid() || !pipeline_.valid()) return;
+	if (!descriptorSetOffscreen_.valid() || !uboBufferOffscreen_.valid() || !vertexBuffer_.valid() || !pipelineOffscreen_.valid()) return;
 
 	vk::CommandBuffer cmd = frame->cmd;
-
-	vk::Extent2D extent = vk_.getSwapChainExtent();
 
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(extent.width);
-	viewport.height = static_cast<float>(extent.height);
+	viewport.width = static_cast<float>(width);
+	viewport.height = static_cast<float>(height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	vk::Rect2D scissor{};
 	scissor.offset = vk::Offset2D{ 0, 0 };
-	scissor.extent = extent;
+	scissor.extent = vk::Extent2D{ width, height };
 
 	cmd.setViewport(0, 1, &viewport);
 	cmd.setScissor(0, 1, &scissor);
@@ -135,7 +138,7 @@ void LightVk::renderOffscreen(
 	vk::DeviceSize offset = 0;
 	cmd.bindVertexBuffers(0, 1, &vertBuffer, &offset);
 
-	glm::mat4 model = glm::translate(glm::mat4(1.0f), position_);
+	glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
 
 	LightUBO ubo{};
 	ubo.model = model;
@@ -143,9 +146,9 @@ void LightVk::renderOffscreen(
 	ubo.proj = proj;
 	ubo.color = glm::vec4(color_, 1.0f);
 
-	uboBuffer_.upload(&ubo, sizeof(LightUBO));
+	uboBufferOffscreen_.upload(&ubo, sizeof(LightUBO));
 
-	vk::DescriptorSet descSet = descriptorSet_.getSet();
+	vk::DescriptorSet descSet = descriptorSetOffscreen_.getSet();
 	cmd.bindDescriptorSets(
 		vk::PipelineBindPoint::eGraphics,
 		pipelineOffscreen_.getLayout(),
@@ -180,6 +183,12 @@ void LightVk::createUBO()
 		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
+
+	uboBufferOffscreen_.create(
+		sizeof(LightUBO),
+		vk::BufferUsageFlagBits::eUniformBuffer,
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+	);
 } // end of createUBO()
 
 void LightVk::createDescriptorSet()
@@ -188,6 +197,13 @@ void LightVk::createDescriptorSet()
 		TO_API_FORM(LightBinding::UBO),
 		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 		uboBuffer_.getBuffer(),
+		sizeof(LightUBO)
+	);
+
+	descriptorSetOffscreen_.createSingleUniformBuffer(
+		TO_API_FORM(LightBinding::UBO),
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+		uboBufferOffscreen_.getBuffer(),
 		sizeof(LightUBO)
 	);
 } // end of createDescriptorSet()

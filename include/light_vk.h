@@ -31,7 +31,10 @@ public:
 	void renderOffscreen(
 		const FrameContext* frame,
 		const glm::mat4& view,
-		const glm::mat4& proj
+		const glm::mat4& proj,
+		const glm::vec3& position,
+		uint32_t width,
+		uint32_t height
 	);
 
 	glm::vec3& getPosition() override { return position_; }
@@ -60,12 +63,14 @@ private:
 
 	std::unique_ptr<ShaderModuleVk> shader_;
 
-	BufferVk uboBuffer_;
 	BufferVk vertexBuffer_;
+	BufferVk uboBuffer_;
+	BufferVk uboBufferOffscreen_;
 
 	uint32_t vertexCount_{};
 
 	DescriptorSetVk descriptorSet_;
+	DescriptorSetVk descriptorSetOffscreen_;
 
 	GraphicsPipelineVk pipeline_;
 	GraphicsPipelineVk pipelineOffscreen_;

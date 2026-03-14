@@ -55,7 +55,7 @@ private:
 	void waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) const;
 	void waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) const;
 private:
-	int factor_{ 2 };
+	int factor_{};
 	int width_{ 0 };
 	int height_{ 0 };
 	int fullW_{ 0 };

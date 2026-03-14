@@ -30,6 +30,7 @@ using namespace World;
 //--- PUBLIC ---//
 WaterPassVk::WaterPassVk(VulkanMain& vk)
 	: vk_(vk),
+	factor_(WATER_TEX_FACTOR),
 	reflColorImage_(vk), reflDepthImage_(vk),
 	refrColorImage_(vk), refrDepthImage_(vk),
 	dudvTex_(vk), normalTex_(vk),
@@ -181,7 +182,7 @@ void WaterPassVk::renderWater(
 		ubo.u_time = in.time;
 		ubo.u_view = view;
 		ubo.u_proj = proj;
-		ubo.u_screenSize = glm::vec2(fullW_, fullH_);
+		ubo.u_screenSize = glm::vec2(width_, height_);
 		ubo.u_ambientStrength = in.world->getAmbientStrength();
 
 		ubo.u_near = in.camera->getNearPlane();
@@ -674,51 +675,55 @@ void WaterPassVk::waterReflectionPass(
 
 		// build reflected view matrix
 		const float waterHeight = static_cast<float>(World::SEA_LEVEL) + 0.9f;
-		const Camera& camera = *in.camera;
-
-		glm::mat4 view = camera.getViewMatrix();
-
+		Camera camera = *in.camera;
 		glm::vec3 reflectedPos = camera.getCameraPosition();
 		reflectedPos.y = 2.0f * waterHeight - reflectedPos.y;
+		camera.setCameraPosition(reflectedPos);
+		camera.invertPitch();
 
-		glm::vec3 reflectedFront = camera.getCameraFront();
-		reflectedFront.y *= -1.0f;
-
-		glm::vec3 reflectedUp = camera.getCameraUp();
-		reflectedUp.y *= -1.0f;
-
-		glm::mat4 reflView = glm::lookAt(
-			reflectedPos,
-			reflectedPos + reflectedFront,
-			reflectedUp
-		);
-
-		//float distance = 2.0f * (camera.getCameraPosition().y - waterHeight);
-		//glm::mat4 view = camera.getViewMatrix();
-		//camera.getCameraPosition().y -= distance;
-		//camera.invertPitch();
-		//glm::mat4 reflView = camera.getViewMatrix();
-
+		const glm::mat4 reflView = camera.getViewMatrix();
 
 		// set clip plane (clip everything below water)
-		glm::vec4 clipPlane{ 0, 1, 0, -(waterHeight) };
+		glm::vec4 clipPlane{ 0, 1, 0, -waterHeight };
 
 		const float aspect = (height_ > 0)
 			? (static_cast<float>(width_) / static_cast<float>(height_))
 			: 1.0f;
-		const glm::mat4 projCull = camera.getProjectionMatrix(aspect);
-		glm::mat4 projRender = projCull;
-		projRender[1][1] *= -1.0f;
+		glm::mat4 proj = camera.getProjectionMatrix(aspect);
+		proj[1][1] *= -1.0f;
 
 		ChunkOpaqueUBO ubo{};
 		ubo.u_clipPlane = clipPlane;
 		ubo.u_useSSAO = 0;
-		ubo.u_viewPos = reflectedPos;
+		ubo.u_viewPos = camera.getCameraPosition();
+		ubo.u_lightPos = in.light->getPosition();
+		ubo.u_lightColor = in.light->getColor();
 
 		// render world
-		chunk.renderOpaqueOffscreen(in, frame, reflView, projCull, projRender, width_, height_, ubo);
-		if (in.light) in.light->renderOffscreen(&frame, reflView, projRender);
-		if (in.skybox) in.skybox->renderOffscreen(&frame, reflView, projRender);
+		chunk.renderOpaqueOffscreen(
+			in, 
+			frame, 
+			reflView, 
+			proj,
+			width_, height_, 
+			ubo,
+			chunk.getOpaqueOffscreenDescriptorSetReflection(),
+			chunk.getOpaqueOffscreenUBOBufferReflection()
+		);
+		if (in.light) in.light->renderOffscreen(&frame, 
+			reflView, 
+			proj, 
+			in.light->getPosition(),
+			width_, 
+			height_
+		);
+		if (in.skybox) in.skybox->renderOffscreen(
+			&frame, 
+			reflView, 
+			proj, 
+			width_, 
+			height_
+		);
 	}
 	cmd.endRendering();
 } // end of waterReflectionPass()
@@ -730,23 +735,6 @@ void WaterPassVk::waterRefractionPass(
 ) const
 {
 	vk::CommandBuffer cmd = frame.cmd;
-
-	// set clip plane (clip everything above water)
-	float waterHeight = static_cast<float>(World::SEA_LEVEL) + 0.9f;
-	glm::vec4 clipPlane{ 0, -1, 0, (waterHeight) };
-
-	const glm::mat4 view = in.camera->getViewMatrix();
-
-	const float aspect = (height_ > 0)
-		? (static_cast<float>(width_) / static_cast<float>(height_))
-		: 1.0f;
-	glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
-	proj[1][1] *= -1.0f;
-
-	ChunkOpaqueUBO ubo{};
-	ubo.u_clipPlane = clipPlane;
-	ubo.u_useSSAO = 0;
-	ubo.u_viewPos = in.camera->getCameraPosition();
 
 	vk::ClearValue normalClear{};
 	normalClear.color.float32[0] = 0.0f;
@@ -801,9 +789,35 @@ void WaterPassVk::waterRefractionPass(
 		};
 		cmd.setScissor(0, 1, &scissor);
 
+		// set clip plane (clip everything above water)
+		float waterHeight = static_cast<float>(World::SEA_LEVEL) + 0.9f;
+		glm::vec4 clipPlane{ 0, -1, 0, waterHeight };
+
+		const glm::mat4 view = in.camera->getViewMatrix();
+		const float aspect = (height_ > 0)
+			? (static_cast<float>(width_) / static_cast<float>(height_))
+			: 1.0f;
+		glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
+		proj[1][1] *= -1.0f;
+
+		ChunkOpaqueUBO ubo{};
+		ubo.u_clipPlane = clipPlane;
+		ubo.u_useSSAO = 0;
+		ubo.u_viewPos = in.camera->getCameraPosition();
+		ubo.u_lightPos = in.light->getPosition();
+		ubo.u_lightColor = in.light->getColor();
+
 		// render world
-		chunk.renderOpaqueOffscreen(in, frame, view, proj, proj, width_, height_, ubo);
-		if (in.light) in.light->renderOffscreen(&frame, view, proj);
+		chunk.renderOpaqueOffscreen(
+			in, 
+			frame, 
+			view, 
+			proj,
+			width_, height_, 
+			ubo,
+			chunk.getOpaqueOffscreenDescriptorSetRefraction(),
+			chunk.getOpaqueOffscreenUBOBufferRefraction()
+		);
 	}
 	cmd.endRendering();
 } // end of waterRefractionPass()

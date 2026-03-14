@@ -40,10 +40,11 @@ public:
 		const RenderInputs& in,
 		const FrameContext& frame,
 		const glm::mat4& view,
-		const glm::mat4& projCull,
-		const glm::mat4& projRender,
+		const glm::mat4& proj,
 		int width, int height,
-		Chunk_Constants::ChunkOpaqueUBO& ubo
+		Chunk_Constants::ChunkOpaqueUBO& ubo,
+		DescriptorSetVk& descriptorSet,
+		BufferVk& uboBuffer
 	);
 	void renderOpaqueGBuffer(
 		const RenderInputs& in,
@@ -52,6 +53,12 @@ public:
 		const glm::mat4& proj,
 		int width, int height
 	);
+
+	BufferVk& getOpaqueOffscreenUBOBufferReflection() { return opaqueOffscreenUBOBufferReflection_; }
+	BufferVk& getOpaqueOffscreenUBOBufferRefraction() { return opaqueOffscreenUBOBufferRefraction_; }
+
+	DescriptorSetVk& getOpaqueOffscreenDescriptorSetReflection() { return opaqueOffscreenDescriptorSetReflection_; }
+	DescriptorSetVk& getOpaqueOffscreenDescriptorSetRefraction() { return opaqueOffscreenDescriptorSetRefraction_; }
 
 private:
 	void createOpaqueResources();
@@ -73,11 +80,13 @@ private:
 	Texture2DVk atlas_;
 
 	BufferVk opaqueUBOBuffer_;
-	BufferVk opaqueOffscreenUBOBuffer_;
+	BufferVk opaqueOffscreenUBOBufferReflection_;
+	BufferVk opaqueOffscreenUBOBufferRefraction_;
 	BufferVk opaqueGBufferUBOBuffer_;
 
 	DescriptorSetVk opaqueDescriptorSet_;
-	DescriptorSetVk opaqueOffscreenDescriptorSet_;
+	DescriptorSetVk opaqueOffscreenDescriptorSetReflection_;
+	DescriptorSetVk opaqueOffscreenDescriptorSetRefraction_;
 	DescriptorSetVk opaqueGBufferDescriptorSet_;
 
 	GraphicsPipelineVk opaquePipeline_;

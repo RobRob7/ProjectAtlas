@@ -5,6 +5,8 @@
 
 #include <glm/glm.hpp>
 
+#include <cstdint>
+
 struct FrameContext;
 
 class ICubemap
@@ -30,6 +32,8 @@ public:
 		const FrameContext* frame,
 		const glm::mat4& view,
 		const glm::mat4& projection,
+		uint32_t width,
+		uint32_t height,
 		const float time = -1.0
 	) 
 	{

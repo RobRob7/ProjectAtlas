@@ -129,7 +129,7 @@ void main()
     // ------- FRESNEL ------- //
     // allow some reflections even when looking straight down at water
     float fresnel = pow(1.0 - ndv, 5.0);
-    fresnel = mix(0.02, 0.98, fresnel);
+    fresnel = mix(0.2, 0.98, fresnel);
 
     // ------- SHORELINE ------- //
     float edgeFade = clamp(thickness / 1.5, 0.0, 1.0);
@@ -168,8 +168,4 @@ void main()
     // output color
     vec3 finalColor = base + (ambient + diffuse + specular);
     FragColor = vec4(finalColor, 1.0);
-    // FragColor = vec4(refraction, 1.0);
-    // FragColor = vec4(reflection, 1.0);
-    // FragColor = vec4(1.0);
-
 }
