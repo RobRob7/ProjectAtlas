@@ -13,6 +13,9 @@ struct GraphicsPipelineDescVk
 	vk::ShaderModule vertShader{};
 	vk::ShaderModule fragShader{};
 
+	// push contant
+	std::vector<vk::PushConstantRange> pushConstantRanges;
+
 	// descriptor layouts
 	std::vector<vk::DescriptorSetLayout> setLayouts;
 

@@ -97,8 +97,6 @@ private:
 	BufferVk uboBuffer_;
 	DescriptorSetVk descriptorSet_;
 	GraphicsPipelineVk pipeline_;
-
-	uint32_t waterUBOStride_{ 0 };
 };
 
 #endif

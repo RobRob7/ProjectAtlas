@@ -33,10 +33,10 @@ void GraphicsPipelineVk::create(const GraphicsPipelineDescVk& desc)
 
 	// vertex input
 	vk::PipelineVertexInputStateCreateInfo vi{};
-	vi.vertexBindingDescriptionCount = 1;
-	vi.pVertexBindingDescriptions = &desc.vertexBinding;
-	vi.vertexAttributeDescriptionCount = static_cast<uint32_t>(desc.vertexAttributes.size());;
-	vi.pVertexAttributeDescriptions = desc.vertexAttributes.data();
+	vi.vertexBindingDescriptionCount = desc.vertexAttributes.empty() ? 0 : 1;
+	vi.pVertexBindingDescriptions = desc.vertexAttributes.empty() ? nullptr : &desc.vertexBinding;
+	vi.vertexAttributeDescriptionCount = static_cast<uint32_t>(desc.vertexAttributes.size());
+	vi.pVertexAttributeDescriptions = desc.vertexAttributes.empty() ? nullptr : desc.vertexAttributes.data();
 
 	// input assembly
 	vk::PipelineInputAssemblyStateCreateInfo ia{};
@@ -80,8 +80,13 @@ void GraphicsPipelineVk::create(const GraphicsPipelineDescVk& desc)
 
 	// pipeline layout
 	vk::PipelineLayoutCreateInfo pli{};
-	pli.setLayoutCount = static_cast<uint32_t>(desc.setLayouts.size());;
+	pli.setLayoutCount = static_cast<uint32_t>(desc.setLayouts.size());
 	pli.pSetLayouts = desc.setLayouts.data();
+
+	pli.pushConstantRangeCount =
+		static_cast<uint32_t>(desc.pushConstantRanges.size());
+	pli.pPushConstantRanges =
+		desc.pushConstantRanges.empty() ? nullptr : desc.pushConstantRanges.data();
 	{
 		vk::ResultValue rv = device.createPipelineLayoutUnique(pli);
 		if (rv.result != vk::Result::eSuccess)

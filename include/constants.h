@@ -236,6 +236,11 @@ namespace Chunk_Constants
 		int32_t _pad3;
 	};
 
+	struct ChunkPushConstants
+	{
+		glm::vec4 u_chunkOrigin{ 0.0f };
+	};
+
 	struct ChunkWaterUBO
 	{
 		// vert
@@ -263,6 +268,11 @@ namespace Chunk_Constants
 
 		glm::vec3 u_lightColor;
 		float u_ambientStrength;
+	};
+
+	struct ChunkWaterPushConstants
+	{
+		glm::mat4 u_model;
 	};
 };
 

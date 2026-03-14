@@ -92,10 +92,6 @@ private:
 	GraphicsPipelineVk opaquePipeline_;
 	GraphicsPipelineVk opaquePipelineOffscreen_;
 	GraphicsPipelineVk opaqueGBufferPipeline_;
-
-	uint32_t opaqueUBOStride_{ 0 };
-	uint32_t opaqueOffscreenUBOStride_{ 0 };
-	uint32_t opaqueGBufferUBOStride_{ 0 };
 };
 
 #endif
