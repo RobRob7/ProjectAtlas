@@ -192,31 +192,34 @@ void WaterPassVk::renderWater(
 		ubo.u_lightPos = in.light->getPosition();
 		ubo.u_lightColor = in.light->getColor();
 
-		uint32_t drawIndex = 0;
+		uboBuffer_.upload(&ubo, sizeof(ubo), 0);
+
+		cmd.bindDescriptorSets(
+			vk::PipelineBindPoint::eGraphics,
+			pipeline_.getLayout(),
+			0,
+			1, &set,
+			0, nullptr
+		);
+
 		for (const auto& item : list.items)
 		{
 			glm::mat4 model = glm::translate(
 				glm::mat4(1.0f),
 				item.chunkOrigin);
-			ubo.u_model = model;
 
-			vk::DeviceSize offset =
-				static_cast<vk::DeviceSize>(drawIndex) * waterUBOStride_;
+			ChunkWaterPushConstants pc{};
+			pc.u_model = model;
 
-			uboBuffer_.upload(&ubo, sizeof(ubo), offset);
-
-			uint32_t dynamicOffset = static_cast<uint32_t>(offset);
-
-			cmd.bindDescriptorSets(
-				vk::PipelineBindPoint::eGraphics,
+			cmd.pushConstants(
 				pipeline_.getLayout(),
+				vk::ShaderStageFlagBits::eVertex,
 				0,
-				1, &set,
-				1, &dynamicOffset
+				sizeof(ChunkWaterPushConstants),
+				&pc
 			);
 
 			item.gpu->drawWater(cmd);
-			++drawIndex;
 		} // end for
 	}
 	cmd.endRendering();
@@ -345,20 +348,8 @@ void WaterPassVk::createAttachments()
 
 void WaterPassVk::createResources()
 {
-	const uint32_t minAlign =
-		vk_.getPhysicalDeviceProperties().limits.minUniformBufferOffsetAlignment;
-
-	waterUBOStride_ = sizeof(ChunkWaterUBO);
-	if (minAlign > 0)
-	{
-		waterUBOStride_ =
-			(waterUBOStride_ + minAlign - 1) & ~(minAlign - 1);
-	}
-
-	uint32_t MAX_VISIBLE_CHUNKS = (2 * World::MAX_RADIUS + 1) * (2 * World::MAX_RADIUS + 1);
-
 	uboBuffer_.create(
-		static_cast<vk::DeviceSize>(waterUBOStride_) * MAX_VISIBLE_CHUNKS,
+		sizeof(ChunkWaterUBO),
 		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
@@ -368,7 +359,7 @@ void WaterPassVk::createDescriptorSet()
 {
 	vk::DescriptorSetLayoutBinding uboBinding{};
 	uboBinding.binding = TO_API_FORM(WaterBinding::UBO);
-	uboBinding.descriptorType = vk::DescriptorType::eUniformBufferDynamic;
+	uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 	uboBinding.descriptorCount = 1;
 	uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
@@ -408,7 +399,7 @@ void WaterPassVk::createDescriptorSet()
 		dudvBinding, normalBinding});
 
 	vk::DescriptorPoolSize uboPool{};
-	uboPool.type = vk::DescriptorType::eUniformBufferDynamic;
+	uboPool.type = vk::DescriptorType::eUniformBuffer;
 	uboPool.descriptorCount = 1;
 
 	vk::DescriptorPoolSize reflColorPool{};
@@ -437,7 +428,7 @@ void WaterPassVk::createDescriptorSet()
 		dudvPool, normalPool}, 1);
 	descriptorSet_.allocate();
 
-	descriptorSet_.writeDynamicUniformBuffer(
+	descriptorSet_.writeUniformBuffer(
 		TO_API_FORM(WaterBinding::UBO),
 		uboBuffer_.getBuffer(),
 		sizeof(ChunkWaterUBO)
@@ -479,6 +470,12 @@ void WaterPassVk::createPipeline()
 	GraphicsPipelineDescVk desc{};
 	desc.vertShader = shader_->vertShader();
 	desc.fragShader = shader_->fragShader();
+
+	vk::PushConstantRange pushRange{};
+	pushRange.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	pushRange.offset = 0;
+	pushRange.size = sizeof(ChunkWaterPushConstants);
+	desc.pushConstantRanges = { pushRange };
 
 	desc.setLayouts = { descriptorSet_.getLayout() };
 

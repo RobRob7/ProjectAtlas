@@ -28,6 +28,13 @@ layout (std140, set = 0, binding = 0) uniform UBO
     int _pad3;
 };
 
+#ifdef VULKAN
+layout(push_constant) uniform PushConstants
+{
+    vec4 u_chunkOrigin;
+} pc;
+#endif
+
 layout (location = 0) flat out uvec2 Tile;
 layout (location = 1) out vec2 TileUV;
 layout (location = 2) out vec3 FragWorldPos;
@@ -74,7 +81,13 @@ void main()
     combinedCopy >>= 4;
     
     Tile = uvec2(tileX, tileY);
+
+    #ifdef VULKAN
+    vec3 world = aPos + vec3(pc.u_chunkOrigin);
+    #else
     vec3 world = aPos + vec3(u_chunkOrigin);
+    #endif
+    
     vec4 worldPos = vec4(world, 1.0);
     FragWorldPos = world;
 

@@ -31,7 +31,7 @@ struct BlockHit
 class ChunkManager
 {
 public:
-	ChunkManager(int viewRadiusInChunks = 50);
+	ChunkManager(int viewRadiusInChunks = 15);
 	~ChunkManager();
 
 	void init(VulkanMain* vk);

@@ -31,6 +31,13 @@ layout (std140, set = 0, binding = 0) uniform UBO
     float u_ambientStrength;
 };
 
+#ifdef VULKAN
+layout(push_constant) uniform WaterPushConstants
+{
+    mat4 u_model;
+} pc;
+#endif
+
 layout (location = 0) out VS_OUT {
     vec3 worldPos;
     vec4 clipPos;
@@ -39,7 +46,12 @@ layout (location = 0) out VS_OUT {
 
 void main() 
 {
-    vec4 world = u_model * vec4(aPos, 1.0);
+    #ifdef VULKAN
+        vec4 world = pc.u_model * vec4(aPos, 1.0);
+    #else
+        vec4 world = u_model * vec4(aPos, 1.0);
+    #endif
+
     vs_out.worldPos = world.xyz;
 
     vec4 clip = u_proj * u_view * world;

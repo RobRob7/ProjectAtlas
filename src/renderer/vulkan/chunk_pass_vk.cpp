@@ -93,29 +93,31 @@ void ChunkPassVk::renderOpaque(
 
 	ubo.u_lightPos = in.light->getPosition();
 	ubo.u_lightColor = in.light->getColor();
+
+	opaqueUBOBuffer_.upload(&ubo, sizeof(ubo), 0);
+
+	cmd.bindDescriptorSets(
+		vk::PipelineBindPoint::eGraphics,
+		opaquePipeline_.getLayout(),
+		0,
+		1, &set,
+		0, nullptr
+	);
 	
-	uint32_t drawIndex = 0;
 	for (const auto& item : list.items)
 	{
-		ubo.u_chunkOrigin = item.chunkOrigin;
+		ChunkPushConstants pc{};
+		pc.u_chunkOrigin = glm::vec4(item.chunkOrigin, 0.0f);
 
-		vk::DeviceSize offset =
-			static_cast<vk::DeviceSize>(drawIndex) * opaqueUBOStride_;
-
-		opaqueUBOBuffer_.upload(&ubo, sizeof(ubo), offset);
-
-		uint32_t dynamicOffset = static_cast<uint32_t>(offset);
-
-		cmd.bindDescriptorSets(
-			vk::PipelineBindPoint::eGraphics,
+		cmd.pushConstants(
 			opaquePipeline_.getLayout(),
+			vk::ShaderStageFlagBits::eVertex,
 			0,
-			1, &set,
-			1, &dynamicOffset
+			sizeof(ChunkPushConstants),
+			&pc
 		);
 
 		item.gpu->drawOpaque(cmd);
-		++drawIndex;
 	} // end for
 } // end of renderOpaque()
 
@@ -144,28 +146,30 @@ void ChunkPassVk::renderOpaqueOffscreen(
 	ubo.u_screenSize = glm::vec2(width, height);
 	ubo.u_ambientStrength = in.world->getAmbientStrength();
 
-	uint32_t drawIndex = 0;
+	uboBuffer.upload(&ubo, sizeof(ubo), 0);
+
+	cmd.bindDescriptorSets(
+		vk::PipelineBindPoint::eGraphics,
+		opaquePipelineOffscreen_.getLayout(),
+		0,
+		1, &set,
+		0, nullptr
+	);
+
 	for (const auto& item : list.items)
 	{
-		ubo.u_chunkOrigin = item.chunkOrigin;
+		ChunkPushConstants pc{};
+		pc.u_chunkOrigin = glm::vec4(item.chunkOrigin, 0.0f);
 
-		vk::DeviceSize offset =
-			static_cast<vk::DeviceSize>(drawIndex) * opaqueOffscreenUBOStride_;
-
-		uboBuffer.upload(&ubo, sizeof(ubo), offset);
-
-		uint32_t dynamicOffset = static_cast<uint32_t>(offset);
-
-		cmd.bindDescriptorSets(
-			vk::PipelineBindPoint::eGraphics,
+		cmd.pushConstants(
 			opaquePipelineOffscreen_.getLayout(),
+			vk::ShaderStageFlagBits::eVertex,
 			0,
-			1, &set,
-			1, &dynamicOffset
+			sizeof(ChunkPushConstants),
+			&pc
 		);
 
 		item.gpu->drawOpaque(cmd);
-		++drawIndex;
 	} // end for
 } // end of renderOpaqueOffscreen()
 
@@ -190,28 +194,30 @@ void ChunkPassVk::renderOpaqueGBuffer(
 	ubo.u_view = view;
 	ubo.u_proj = proj;
 
-	uint32_t drawIndex = 0;
+	opaqueGBufferUBOBuffer_.upload(&ubo, sizeof(ubo), 0);
+
+	cmd.bindDescriptorSets(
+		vk::PipelineBindPoint::eGraphics,
+		opaqueGBufferPipeline_.getLayout(),
+		0,
+		1, &set,
+		0, nullptr
+	);
+
 	for (const auto& item : list.items)
 	{
-		ubo.u_chunkOrigin = item.chunkOrigin;
+		ChunkPushConstants pc{};
+		pc.u_chunkOrigin = glm::vec4(item.chunkOrigin, 0.0f);
 
-		vk::DeviceSize offset =
-			static_cast<vk::DeviceSize>(drawIndex) * opaqueGBufferUBOStride_;
-
-		opaqueGBufferUBOBuffer_.upload(&ubo, sizeof(ubo), offset);
-
-		uint32_t dynamicOffset = static_cast<uint32_t>(offset);
-
-		cmd.bindDescriptorSets(
-			vk::PipelineBindPoint::eGraphics,
+		cmd.pushConstants(
 			opaqueGBufferPipeline_.getLayout(),
+			vk::ShaderStageFlagBits::eVertex,
 			0,
-			1, &set,
-			1, &dynamicOffset
+			sizeof(ChunkPushConstants),
+			&pc
 		);
 
 		item.gpu->drawOpaque(cmd);
-		++drawIndex;
 	} // end for
 } // end of renderOpaqueGBuffer()
 
@@ -219,20 +225,8 @@ void ChunkPassVk::renderOpaqueGBuffer(
 //--- PRIVATE ---//
 void ChunkPassVk::createOpaqueResources()
 {
-	const uint32_t minAlign =
-		vk_.getPhysicalDeviceProperties().limits.minUniformBufferOffsetAlignment;
-
-	opaqueUBOStride_ = sizeof(ChunkOpaqueUBO);
-	if (minAlign > 0)
-	{
-		opaqueUBOStride_ =
-			(opaqueUBOStride_ + minAlign - 1) & ~(minAlign - 1);
-	}
-
-	uint32_t MAX_VISIBLE_CHUNKS = (2 * World::MAX_RADIUS + 1) * (2 * World::MAX_RADIUS + 1);
-
 	opaqueUBOBuffer_.create(
-		static_cast<vk::DeviceSize>(opaqueUBOStride_) * MAX_VISIBLE_CHUNKS,
+		sizeof(ChunkOpaqueUBO),
 		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
@@ -240,30 +234,14 @@ void ChunkPassVk::createOpaqueResources()
 
 void ChunkPassVk::createOpaqueOffscreenResources()
 {
-	const uint32_t minAlign =
-		vk_.getPhysicalDeviceProperties().limits.minUniformBufferOffsetAlignment;
-
-	opaqueOffscreenUBOStride_ = sizeof(ChunkOpaqueUBO);
-	if (minAlign > 0)
-	{
-		opaqueOffscreenUBOStride_ =
-			(opaqueOffscreenUBOStride_ + minAlign - 1) & ~(minAlign - 1);
-	}
-
-	uint32_t MAX_VISIBLE_CHUNKS =
-		(2 * World::MAX_RADIUS + 1) * (2 * World::MAX_RADIUS + 1);
-
-	vk::DeviceSize bufferSize =
-		static_cast<vk::DeviceSize>(opaqueOffscreenUBOStride_) * MAX_VISIBLE_CHUNKS;
-
 	opaqueOffscreenUBOBufferReflection_.create(
-		bufferSize,
+		sizeof(ChunkOpaqueUBO),
 		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
 
 	opaqueOffscreenUBOBufferRefraction_.create(
-		bufferSize,
+		sizeof(ChunkOpaqueUBO),
 		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
@@ -271,20 +249,8 @@ void ChunkPassVk::createOpaqueOffscreenResources()
 
 void ChunkPassVk::createOpaqueGBufferResources()
 {
-	const uint32_t minAlign =
-		vk_.getPhysicalDeviceProperties().limits.minUniformBufferOffsetAlignment;
-
-	opaqueGBufferUBOStride_ = sizeof(GbufferUBO);
-	if (minAlign > 0)
-	{
-		opaqueGBufferUBOStride_ =
-			(opaqueGBufferUBOStride_ + minAlign - 1) & ~(minAlign - 1);
-	}
-
-	uint32_t MAX_VISIBLE_CHUNKS = (2 * World::MAX_RADIUS + 1) * (2 * World::MAX_RADIUS + 1);
-
 	opaqueGBufferUBOBuffer_.create(
-		static_cast<vk::DeviceSize>(opaqueGBufferUBOStride_) * MAX_VISIBLE_CHUNKS,
+		sizeof(GbufferUBO),
 		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 	);
@@ -294,7 +260,7 @@ void ChunkPassVk::createOpaqueDescriptorSet()
 {
 	vk::DescriptorSetLayoutBinding uboBinding{};
 	uboBinding.binding = TO_API_FORM(ChunkBinding::UBO);
-	uboBinding.descriptorType = vk::DescriptorType::eUniformBufferDynamic;
+	uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 	uboBinding.descriptorCount = 1;
 	uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
@@ -313,7 +279,7 @@ void ChunkPassVk::createOpaqueDescriptorSet()
 	opaqueDescriptorSet_.createLayout({ uboBinding, atlasBinding, ssaoBinding });
 
 	vk::DescriptorPoolSize uboPool{};
-	uboPool.type = vk::DescriptorType::eUniformBufferDynamic;
+	uboPool.type = vk::DescriptorType::eUniformBuffer;
 	uboPool.descriptorCount = 1;
 
 	vk::DescriptorPoolSize atlasPool{};
@@ -327,7 +293,7 @@ void ChunkPassVk::createOpaqueDescriptorSet()
 	opaqueDescriptorSet_.createPool({ uboPool, atlasPool, ssaoPool }, 1);
 	opaqueDescriptorSet_.allocate();
 
-	opaqueDescriptorSet_.writeDynamicUniformBuffer(
+	opaqueDescriptorSet_.writeUniformBuffer(
 		TO_API_FORM(ChunkBinding::UBO),
 		opaqueUBOBuffer_.getBuffer(),
 		sizeof(ChunkOpaqueUBO)
@@ -350,7 +316,7 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 {
 	vk::DescriptorSetLayoutBinding uboBinding{};
 	uboBinding.binding = TO_API_FORM(ChunkBinding::UBO);
-	uboBinding.descriptorType = vk::DescriptorType::eUniformBufferDynamic;
+	uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 	uboBinding.descriptorCount = 1;
 	uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
@@ -370,7 +336,7 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 	opaqueOffscreenDescriptorSetReflection_.createLayout({ uboBinding, atlasBinding, ssaoBinding });
 
 	vk::DescriptorPoolSize uboPool{};
-	uboPool.type = vk::DescriptorType::eUniformBufferDynamic;
+	uboPool.type = vk::DescriptorType::eUniformBuffer;
 	uboPool.descriptorCount = 1;
 
 	vk::DescriptorPoolSize atlasPool{};
@@ -384,7 +350,7 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 	opaqueOffscreenDescriptorSetReflection_.createPool({ uboPool, atlasPool, ssaoPool }, 1);
 	opaqueOffscreenDescriptorSetReflection_.allocate();
 
-	opaqueOffscreenDescriptorSetReflection_.writeDynamicUniformBuffer(
+	opaqueOffscreenDescriptorSetReflection_.writeUniformBuffer(
 		TO_API_FORM(ChunkBinding::UBO),
 		opaqueOffscreenUBOBufferReflection_.getBuffer(),
 		sizeof(ChunkOpaqueUBO)
@@ -407,7 +373,7 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 	opaqueOffscreenDescriptorSetRefraction_.createPool({ uboPool, atlasPool, ssaoPool }, 1);
 	opaqueOffscreenDescriptorSetRefraction_.allocate();
 
-	opaqueOffscreenDescriptorSetRefraction_.writeDynamicUniformBuffer(
+	opaqueOffscreenDescriptorSetRefraction_.writeUniformBuffer(
 		TO_API_FORM(ChunkBinding::UBO),
 		opaqueOffscreenUBOBufferRefraction_.getBuffer(),
 		sizeof(ChunkOpaqueUBO)
@@ -430,20 +396,20 @@ void ChunkPassVk::createOpaqueGBufferDescriptorSet()
 {
 	vk::DescriptorSetLayoutBinding uboBinding{};
 	uboBinding.binding = TO_API_FORM(GbufferBinding::UBO);
-	uboBinding.descriptorType = vk::DescriptorType::eUniformBufferDynamic;
+	uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 	uboBinding.descriptorCount = 1;
 	uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
 	opaqueGBufferDescriptorSet_.createLayout({ uboBinding });
 
 	vk::DescriptorPoolSize uboPool{};
-	uboPool.type = vk::DescriptorType::eUniformBufferDynamic;
+	uboPool.type = vk::DescriptorType::eUniformBuffer;
 	uboPool.descriptorCount = 1;
 
 	opaqueGBufferDescriptorSet_.createPool({ uboPool });
 	opaqueGBufferDescriptorSet_.allocate();
 
-	opaqueGBufferDescriptorSet_.writeDynamicUniformBuffer(
+	opaqueGBufferDescriptorSet_.writeUniformBuffer(
 		TO_API_FORM(GbufferBinding::UBO),
 		opaqueGBufferUBOBuffer_.getBuffer(),
 		sizeof(GbufferUBO)
@@ -456,6 +422,12 @@ void ChunkPassVk::createOpaquePipeline()
 	GraphicsPipelineDescVk desc{};
 	desc.vertShader = opaqueShader_->vertShader();
 	desc.fragShader = opaqueShader_->fragShader();
+
+	vk::PushConstantRange pushRange{};
+	pushRange.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	pushRange.offset = 0;
+	pushRange.size = sizeof(ChunkPushConstants);
+	desc.pushConstantRanges = { pushRange };
 
 	desc.setLayouts = { opaqueDescriptorSet_.getLayout() };
 
@@ -498,6 +470,12 @@ void ChunkPassVk::createOpaqueGBufferPipeline()
 	GraphicsPipelineDescVk desc{};
 	desc.vertShader = opaqueGBufferShader_->vertShader();
 	desc.fragShader = opaqueGBufferShader_->fragShader();
+
+	vk::PushConstantRange pushRange{};
+	pushRange.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	pushRange.offset = 0;
+	pushRange.size = sizeof(ChunkPushConstants);
+	desc.pushConstantRanges = { pushRange };
 
 	desc.setLayouts = { opaqueGBufferDescriptorSet_.getLayout() };
 
