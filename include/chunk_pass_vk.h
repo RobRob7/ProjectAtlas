@@ -12,9 +12,9 @@
 #include <glm/glm.hpp>
 
 #include <memory>
-#include <cstdint>
 
 class VulkanMain;
+class ImageVk;
 struct RenderInputs;
 struct RenderSettings;
 struct DrawContext;
@@ -23,13 +23,16 @@ struct FrameContext;
 class ChunkPassVk
 {
 public:
-	explicit ChunkPassVk(VulkanMain& vk);
+	explicit ChunkPassVk(VulkanMain& vk, ImageVk& ssaoBlurImage);
 	~ChunkPassVk();
 
 	void init();
 
+	void refreshSSAOBinding();
+
 	void renderOpaque(
 		const RenderInputs& in, 
+		const RenderSettings& rs,
 		const FrameContext& frame, 
 		const glm::mat4& view, 
 		const glm::mat4& proj,
@@ -73,6 +76,8 @@ private:
 	void createOpaqueGBufferPipeline();
 private:
 	VulkanMain& vk_;
+
+	ImageVk& ssaoBlurImage_;
 
 	std::unique_ptr<ShaderModuleVk> opaqueShader_;
 	std::unique_ptr<ShaderModuleVk> opaqueGBufferShader_;

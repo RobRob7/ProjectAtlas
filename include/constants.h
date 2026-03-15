@@ -14,12 +14,6 @@ enum class Backend
 	DX12
 };
 
-struct RenderContext
-{
-	Backend backend = Backend::OpenGL;
-	const void* nativeCmd = nullptr;
-};
-
 namespace World
 {
 	const int WATER_TEX_FACTOR = 2;
@@ -296,6 +290,38 @@ namespace Debug_Constants
 		float u_near;
 		float u_far;
 		float _pad0;
+	};
+};
+
+namespace SSAO_Constants
+{
+	const int MAX_KERNEL_SIZE = 64;
+
+	const int K_NOISE_SIZE = 4;
+	const float RADIUS = 5.0f;
+	const float BIAS = 0.05f;
+	const int KERNEL_SIZE = 64;
+
+	struct SSAOBlurUBO
+	{
+		glm::vec2 u_texelSize;
+		glm::vec2 _pad0;
+	};
+
+	struct SSAORawUBO
+	{
+		glm::mat4 u_proj;
+		glm::mat4 u_invProj;
+
+		glm::vec2 u_noiseScale;
+		float u_radius;
+		float u_bias;
+
+		int32_t u_kernelSize;
+		float _pad0;
+		glm::vec2 _pad1;
+
+		glm::vec4 u_samples[MAX_KERNEL_SIZE];
 	};
 };
 
