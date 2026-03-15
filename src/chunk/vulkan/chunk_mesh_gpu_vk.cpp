@@ -5,6 +5,8 @@
 #include "vulkan_main.h"
 #include "chunk_mesh_data.h"
 
+#include <vector>
+
 using namespace World;
 
 //--- PUBLIC ---//
@@ -35,6 +37,9 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 	uint32_t newOpaqueIndexCount = 0;
 	uint32_t newWaterIndexCount = 0;
 
+	vk::CommandBuffer cmd = vk_->beginSingleTimeCommands();
+	std::vector<BufferVk> stagingBuffers;
+
 	// -------- OPAQUE --------
 	if (!data.opaqueVertices.empty() && !data.opaqueIndices.empty())
 	{
@@ -56,7 +61,13 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 			vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
 			vk::MemoryPropertyFlagBits::eDeviceLocal
 		);
-		vk_->copyBuffer(stagingVB.getBuffer(), newOpaqueVB.getBuffer(), vbSize);
+		stagingBuffers.push_back(std::move(stagingVB));
+		vk_->recordCopyBuffer(
+			cmd,
+			stagingBuffers.back().getBuffer(),
+			newOpaqueVB.getBuffer(),
+			vbSize
+		);
 
 		// IB staging
 		BufferVk stagingIB(*vk_);
@@ -73,7 +84,13 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 			vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
 			vk::MemoryPropertyFlagBits::eDeviceLocal
 		);
-		vk_->copyBuffer(stagingIB.getBuffer(), newOpaqueIB.getBuffer(), ibSize);
+		stagingBuffers.push_back(std::move(stagingIB));
+		vk_->recordCopyBuffer(
+			cmd,
+			stagingBuffers.back().getBuffer(),
+			newOpaqueIB.getBuffer(), 
+			ibSize
+		);
 
 		newOpaqueIndexCount = static_cast<uint32_t>(data.opaqueIndices.size());
 	}
@@ -99,7 +116,13 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 			vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
 			vk::MemoryPropertyFlagBits::eDeviceLocal
 		);
-		vk_->copyBuffer(stagingVB.getBuffer(), newWaterVB.getBuffer(), vbSize);
+		stagingBuffers.push_back(std::move(stagingVB));
+		vk_->recordCopyBuffer(
+			cmd,
+			stagingBuffers.back().getBuffer(),
+			newWaterVB.getBuffer(),
+			vbSize
+		);
 
 		// IB staging
 		BufferVk stagingIB(*vk_);
@@ -116,7 +139,13 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 			vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
 			vk::MemoryPropertyFlagBits::eDeviceLocal
 		);
-		vk_->copyBuffer(stagingIB.getBuffer(), newWaterIB.getBuffer(), ibSize);
+		stagingBuffers.push_back(std::move(stagingIB));
+		vk_->recordCopyBuffer(
+			cmd,
+			stagingBuffers.back().getBuffer(),
+			newWaterIB.getBuffer(),
+			ibSize
+		);
 
 		newWaterIndexCount = static_cast<uint32_t>(data.waterIndices.size());
 	}
@@ -130,6 +159,15 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 
 	opaqueIndexCount_ = newOpaqueIndexCount;
 	waterIndexCount_ = newWaterIndexCount;
+
+	if (!stagingBuffers.empty())
+	{
+		vk_->submitUpload(cmd, std::move(stagingBuffers));
+	}
+	else
+	{
+		vk_->discardSingleTimeCommands(cmd);
+	}
 } // end of upload()
 
 void ChunkMeshGPUVk::drawOpaque(vk::CommandBuffer cmd)
