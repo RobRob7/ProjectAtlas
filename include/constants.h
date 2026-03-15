@@ -325,4 +325,22 @@ namespace SSAO_Constants
 	};
 };
 
+namespace FXAA_Constants
+{
+	const float EDGE_SHARP_QUALITY{ 8.0f };
+	const float EDGE_THRESH_MAX{ 0.125f };
+	const float EDGE_THRESH_MIN{ 0.0625f };
+
+	struct FXAAPassUBO
+	{
+		glm::vec2 u_inverseScreenSize;
+		float u_edgeSharpnessQuality;
+		float u_edgeThresholdMax;
+
+		float u_edgeThresholdMin;
+		float _pad0;
+		glm::vec2 _pad1;
+	};
+};
+
 #endif

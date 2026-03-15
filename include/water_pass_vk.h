@@ -10,6 +10,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include <glm/glm.hpp>
+
 class VulkanMain;
 class ShaderModuleVk;
 struct RenderInputs;
@@ -32,9 +34,11 @@ public:
 	);
 
 	void renderWater(
-		FrameContext& frame,
-		ChunkPassVk& chunk, 
-		const RenderInputs& in
+		const RenderInputs& in,
+		vk::CommandBuffer cmd,
+		const glm::mat4& view,
+		const glm::mat4& proj,
+		int width, int height
 	);
 
 	ImageVk& getReflColorImage() { return reflColorImage_; }

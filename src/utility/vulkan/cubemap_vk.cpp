@@ -61,23 +61,6 @@ void CubemapVk::render(
 
 	vk::CommandBuffer cmd = frame->cmd;
 
-	vk::Extent2D extent = vk_.getSwapChainExtent();
-
-	vk::Viewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(extent.width);
-	viewport.height = static_cast<float>(extent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-
-	vk::Rect2D scissor{};
-	scissor.offset = vk::Offset2D{ 0, 0 };
-	scissor.extent = extent;
-
-	cmd.setViewport(0, 1, &viewport);
-	cmd.setScissor(0, 1, &scissor);
-
 	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.getPipeline());
 
 	vk::Buffer vertBuffer = vertexBuffer_.getBuffer();
@@ -293,8 +276,8 @@ void CubemapVk::createPipeline()
 	desc.vertexBinding = binding;
 	desc.vertexAttributes = { attr };
 
-	desc.colorFormat = vk_.getSwapChainImageFormat();
-	desc.depthFormat = vk_.getDepthFormat();
+	desc.colorFormat = vk::Format::eR32G32B32A32Sfloat;
+	desc.depthFormat = vk::Format::eD32Sfloat;
 
 	desc.cullMode = vk::CullModeFlagBits::eFront;
 	desc.frontFace = vk::FrontFace::eClockwise;

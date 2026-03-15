@@ -458,8 +458,8 @@ void ChunkPassVk::createOpaquePipeline()
 
 	desc.setLayouts = { opaqueDescriptorSet_.getLayout() };
 
-	desc.colorFormat = vk_.getSwapChainImageFormat();
-	desc.depthFormat = vk_.getDepthFormat();
+	desc.colorFormat = vk::Format::eR32G32B32A32Sfloat;
+	desc.depthFormat = vk::Format::eD32Sfloat;
 
 	desc.cullMode = vk::CullModeFlagBits::eBack;
 	desc.frontFace = vk::FrontFace::eClockwise;

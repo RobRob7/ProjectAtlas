@@ -3,6 +3,8 @@
 
 #include "i_renderer.h"
 
+#include "image_vk.h"
+
 #include <memory>
 
 class VulkanMain;
@@ -12,11 +14,15 @@ class ICubemap;
 struct RenderInputs;
 struct RenderSettings;
 
-class ChunkPassVk;
 class GBufferPassVk;
 class DebugPassVk;
 class SSAOPassVk;
+
+class ChunkPassVk;
 class WaterPassVk;
+
+class FXAAPassVk;
+class PresentPassVk;
 
 class RendererVk final : public IRenderer
 {
@@ -33,7 +39,10 @@ public:
 		UIVk* ui
 	) override;
 
-	RenderSettings& settings();
+	RenderSettings& settings() override { return *renderSettings_; }
+
+private:
+	void createSceneAttachments();
 
 private:
 	int width_{};
@@ -41,13 +50,26 @@ private:
 
 	VulkanMain& vk_;
 
+	ImageVk sceneColor_;
+	ImageVk sceneDepth_;
+
+	vk::ImageLayout sceneColorLayout_{ vk::ImageLayout::eUndefined };
+	vk::ImageLayout sceneDepthLayout_{ vk::ImageLayout::eUndefined };
+
+	vk::Format sceneColorFormat_{ vk::Format::eR32G32B32A32Sfloat };
+	vk::Format sceneDepthFormat_{ vk::Format::eD32Sfloat };
+
 	std::unique_ptr<RenderSettings> renderSettings_;
 
 	std::unique_ptr<GBufferPassVk> gbufferPass_;
 	std::unique_ptr<DebugPassVk> debugPass_;
 	std::unique_ptr<SSAOPassVk> ssaoPass_;
+
 	std::unique_ptr<WaterPassVk> waterPass_;
 	std::unique_ptr<ChunkPassVk> chunkPass_;
+
+	//std::unique_ptr<FXAAPassVk> fxaaPass_;
+	std::unique_ptr<PresentPassVk> presentPass_;
 };
 
 #endif

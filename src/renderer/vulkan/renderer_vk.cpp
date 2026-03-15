@@ -14,17 +14,20 @@
 #include "chunk_manager.h"
 #include "ui_vk.h"
 
-#include "chunk_pass_vk.h"
 #include "gbuffer_pass_vk.h"
 #include "debug_pass_vk.h"
 #include "ssao_pass_vk.h"
 #include "water_pass_vk.h"
+#include "chunk_pass_vk.h"
+#include "present_pass_vk.h"
 
 #include <glm/glm.hpp>
 
 //--- PUBLIC ---//
 RendererVk::RendererVk(VulkanMain& vk)
-	: vk_(vk)
+	: vk_(vk),
+	sceneColor_(vk),
+	sceneDepth_(vk)
 {
 } // end of constructor
 
@@ -37,15 +40,21 @@ void RendererVk::init()
 	if (!gbufferPass_)	gbufferPass_ = std::make_unique<GBufferPassVk>(vk_);
 	if (!debugPass_)	debugPass_ = std::make_unique<DebugPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage());
 	if (!ssaoPass_)		ssaoPass_ = std::make_unique<SSAOPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage());
+
 	if (!waterPass_)	waterPass_ = std::make_unique<WaterPassVk>(vk_);
 	if (!chunkPass_)	chunkPass_ = std::make_unique<ChunkPassVk>(vk_, ssaoPass_->ssaoBlurImage());
+
+	if (!presentPass_)	presentPass_ = std::make_unique<PresentPassVk>(vk_, sceneColor_);
 
 	gbufferPass_->init();
 	debugPass_->init();
 	ssaoPass_->init();
+
 	waterPass_->init();
 	chunkPass_->init();
 	chunkPass_->refreshSSAOBinding();
+
+	presentPass_->init();
 } // end of init()
 
 void RendererVk::resize(int w, int h)
@@ -59,8 +68,13 @@ void RendererVk::resize(int w, int h)
 	if (gbufferPass_)	gbufferPass_->resize(width_, height_);
 	if (debugPass_)		debugPass_->resize(width_, height_);
 	if (ssaoPass_)		ssaoPass_->resize(width_, height_);
+
 	if (waterPass_)		waterPass_->resize(width_, height_);
 	if (chunkPass_)		chunkPass_->refreshSSAOBinding();
+
+	createSceneAttachments();
+
+	if (presentPass_)	presentPass_->refreshInput();
 } // end of resize()
 
 void RendererVk::renderFrame(
@@ -87,6 +101,7 @@ void RendererVk::renderFrame(
 
 	vk::CommandBuffer cmd = frame.cmd;
 
+	// --------------- PASSES --------------- //
 	// gbuffer pass
 	if (gbufferPass_)
 	{
@@ -94,7 +109,8 @@ void RendererVk::renderFrame(
 	}
 
 	// debug pass
-	if (renderSettings_->debugMode == DebugMode::Normals || renderSettings_->debugMode == DebugMode::Depth)
+	if (renderSettings_->debugMode == DebugMode::Normals || 
+		renderSettings_->debugMode == DebugMode::Depth)
 	{
 		vk::ImageLayout old = vk_.getSwapChainLayout(frame.imageIndex);
 
@@ -125,33 +141,36 @@ void RendererVk::renderFrame(
 			in
 		);
 	}
+	// --------------- END PASSES --------------- //
 
-	if (frame.colorLayout != vk::ImageLayout::eColorAttachmentOptimal)
+
+	// --------------- FORWARD RENDER --------------- //
+	if (sceneColorLayout_ != vk::ImageLayout::eColorAttachmentOptimal)
 	{
 		VkUtils::TransitionImageLayout(
 			cmd,
-			frame.colorImage,
+			sceneColor_.image(),
 			vk::ImageAspectFlagBits::eColor,
-			frame.colorLayout,
+			sceneColorLayout_,
 			vk::ImageLayout::eColorAttachmentOptimal,
 			1,
 			1
 		);
-		frame.colorLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		sceneColorLayout_ = vk::ImageLayout::eColorAttachmentOptimal;
 	}
 
-	if (frame.depthLayout != vk::ImageLayout::eDepthAttachmentOptimal)
+	if (sceneDepthLayout_ != vk::ImageLayout::eDepthAttachmentOptimal)
 	{
 		VkUtils::TransitionImageLayout(
 			cmd,
-			frame.depthImage,
+			sceneDepth_.image(),
 			vk::ImageAspectFlagBits::eDepth,
-			frame.depthLayout,
+			sceneDepthLayout_,
 			vk::ImageLayout::eDepthAttachmentOptimal,
 			1,
 			1
 		);
-		frame.depthLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		sceneDepthLayout_ = vk::ImageLayout::eDepthAttachmentOptimal;
 	}
 
 	vk::ClearValue clear{};
@@ -161,14 +180,14 @@ void RendererVk::renderFrame(
 	clear.color.float32[3] = 1.0f;
 
 	vk::RenderingAttachmentInfo colorAttach{};
-	colorAttach.imageView = frame.colorImageView;
+	colorAttach.imageView = sceneColor_.view();
 	colorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	colorAttach.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttach.storeOp = vk::AttachmentStoreOp::eStore;
 	colorAttach.clearValue = clear;
 
 	vk::RenderingAttachmentInfo depthAttach{};
-	depthAttach.imageView = frame.depthImageView;
+	depthAttach.imageView = sceneDepth_.view();
 	depthAttach.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 	depthAttach.loadOp = vk::AttachmentLoadOp::eClear;
 	depthAttach.storeOp = vk::AttachmentStoreOp::eStore;
@@ -182,7 +201,6 @@ void RendererVk::renderFrame(
 	renderingInfo.pColorAttachments = &colorAttach;
 	renderingInfo.pDepthAttachment = &depthAttach;
 
-	// FORWARD RENDER
 	cmd.beginRendering(renderingInfo);
 	{
 		vk::Viewport viewport{};
@@ -206,28 +224,128 @@ void RendererVk::renderFrame(
 		}
 		if (in.light) in.light->render(&frame, view, proj);
 		if (in.skybox) in.skybox->render(&frame, view, proj);
+
+		if (waterPass_)
+		{
+			waterPass_->renderWater(
+				in,
+				cmd,
+				view,
+				proj,
+				width_,
+				height_
+			);
+		}
 	}
 	cmd.endRendering();
+	// --------------- END FORWARD RENDER --------------- //
 
-	// WATER RENDER
-	if (waterPass_)
+
+	// --------------- POST-PROCESSING --------------- //
+	// FXAA
+	//if (renderSettings_->useFXAA)
+	//{
+	//	//fxaaPass_->render(forwardColorTex_);
+	//	//finalColorTex = fxaaPass_->getOutputTex();
+	//}
+
+	//// FOG
+	//if (renderSettings_->useFog)
+	//{
+	//	fogPass_->render(finalColorTex, forwardDepthTex_,
+	//		in.camera->getNearPlane(), in.camera->getFarPlane(), in.world->getAmbientStrength());
+	//}
+	// --------------- END POST-PROCESSING --------------- //
+
+
+	// --------------- PRESENT PASS --------------- //
+	if (sceneColorLayout_ != vk::ImageLayout::eShaderReadOnlyOptimal)
 	{
-		waterPass_->renderWater(
-			frame,
-			*chunkPass_,
-			in
+		VkUtils::TransitionImageLayout(
+			cmd,
+			sceneColor_.image(),
+			vk::ImageAspectFlagBits::eColor,
+			sceneColorLayout_,
+			vk::ImageLayout::eShaderReadOnlyOptimal,
+			1,
+			1
 		);
+		sceneColorLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 	}
 
-	// UI RENDER
-	colorAttach.loadOp = vk::AttachmentLoadOp::eLoad;
-	colorAttach.storeOp = vk::AttachmentStoreOp::eStore;
-	depthAttach.loadOp = vk::AttachmentLoadOp::eLoad;
-	depthAttach.storeOp = vk::AttachmentStoreOp::eStore;
+	if (frame.colorLayout != vk::ImageLayout::eColorAttachmentOptimal)
+	{
+		VkUtils::TransitionImageLayout(
+			cmd,
+			frame.colorImage,
+			vk::ImageAspectFlagBits::eColor,
+			frame.colorLayout,
+			vk::ImageLayout::eColorAttachmentOptimal,
+			1,
+			1
+		);
+		frame.colorLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	}
 
-	renderingInfo.pColorAttachments = &colorAttach;
-	renderingInfo.pDepthAttachment = &depthAttach;
-	cmd.beginRendering(renderingInfo);
+	vk::RenderingAttachmentInfo presentColorAttach{};
+	presentColorAttach.imageView = frame.colorImageView;
+	presentColorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	presentColorAttach.loadOp = vk::AttachmentLoadOp::eDontCare;
+	presentColorAttach.storeOp = vk::AttachmentStoreOp::eStore;
+	presentColorAttach.clearValue = clear;
+
+	vk::RenderingInfo presentRenderingInfo{};
+	presentRenderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
+	presentRenderingInfo.renderArea.extent = frame.extent;
+	presentRenderingInfo.layerCount = 1;
+	presentRenderingInfo.colorAttachmentCount = 1;
+	presentRenderingInfo.pColorAttachments = &presentColorAttach;
+	presentRenderingInfo.pDepthAttachment = nullptr;
+
+	cmd.beginRendering(presentRenderingInfo);
+	{
+		vk::Viewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(frame.extent.width);
+		viewport.height = static_cast<float>(frame.extent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		cmd.setViewport(0, 1, &viewport);
+
+		vk::Rect2D scissor{};
+		scissor.offset = vk::Offset2D{ 0, 0 };
+		scissor.extent = frame.extent;
+		cmd.setScissor(0, 1, &scissor);
+
+		if (presentPass_)
+		{
+			presentPass_->render(cmd);
+		}
+	}
+	cmd.endRendering();
+	// --------------- END PRESENT PASS --------------- //
+
+
+	// --------------- UI ELEMENTS --------------- //
+	// CROSSHAIR RENDER
+	
+
+	// UI RENDER
+	vk::RenderingAttachmentInfo uiColorAttach{};
+	uiColorAttach.imageView = frame.colorImageView;
+	uiColorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	uiColorAttach.loadOp = vk::AttachmentLoadOp::eLoad;
+	uiColorAttach.storeOp = vk::AttachmentStoreOp::eStore;
+
+	vk::RenderingInfo uiRenderingInfo{};
+	uiRenderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
+	uiRenderingInfo.renderArea.extent = frame.extent;
+	uiRenderingInfo.layerCount = 1;
+	uiRenderingInfo.colorAttachmentCount = 1;
+	uiRenderingInfo.pColorAttachments = &uiColorAttach;
+	uiRenderingInfo.pDepthAttachment = nullptr;
+	cmd.beginRendering(uiRenderingInfo);
 	{
 		if (ui)
 		{
@@ -235,22 +353,84 @@ void RendererVk::renderFrame(
 		}
 	}
 	cmd.endRendering();
+	// --------------- END UI ELEMENTS --------------- //
 
 
-	// PRESENT
+	// PRESENT TO SCREEN
 	VkUtils::TransitionImageLayout(
 		cmd, 
 		frame.colorImage,
 		vk::ImageAspectFlagBits::eColor,
-		vk::ImageLayout::eColorAttachmentOptimal,
+		frame.colorLayout,
 		vk::ImageLayout::ePresentSrcKHR,
 		1,
 		1
 	);
+	frame.colorLayout = vk::ImageLayout::ePresentSrcKHR;
 	vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
 } // end of renderFrame()
 
-RenderSettings& RendererVk::settings()
+
+//--- PRIVATE ---//
+void RendererVk::createSceneAttachments()
 {
-	return *renderSettings_;
-} // end of settings()
+	// SCENE COLOR
+	sceneColor_.createImage(
+		width_,
+		height_,
+		1,
+		false,
+		vk::SampleCountFlagBits::e1,
+		sceneColorFormat_,
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	);
+
+	sceneColor_.createImageView(
+		sceneColorFormat_,
+		vk::ImageAspectFlagBits::eColor,
+		vk::ImageViewType::e2D,
+		1
+	);
+
+	sceneColor_.createSampler(
+		vk::Filter::eNearest,
+		vk::Filter::eNearest,
+		vk::SamplerMipmapMode::eNearest,
+		vk::SamplerAddressMode::eClampToEdge,
+		vk::False
+	);
+
+
+	// SCENE DEPTH
+	sceneDepth_.createImage(
+		width_,
+		height_,
+		1,
+		false,
+		vk::SampleCountFlagBits::e1,
+		sceneDepthFormat_,
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	);
+
+	sceneDepth_.createImageView(
+		sceneDepthFormat_,
+		vk::ImageAspectFlagBits::eDepth,
+		vk::ImageViewType::e2D,
+		1
+	);
+
+	sceneDepth_.createSampler(
+		vk::Filter::eNearest,
+		vk::Filter::eNearest,
+		vk::SamplerMipmapMode::eNearest,
+		vk::SamplerAddressMode::eClampToEdge,
+		vk::False
+	);
+
+	sceneColorLayout_ = vk::ImageLayout::eUndefined;
+	sceneDepthLayout_ = vk::ImageLayout::eUndefined;
+} // end of createSceneAttachments()
