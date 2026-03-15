@@ -149,6 +149,7 @@ void RendererVk::renderFrame(
 
 
 	// --------------- FORWARD RENDER --------------- //
+	// scene color transition to attachment
 	if (sceneColorLayout_ != vk::ImageLayout::eColorAttachmentOptimal)
 	{
 		VkUtils::TransitionImageLayout(
@@ -162,7 +163,7 @@ void RendererVk::renderFrame(
 		);
 		sceneColorLayout_ = vk::ImageLayout::eColorAttachmentOptimal;
 	}
-
+	// scene depth transition to attachment
 	if (sceneDepthLayout_ != vk::ImageLayout::eDepthAttachmentOptimal)
 	{
 		VkUtils::TransitionImageLayout(
@@ -242,6 +243,49 @@ void RendererVk::renderFrame(
 		}
 	}
 	cmd.endRendering();
+
+	// scene color transition to shader read
+	if (sceneColorLayout_ != vk::ImageLayout::eShaderReadOnlyOptimal)
+	{
+		VkUtils::TransitionImageLayout(
+			cmd,
+			sceneColor_.image(),
+			vk::ImageAspectFlagBits::eColor,
+			sceneColorLayout_,
+			vk::ImageLayout::eShaderReadOnlyOptimal,
+			1,
+			1
+		);
+		sceneColorLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
+	}
+	// scene depth transition to shader read
+	if (sceneDepthLayout_ != vk::ImageLayout::eShaderReadOnlyOptimal)
+	{
+		VkUtils::TransitionImageLayout(
+			cmd,
+			sceneDepth_.image(),
+			vk::ImageAspectFlagBits::eDepth,
+			sceneDepthLayout_,
+			vk::ImageLayout::eShaderReadOnlyOptimal,
+			1,
+			1
+		);
+		sceneDepthLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
+	}
+
+	if (frame.colorLayout != vk::ImageLayout::eColorAttachmentOptimal)
+	{
+		VkUtils::TransitionImageLayout(
+			cmd,
+			frame.colorImage,
+			vk::ImageAspectFlagBits::eColor,
+			frame.colorLayout,
+			vk::ImageLayout::eColorAttachmentOptimal,
+			1,
+			1
+		);
+		frame.colorLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	}
 	// --------------- END FORWARD RENDER --------------- //
 
 
@@ -263,34 +307,6 @@ void RendererVk::renderFrame(
 
 
 	// --------------- PRESENT PASS --------------- //
-	if (sceneColorLayout_ != vk::ImageLayout::eShaderReadOnlyOptimal)
-	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			sceneColor_.image(),
-			vk::ImageAspectFlagBits::eColor,
-			sceneColorLayout_,
-			vk::ImageLayout::eShaderReadOnlyOptimal,
-			1,
-			1
-		);
-		sceneColorLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
-	}
-
-	if (frame.colorLayout != vk::ImageLayout::eColorAttachmentOptimal)
-	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			frame.colorImage,
-			vk::ImageAspectFlagBits::eColor,
-			frame.colorLayout,
-			vk::ImageLayout::eColorAttachmentOptimal,
-			1,
-			1
-		);
-		frame.colorLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	}
-
 	if (presentPass_)
 	{
 		presentPass_->render(cmd, frame);
