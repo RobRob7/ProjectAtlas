@@ -11,6 +11,13 @@ layout (std140, set = 0, binding = 0) uniform UBO
 	float _pad0;
 };
 
+#ifdef VULKAN
+layout (push_constant) uniform PushConstants
+{
+    vec4 u_chunkOrigin;
+} pc;
+#endif
+
 // constants
 const vec3[6] normalSample =
 {
@@ -49,7 +56,12 @@ void main()
     aPos.z = float(combinedCopy & 15);
     combinedCopy >>= 4;
 
-    vec3 world = aPos + vec3(u_chunkOrigin);
+    #ifdef VULKAN
+        vec3 world = aPos + vec3(pc.u_chunkOrigin);
+    #else
+        vec3 world = aPos + vec3(u_chunkOrigin);
+    #endif
+
     gl_Position = u_proj * u_view * vec4(world, 1.0);
 }
 
