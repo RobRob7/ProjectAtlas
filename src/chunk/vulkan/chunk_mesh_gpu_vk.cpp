@@ -41,19 +41,39 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 		vk::DeviceSize vbSize = sizeof(Vertex) * data.opaqueVertices.size();
 		vk::DeviceSize ibSize = sizeof(uint32_t) * data.opaqueIndices.size();
 
+		// VB staging
+		BufferVk stagingVB(*vk_);
+		stagingVB.create(
+			vbSize,
+			vk::BufferUsageFlagBits::eTransferSrc,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+		stagingVB.upload(data.opaqueVertices.data(), vbSize);
+
+		// VB device local
 		newOpaqueVB.create(
 			vbSize,
-			vk::BufferUsageFlagBits::eVertexBuffer,
+			vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
+			vk::MemoryPropertyFlagBits::eDeviceLocal
+		);
+		vk_->copyBuffer(stagingVB.getBuffer(), newOpaqueVB.getBuffer(), vbSize);
+
+		// IB staging
+		BufferVk stagingIB(*vk_);
+		stagingIB.create(
+			ibSize,
+			vk::BufferUsageFlagBits::eTransferSrc,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 		);
-		newOpaqueVB.upload(data.opaqueVertices.data(), vbSize);
+		stagingIB.upload(data.opaqueIndices.data(), ibSize);
 
+		// IB device local
 		newOpaqueIB.create(
 			ibSize,
-			vk::BufferUsageFlagBits::eIndexBuffer,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+			vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
+			vk::MemoryPropertyFlagBits::eDeviceLocal
 		);
-		newOpaqueIB.upload(data.opaqueIndices.data(), ibSize);
+		vk_->copyBuffer(stagingIB.getBuffer(), newOpaqueIB.getBuffer(), ibSize);
 
 		newOpaqueIndexCount = static_cast<uint32_t>(data.opaqueIndices.size());
 	}
@@ -64,19 +84,39 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 		vk::DeviceSize vbSize = sizeof(VertexWater) * data.waterVertices.size();
 		vk::DeviceSize ibSize = sizeof(uint32_t) * data.waterIndices.size();
 
+		// VB staging
+		BufferVk stagingVB(*vk_);
+		stagingVB.create(
+			vbSize,
+			vk::BufferUsageFlagBits::eTransferSrc,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+		stagingVB.upload(data.waterVertices.data(), vbSize);
+
+		// VB device local
 		newWaterVB.create(
 			vbSize,
-			vk::BufferUsageFlagBits::eVertexBuffer,
+			vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
+			vk::MemoryPropertyFlagBits::eDeviceLocal
+		);
+		vk_->copyBuffer(stagingVB.getBuffer(), newWaterVB.getBuffer(), vbSize);
+
+		// IB staging
+		BufferVk stagingIB(*vk_);
+		stagingIB.create(
+			ibSize,
+			vk::BufferUsageFlagBits::eTransferSrc,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 		);
-		newWaterVB.upload(data.waterVertices.data(), vbSize);
+		stagingIB.upload(data.waterIndices.data(), ibSize);
 
+		// IB device local
 		newWaterIB.create(
 			ibSize,
-			vk::BufferUsageFlagBits::eIndexBuffer,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+			vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
+			vk::MemoryPropertyFlagBits::eDeviceLocal
 		);
-		newWaterIB.upload(data.waterIndices.data(), ibSize);
+		vk_->copyBuffer(stagingIB.getBuffer(), newWaterIB.getBuffer(), ibSize);
 
 		newWaterIndexCount = static_cast<uint32_t>(data.waterIndices.size());
 	}
