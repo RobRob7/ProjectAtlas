@@ -414,6 +414,11 @@ void UIVk::drawInspector(IScene& scene)
 		{
 			world.enableFrustumCulling(frustumCulling);
 		}
+		bool distanceCulling = world.statusDistanceCulling();
+		if (ImGui::Checkbox("Distance Culling##render", &distanceCulling))
+		{
+			world.enableDistanceCulling(distanceCulling);
+		}
 		ImGui::Text("Chunks Rendered: %d", world.getFrameChunksRendered());
 		ImGui::Text("Blocks Rendered: %d", world.getFrameBlocksRendered());
 

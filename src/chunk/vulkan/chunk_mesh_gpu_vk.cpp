@@ -39,6 +39,7 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 
 	vk::CommandBuffer cmd = vk_->beginSingleTimeCommands();
 	std::vector<BufferVk> stagingBuffers;
+	stagingBuffers.reserve(4);
 
 	// -------- OPAQUE --------
 	if (!data.opaqueVertices.empty() && !data.opaqueIndices.empty())

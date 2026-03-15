@@ -189,6 +189,10 @@ void ChunkManager::buildOpaqueDrawList(const glm::mat4& view, const glm::mat4& p
 {
 	out.clear();
 
+	int camChunkX = static_cast<int>(std::floor(lastCameraPos_.x / CHUNK_SIZE));
+	int camChunkZ = static_cast<int>(std::floor(lastCameraPos_.z / CHUNK_SIZE));
+	int maxDist2 = viewRadius_ * viewRadius_;
+
 	frameBlocksRendered_ = 0;
 	frameChunksRendered_ = 0;
 
@@ -204,6 +208,16 @@ void ChunkManager::buildOpaqueDrawList(const glm::mat4& view, const glm::mat4& p
 		// chunkX, chunkZ
 		int chunkX = cpu->getChunk().m_chunkX;
 		int chunkZ = cpu->getChunk().m_chunkZ;
+
+		// distance culling
+		int dx = chunkX - camChunkX;
+		int dz = chunkZ - camChunkZ;
+		int dist2 = dx * dx + dz * dz;
+		if (enableDistanceCulling_ && dist2 > maxDist2)
+		{
+			continue;
+		}
+
 		// set AABB
 		AABB box = ChunkWorldAABB(chunkX, chunkZ);
 		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
@@ -223,12 +237,16 @@ void ChunkManager::buildOpaqueDrawList(const glm::mat4& view, const glm::mat4& p
 		item.renderedBlockCount = cpu->getRenderedBlockCount();
 
 		out.items.push_back(item);
-	}
+	} // end for
 } // end of buildOpaqueDrawList()
 
 void ChunkManager::buildWaterDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out)
 {
 	out.clear();
+
+	int camChunkX = static_cast<int>(std::floor(lastCameraPos_.x / CHUNK_SIZE));
+	int camChunkZ = static_cast<int>(std::floor(lastCameraPos_.z / CHUNK_SIZE));
+	int maxDist2 = viewRadius_ * viewRadius_;
 
 	// get frustum planes
 	Frustum fr = ExtractFrustumPlanes(proj * view);
@@ -242,6 +260,16 @@ void ChunkManager::buildWaterDrawList(const glm::mat4& view, const glm::mat4& pr
 		// chunkX, chunkZ
 		int chunkX = cpu->getChunk().m_chunkX;
 		int chunkZ = cpu->getChunk().m_chunkZ;
+
+		// distance culling
+		int dx = chunkX - camChunkX;
+		int dz = chunkZ - camChunkZ;
+		int dist2 = dx * dx + dz * dz;
+		if (enableDistanceCulling_ && dist2 > maxDist2)
+		{
+			continue;
+		}
+
 		// set AABB
 		AABB box = ChunkWorldAABB(chunkX, chunkZ);
 		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
@@ -255,7 +283,7 @@ void ChunkManager::buildWaterDrawList(const glm::mat4& view, const glm::mat4& pr
 		item.waterIndexCount = static_cast<uint32_t>(std::max(0, cpu->waterIndexCount()));
 
 		out.items.push_back(item);
-	}
+	} // end for
 } // end of buildWaterDrawList()
 
 BlockID ChunkManager::getBlock(int wx, int wy, int wz) const
@@ -417,6 +445,16 @@ void ChunkManager::enableFrustumCulling(bool enable)
 {
 	enableFrustumCulling_ = enable;
 } // end of enableFrustumCulling()
+
+bool ChunkManager::statusDistanceCulling() const
+{
+	return enableDistanceCulling_;
+} // end of statusDistanceCulling()
+
+void ChunkManager::enableDistanceCulling(bool enable)
+{
+	enableDistanceCulling_ = enable;
+} // end of enableDistanceCulling()
 
 
 //--- PRIVATE ---//
