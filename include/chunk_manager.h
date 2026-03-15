@@ -62,12 +62,16 @@ public:
 	bool statusFrustumCulling() const;
 	void enableFrustumCulling(bool enable);
 
+	bool statusDistanceCulling() const;
+	void enableDistanceCulling(bool enable);
+
 private:
 	float ambientStrength_{ 0.5f };
 	Save saveWorld_;
 
-	// frustum culling toggle
+	// culling toggles
 	bool enableFrustumCulling_ = true;
+	bool enableDistanceCulling_ = true;
 
 	// count
 	uint32_t frameChunksRendered_{ 0 };
