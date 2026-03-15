@@ -9,6 +9,7 @@
 
 class VulkanMain;
 class ShaderModuleVk;
+struct FrameContext;
 
 class PresentPassVk
 {
@@ -19,7 +20,7 @@ public:
 	void init();
 	void refreshInput();
 
-	void render(vk::CommandBuffer cmd);
+	void render(vk::CommandBuffer cmd, FrameContext& frame);
 
 private:
 	void createDescriptorSet();

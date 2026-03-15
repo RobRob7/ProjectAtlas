@@ -291,43 +291,10 @@ void RendererVk::renderFrame(
 		frame.colorLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	}
 
-	vk::RenderingAttachmentInfo presentColorAttach{};
-	presentColorAttach.imageView = frame.colorImageView;
-	presentColorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	presentColorAttach.loadOp = vk::AttachmentLoadOp::eDontCare;
-	presentColorAttach.storeOp = vk::AttachmentStoreOp::eStore;
-	presentColorAttach.clearValue = clear;
-
-	vk::RenderingInfo presentRenderingInfo{};
-	presentRenderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
-	presentRenderingInfo.renderArea.extent = frame.extent;
-	presentRenderingInfo.layerCount = 1;
-	presentRenderingInfo.colorAttachmentCount = 1;
-	presentRenderingInfo.pColorAttachments = &presentColorAttach;
-	presentRenderingInfo.pDepthAttachment = nullptr;
-
-	cmd.beginRendering(presentRenderingInfo);
+	if (presentPass_)
 	{
-		vk::Viewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(frame.extent.width);
-		viewport.height = static_cast<float>(frame.extent.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		cmd.setViewport(0, 1, &viewport);
-
-		vk::Rect2D scissor{};
-		scissor.offset = vk::Offset2D{ 0, 0 };
-		scissor.extent = frame.extent;
-		cmd.setScissor(0, 1, &scissor);
-
-		if (presentPass_)
-		{
-			presentPass_->render(cmd);
-		}
+		presentPass_->render(cmd, frame);
 	}
-	cmd.endRendering();
 	// --------------- END PRESENT PASS --------------- //
 
 
