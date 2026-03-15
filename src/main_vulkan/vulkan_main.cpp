@@ -92,6 +92,8 @@ bool VulkanMain::beginFrame(FrameContext& out)
 		}
 	}
 
+	processPendingUploads();
+
 	// acquire next image
 	uint32_t imageIndex = 0;
 	{
@@ -269,6 +271,11 @@ uint32_t VulkanMain::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags
 	throw std::runtime_error("failed to find suitable memory type!");
 } // end of findMemoryType()
 
+void VulkanMain::discardSingleTimeCommands(vk::CommandBuffer cmd) const
+{
+	device_->freeCommandBuffers(commandPool_.get(), 1, &cmd);
+} // end of discardSingleTimeCommands()
+
 vk::CommandBuffer VulkanMain::beginSingleTimeCommands() const
 {
 	vk::CommandBufferAllocateInfo allocInfo{};
@@ -331,19 +338,86 @@ void VulkanMain::endSingleTimeCommands(vk::CommandBuffer commandBuffer) const
 	device_->freeCommandBuffers(commandPool_.get(), 1, &commandBuffer);
 } // end of endSingleTimeCommands()
 
-void VulkanMain::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) const
+void VulkanMain::submitUpload(
+	vk::CommandBuffer cmd,
+	std::vector<BufferVk>&& stagingBuffers
+)
 {
-	vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
+	vk::Result res = cmd.end();
+	if (res != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("submitUpload: cmd.end failed: " + vk::to_string(res));
+	}
 
+	vk::FenceCreateInfo fenceInfo{};
+	vk::Fence fence{};
+	{
+		vk::ResultValue rv = device_->createFence(fenceInfo);
+		if (rv.result != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("submitUpload: createFence failed: " + vk::to_string(rv.result));
+		}
+		fence = rv.value;
+	}
+
+	vk::SubmitInfo submitInfo{};
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmd;
+
+	res = graphicsQueue_.submit(1, &submitInfo, fence);
+	if (res != vk::Result::eSuccess)
+	{
+		device_->destroyFence(fence);
+		throw std::runtime_error("submitUpload: submit failed: " + vk::to_string(res));
+	}
+
+	PendingUpload upload{};
+	upload.cmd = cmd;
+	upload.fence = fence;
+	upload.stagingBuffers = std::move(stagingBuffers);
+
+	pendingUploads_.push_back(std::move(upload));
+} // end of submitUpload()
+
+void VulkanMain::processPendingUploads()
+{
+	for (size_t i = 0; i < pendingUploads_.size(); )
+	{
+		auto& upload = pendingUploads_[i];
+
+		vk::Result res = device_->getFenceStatus(upload.fence);
+		if (res == vk::Result::eSuccess)
+		{
+			device_->freeCommandBuffers(commandPool_.get(), 1, &upload.cmd);
+			device_->destroyFence(upload.fence);
+
+			pendingUploads_.erase(pendingUploads_.begin() + static_cast<long long>(i));
+		}
+		else if (res == vk::Result::eNotReady)
+		{
+			++i;
+		}
+		else
+		{
+			throw std::runtime_error("processPendingUploads: getFenceStatus failed: " + vk::to_string(res));
+		}
+	} // end for
+} // end of processPendingUploads()
+
+void VulkanMain::recordCopyBuffer(
+	vk::CommandBuffer cmd,
+	vk::Buffer srcBuffer,
+	vk::Buffer dstBuffer,
+	vk::DeviceSize size
+) const
+{
 	vk::BufferCopy copyRegion{};
 	copyRegion.srcOffset = 0;
 	copyRegion.dstOffset = 0;
 	copyRegion.size = size;
 
-	commandBuffer.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
-
-	endSingleTimeCommands(commandBuffer);
-} // end of copyBuffer()
+	cmd.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
+} // end of recordCopyBuffer()
 
 vk::Format VulkanMain::findDepthFormat() const
 {
@@ -1185,6 +1259,23 @@ void VulkanMain::flushRetiredResources()
 	{
 		waitIdle();
 	}
+
+	// clean pending async uploads
+	for (auto& upload : pendingUploads_)
+	{
+		if (upload.cmd)
+		{
+			device_->freeCommandBuffers(commandPool_.get(), 1, &upload.cmd);
+		}
+
+		if (upload.fence)
+		{
+			device_->destroyFence(upload.fence);
+		}
+
+		upload.stagingBuffers.clear();
+	}
+	pendingUploads_.clear();
 
 	for (auto& retired : retiredChunkBuffers_)
 	{

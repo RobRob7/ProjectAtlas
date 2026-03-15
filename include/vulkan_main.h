@@ -39,6 +39,14 @@ struct RetiredChunkBuffers
     BufferVk waterIB;
 };
 
+struct PendingUpload
+{
+    vk::CommandBuffer cmd{};
+    vk::Fence fence{};
+    std::vector<BufferVk> stagingBuffers;
+};
+
+
 class VulkanMain
 {
 public:
@@ -55,10 +63,24 @@ public:
 
     uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
 
+    void discardSingleTimeCommands(vk::CommandBuffer cmd) const;
+
     vk::CommandBuffer beginSingleTimeCommands() const;
     void endSingleTimeCommands(vk::CommandBuffer commandBuffer) const;
 
-    void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) const;
+    void submitUpload(
+        vk::CommandBuffer cmd,
+        std::vector<BufferVk>&& stagingBuffers
+    );
+
+    void processPendingUploads();
+
+    void recordCopyBuffer(
+        vk::CommandBuffer,
+        vk::Buffer srcBuffer,
+        vk::Buffer dstBuffer,
+        vk::DeviceSize size
+    ) const;
 
     vk::Format findDepthFormat() const;
     vk::Format getDepthFormat() const { return depthFormat_; }
@@ -167,6 +189,8 @@ private:
     bool initialized_{ false };
 
     static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
+    std::vector<PendingUpload> pendingUploads_;
 
     std::array<std::vector<RetiredChunkBuffers>, MAX_FRAMES_IN_FLIGHT> retiredChunkBuffers_;
 
