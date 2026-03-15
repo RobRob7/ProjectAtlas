@@ -119,9 +119,13 @@ void RendererVk::renderFrame(
 			old,
 			in.camera->getNearPlane(),
 			in.camera->getFarPlane(),
-			(renderSettings_->debugMode == DebugMode::Normals) ? 1 : 2,
-			ui
+			(renderSettings_->debugMode == DebugMode::Normals) ? 1 : 2
 		);
+
+		// render UI last
+		ui->render(cmd, frame);
+
+		// present
 		vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
 		return;
 	}
@@ -332,27 +336,10 @@ void RendererVk::renderFrame(
 	
 
 	// UI RENDER
-	vk::RenderingAttachmentInfo uiColorAttach{};
-	uiColorAttach.imageView = frame.colorImageView;
-	uiColorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	uiColorAttach.loadOp = vk::AttachmentLoadOp::eLoad;
-	uiColorAttach.storeOp = vk::AttachmentStoreOp::eStore;
-
-	vk::RenderingInfo uiRenderingInfo{};
-	uiRenderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
-	uiRenderingInfo.renderArea.extent = frame.extent;
-	uiRenderingInfo.layerCount = 1;
-	uiRenderingInfo.colorAttachmentCount = 1;
-	uiRenderingInfo.pColorAttachments = &uiColorAttach;
-	uiRenderingInfo.pDepthAttachment = nullptr;
-	cmd.beginRendering(uiRenderingInfo);
+	if (ui)
 	{
-		if (ui)
-		{
-			ui->render(cmd);
-		}
+		ui->render(cmd, frame);
 	}
-	cmd.endRendering();
 	// --------------- END UI ELEMENTS --------------- //
 
 
