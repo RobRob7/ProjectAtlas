@@ -432,10 +432,10 @@ void UIVk::drawInspector(IScene& scene)
 			//glfwSwapInterval(renderSettings_.enableVsync);
 		}
 
-		//// GRAPHICS OPTIONS
-		//ImGui::Text("Graphics Options:");
-		//// SSAO toggle
-		//ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
+		// GRAPHICS OPTIONS
+		ImGui::Text("Graphics Options:");
+		// SSAO toggle
+		ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
 
 		//// FXAA toggle
 		//ImGui::Checkbox("FXAA##render", &renderSettings_.useFXAA);

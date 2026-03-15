@@ -1,6 +1,8 @@
 #ifndef SSAO_PASS_H
 #define SSAO_PASS_H
 
+#include "constants.h"
+
 #include "bindings.h"
 
 #include "ubo_gl.h"
@@ -11,30 +13,6 @@
 #include <array>
 
 class Shader;
-
-inline constexpr int MAX_KERNEL_SIZE = 64;
-
-struct SSAOBlurUBO
-{
-	glm::vec2 u_texelSize;
-	glm::vec2 _pad0;
-};
-
-struct SSAOUBO
-{
-	glm::mat4 u_proj;
-	glm::mat4 u_invProj;
-
-	glm::vec2 u_noiseScale;
-	float u_radius;
-	float u_bias;
-
-	int32_t u_kernelSize;
-	float _pad0;
-	glm::vec2 _pad1;
-
-	glm::vec4 u_samples[MAX_KERNEL_SIZE];
-};
 
 class SSAOPass
 {
@@ -55,10 +33,11 @@ public:
 	uint32_t aoRawTexture() const;
 	uint32_t aoBlurTexture() const;
 
-	void setRadius(float r);
-	void setBias(float b);
-	void setKernelSize(int k);
-
+private:
+	void createTargets();
+	void destroyTargets();
+	void createNoise();
+	void createKernel();
 private:
 	int width_{};
 	int height_{};
@@ -75,21 +54,11 @@ private:
 	std::unique_ptr<Shader> blurShader_;
 
 	UBOGL uboBlur_{ TO_API_FORM(SSAOBlurBinding::UBO) };
-	SSAOBlurUBO ssaoBlurUBO_{};
-	UBOGL uboSSAO_{ TO_API_FORM(SSAOPassBinding::UBO) };
-	SSAOUBO ssaoUBO_{};
+	SSAO_Constants::SSAOBlurUBO ssaoBlurUBO_{};
+	UBOGL uboSSAO_{ TO_API_FORM(SSAORawBinding::UBO) };
+	SSAO_Constants::SSAORawUBO ssaoUBO_{};
 
-	static constexpr int kNoiseSize_ = 4;
-	float radius_ = 5.0f;
-	float bias_ = 0.05f;
-	int kernelSize_ = 64;
-	std::array<glm::vec4, MAX_KERNEL_SIZE> samples_{};
-
-private:
-	void createTargets();
-	void destroyTargets();
-	void createNoise();
-	void createKernel();
+	std::array<glm::vec4, SSAO_Constants::MAX_KERNEL_SIZE> samples_{};
 };
 
 #endif

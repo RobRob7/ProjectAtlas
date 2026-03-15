@@ -64,19 +64,20 @@ enum class LightBinding : uint32_t
     UBO = 0,
 };
 
-enum class SSAOBlurBinding : uint32_t
-{
-    UBO = 0,
-    SSAORawTex = 1,
-};
-
-enum class SSAOPassBinding : uint32_t
+enum class SSAORawBinding : uint32_t
 {
     UBO = 0,
     GNormalTex = 1,
     GDepthTex = 2,
     NoiseTex = 3,
 };
+
+enum class SSAOBlurBinding : uint32_t
+{
+    UBO = 0,
+    SSAORawTex = 1,
+};
+
 
 enum class PresentPassBinding : uint32_t
 {

@@ -17,6 +17,7 @@
 #include "chunk_pass_vk.h"
 #include "gbuffer_pass_vk.h"
 #include "debug_pass_vk.h"
+#include "ssao_pass_vk.h"
 #include "water_pass_vk.h"
 
 #include <glm/glm.hpp>
@@ -33,15 +34,18 @@ void RendererVk::init()
 {
 	if (!renderSettings_) renderSettings_ = std::make_unique<RenderSettings>();
 
-	if (!chunkPass_) chunkPass_ = std::make_unique<ChunkPassVk>(vk_);
-	if (!gbufferPass_) gbufferPass_ = std::make_unique<GBufferPassVk>(vk_);
-	if (!debugPass_) debugPass_ = std::make_unique<DebugPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage());
-	if (!waterPass_) waterPass_ = std::make_unique<WaterPassVk>(vk_);
+	if (!gbufferPass_)	gbufferPass_ = std::make_unique<GBufferPassVk>(vk_);
+	if (!debugPass_)	debugPass_ = std::make_unique<DebugPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage());
+	if (!ssaoPass_)		ssaoPass_ = std::make_unique<SSAOPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage());
+	if (!waterPass_)	waterPass_ = std::make_unique<WaterPassVk>(vk_);
+	if (!chunkPass_)	chunkPass_ = std::make_unique<ChunkPassVk>(vk_, ssaoPass_->ssaoBlurImage());
 
-	chunkPass_->init();
 	gbufferPass_->init();
 	debugPass_->init();
+	ssaoPass_->init();
 	waterPass_->init();
+	chunkPass_->init();
+	chunkPass_->refreshSSAOBinding();
 } // end of init()
 
 void RendererVk::resize(int w, int h)
@@ -52,9 +56,11 @@ void RendererVk::resize(int w, int h)
 	width_ = w;
 	height_ = h;
 
-	if (gbufferPass_) gbufferPass_->resize(width_, height_);
-	if (debugPass_) debugPass_->resize(width_, height_);
-	if (waterPass_) waterPass_->resize(width_, height_);
+	if (gbufferPass_)	gbufferPass_->resize(width_, height_);
+	if (debugPass_)		debugPass_->resize(width_, height_);
+	if (ssaoPass_)		ssaoPass_->resize(width_, height_);
+	if (waterPass_)		waterPass_->resize(width_, height_);
+	if (chunkPass_)		chunkPass_->refreshSSAOBinding();
 } // end of resize()
 
 void RendererVk::renderFrame(
@@ -102,6 +108,12 @@ void RendererVk::renderFrame(
 		);
 		vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
 		return;
+	}
+
+	// ssao pass
+	if (renderSettings_->useSSAO)
+	{
+		ssaoPass_->renderOffscreen(frame, proj);
 	}
 
 	// water refl + refr pass
@@ -190,7 +202,7 @@ void RendererVk::renderFrame(
 		if (chunkPass_)
 		{
 			Chunk_Constants::ChunkOpaqueUBO ubo{};
-			chunkPass_->renderOpaque(in, frame, view, proj, width_, height_, ubo);
+			chunkPass_->renderOpaque(in, *renderSettings_, frame, view, proj, width_, height_, ubo);
 		}
 		if (in.light) in.light->render(&frame, view, proj);
 		if (in.skybox) in.skybox->render(&frame, view, proj);

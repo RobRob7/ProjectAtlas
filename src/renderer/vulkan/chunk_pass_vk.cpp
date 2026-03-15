@@ -2,6 +2,7 @@
 
 #include "frame_context_vk.h"
 #include "vulkan_main.h"
+#include "image_vk.h"
 
 #include "bindings.h"
 
@@ -9,6 +10,7 @@
 #include "i_chunk_mesh_gpu.h"
 
 #include "render_inputs.h"
+#include "render_settings.h"
 #include "chunk_manager.h"
 #include "camera.h"
 #include "i_light.h"
@@ -20,8 +22,9 @@ using namespace Chunk_Constants;
 using namespace Gbuffer_Constants;
 
 //--- PUBLIC ---//
-ChunkPassVk::ChunkPassVk(VulkanMain& vk)
+ChunkPassVk::ChunkPassVk(VulkanMain& vk, ImageVk& ssaoBlurImage)
 	: vk_(vk),
+	ssaoBlurImage_(ssaoBlurImage),
 	atlas_(vk),
 	opaqueUBOBuffer_(vk),
 	opaqueDescriptorSet_(vk),
@@ -66,8 +69,30 @@ void ChunkPassVk::init()
 	createOpaqueGBufferPipeline();
 } // end of init()
 
+void ChunkPassVk::refreshSSAOBinding()
+{
+	opaqueDescriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::SSAOTex),
+		ssaoBlurImage_.view(),
+		ssaoBlurImage_.sampler()
+	);
+
+	opaqueOffscreenDescriptorSetReflection_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::SSAOTex),
+		ssaoBlurImage_.view(),
+		ssaoBlurImage_.sampler()
+	);
+
+	opaqueOffscreenDescriptorSetRefraction_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::SSAOTex),
+		ssaoBlurImage_.view(),
+		ssaoBlurImage_.sampler()
+	);
+} // end of refreshSSAOBinding()
+
 void ChunkPassVk::renderOpaque(
 	const RenderInputs& in,
+	const RenderSettings& rs,
 	const FrameContext& frame,
 	const glm::mat4& view,
 	const glm::mat4& proj,
@@ -83,6 +108,8 @@ void ChunkPassVk::renderOpaque(
 	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, opaquePipeline_.getPipeline());
 
 	vk::DescriptorSet set = opaqueDescriptorSet_.getSet();
+
+	ubo.u_useSSAO = rs.useSSAO ? 1 : 0;
 
 	ubo.u_view = view;
 	ubo.u_proj = proj;
@@ -307,8 +334,8 @@ void ChunkPassVk::createOpaqueDescriptorSet()
 
 	opaqueDescriptorSet_.writeCombinedImageSampler(
 		TO_API_FORM(ChunkBinding::SSAOTex),
-		atlas_.view(),
-		atlas_.sampler()
+		ssaoBlurImage_.view(),
+		ssaoBlurImage_.sampler()
 	);
 } // end of createOpaqueDescriptorSet()
 
@@ -364,8 +391,8 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 
 	opaqueOffscreenDescriptorSetReflection_.writeCombinedImageSampler(
 		TO_API_FORM(ChunkBinding::SSAOTex),
-		atlas_.view(),
-		atlas_.sampler()
+		ssaoBlurImage_.view(),
+		ssaoBlurImage_.sampler()
 	);
 
 	// Refraction descriptor set
@@ -387,8 +414,8 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 
 	opaqueOffscreenDescriptorSetRefraction_.writeCombinedImageSampler(
 		TO_API_FORM(ChunkBinding::SSAOTex),
-		atlas_.view(),
-		atlas_.sampler()
+		ssaoBlurImage_.view(),
+		ssaoBlurImage_.sampler()
 	);
 } // end of createOpaqueOffscreenDescriptorSet()
 

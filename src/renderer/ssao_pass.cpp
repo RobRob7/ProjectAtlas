@@ -1,5 +1,6 @@
 #include "ssao_pass.h"
 
+#include "constants.h"
 #include "bindings.h"
 
 #include "shader.h"
@@ -11,7 +12,8 @@
 #include <vector>
 #include <stdexcept>
 #include <random>
-#include <algorithm>
+
+using namespace SSAO_Constants;
 
 //--- PUBLIC ---//
 SSAOPass::SSAOPass() = default;
@@ -27,7 +29,7 @@ void SSAOPass::init()
 	blurShader_ = std::make_unique<Shader>("ssaopass/ssaoblur.vert", "ssaopass/ssaoblur.frag");
 
 	uboBlur_.init<sizeof(SSAOBlurUBO)>();
-	uboSSAO_.init<sizeof(SSAOUBO)>();
+	uboSSAO_.init<sizeof(SSAORawUBO)>();
 
 	glCreateVertexArrays(1, &fsVao_);
 
@@ -78,9 +80,9 @@ void SSAOPass::render(
 	uboSSAO_.bind();
 
 	// bind reg textures
-	glBindTextureUnit(TO_API_FORM(SSAOPassBinding::GNormalTex), normalTex);
-	glBindTextureUnit(TO_API_FORM(SSAOPassBinding::GDepthTex), depthTex);
-	glBindTextureUnit(TO_API_FORM(SSAOPassBinding::NoiseTex), noiseTexture_);
+	glBindTextureUnit(TO_API_FORM(SSAORawBinding::GNormalTex), normalTex);
+	glBindTextureUnit(TO_API_FORM(SSAORawBinding::GDepthTex), depthTex);
+	glBindTextureUnit(TO_API_FORM(SSAORawBinding::NoiseTex), noiseTexture_);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fboRaw_);
 	glViewport(0, 0, width_, height_);
@@ -91,12 +93,12 @@ void SSAOPass::render(
 	ssaoShader_->use();
 	ssaoUBO_.u_proj = proj;
 	ssaoUBO_.u_invProj = glm::inverse(proj);
-	ssaoUBO_.u_radius = radius_;
-	ssaoUBO_.u_bias = bias_;
-	ssaoUBO_.u_kernelSize = kernelSize_;
+	ssaoUBO_.u_radius = RADIUS;
+	ssaoUBO_.u_bias = BIAS;
+	ssaoUBO_.u_kernelSize = KERNEL_SIZE;
 	ssaoUBO_.u_noiseScale = glm::vec2(
-		static_cast<float>(width_) / static_cast<float>(kNoiseSize_),
-		static_cast<float>(height_) / static_cast<float>(kNoiseSize_));
+		static_cast<float>(width_) / static_cast<float>(K_NOISE_SIZE),
+		static_cast<float>(height_) / static_cast<float>(K_NOISE_SIZE));
 	uboSSAO_.update(&ssaoUBO_, sizeof(ssaoUBO_));
 
 	glBindVertexArray(fsVao_);
@@ -136,28 +138,6 @@ uint32_t SSAOPass::aoBlurTexture() const
 {
 	return aoBlur_;
 } // end of aoBlurTexture()
-
-void SSAOPass::setRadius(float r)
-{
-	radius_ = r;
-} // end of setRadius()
-
-void SSAOPass::setBias(float b)
-{
-	bias_ = b;
-} // end of setBias()
-
-void SSAOPass::setKernelSize(int k)
-{
-	int newKernelSize = std::clamp(k, 1, MAX_KERNEL_SIZE);
-
-	// only update kernel size if different than current
-	if (newKernelSize == kernelSize_) return;
-
-	kernelSize_ = newKernelSize;
-	
-	createKernel();
-} // end of setKernelSize()
 
 
 //--- PRIVATE ---//
@@ -226,18 +206,18 @@ void SSAOPass::createNoise()
 	std::mt19937 rng{ std::random_device{}() };
 	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
-	std::vector<glm::vec3> noise;
-	noise.reserve(kNoiseSize_ * kNoiseSize_);
+	std::vector<glm::vec4> noise;
+	noise.reserve(K_NOISE_SIZE * K_NOISE_SIZE);
 
-	for (int i = 0; i < kNoiseSize_ * kNoiseSize_; ++i)
+	for (int i = 0; i < K_NOISE_SIZE * K_NOISE_SIZE; ++i)
 	{
-		// rotate around z (tangent plane)
-		noise.emplace_back(dist(rng), dist(rng), 0.0f);
+		glm::vec3 n(dist(rng), dist(rng), 0.0f);
+		noise.emplace_back(n, 1.0f);
 	} // end for
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &noiseTexture_);
-	glTextureStorage2D(noiseTexture_, 1, GL_RGB16F, kNoiseSize_, kNoiseSize_);
-	glTextureSubImage2D(noiseTexture_, 0, 0, 0, kNoiseSize_, kNoiseSize_, GL_RGB, GL_FLOAT, noise.data());
+	glTextureStorage2D(noiseTexture_, 1, GL_RGB16F, K_NOISE_SIZE, K_NOISE_SIZE);
+	glTextureSubImage2D(noiseTexture_, 0, 0, 0, K_NOISE_SIZE, K_NOISE_SIZE, GL_RGB, GL_FLOAT, noise.data());
 
 	glTextureParameteri(noiseTexture_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTextureParameteri(noiseTexture_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -250,7 +230,7 @@ void SSAOPass::createKernel()
 	std::mt19937 rng{ std::random_device{}() };
 	std::uniform_real_distribution<float> dist01{ 0.0f,1.0f };
 
-	for (int i = 0; i < kernelSize_; ++i)
+	for (int i = 0; i < KERNEL_SIZE; ++i)
 	{
 		// hemisphere around +z (tangent space)
 		glm::vec4 s{
@@ -263,7 +243,7 @@ void SSAOPass::createKernel()
 		s *= dist01(rng);
 
 		// bias samples toward the origin
-		float scale = static_cast<float>(i) / static_cast<float>(kernelSize_);
+		float scale = static_cast<float>(i) / static_cast<float>(KERNEL_SIZE);
 		scale = 0.1f + (scale * scale) * (1.0f - 0.1f);
 		s *= scale;
 
@@ -275,7 +255,7 @@ void SSAOPass::createKernel()
 
 	// upload kernel
 	ssaoShader_->use();
-	for (int i = 0; i < kernelSize_; ++i)
+	for (int i = 0; i < KERNEL_SIZE; ++i)
 	{
 		ssaoUBO_.u_samples[i] = samples_[i];
 	} // end for

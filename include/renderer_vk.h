@@ -15,6 +15,7 @@ struct RenderSettings;
 class ChunkPassVk;
 class GBufferPassVk;
 class DebugPassVk;
+class SSAOPassVk;
 class WaterPassVk;
 
 class RendererVk final : public IRenderer
@@ -42,10 +43,11 @@ private:
 
 	std::unique_ptr<RenderSettings> renderSettings_;
 
-	std::unique_ptr<ChunkPassVk> chunkPass_;
 	std::unique_ptr<GBufferPassVk> gbufferPass_;
 	std::unique_ptr<DebugPassVk> debugPass_;
+	std::unique_ptr<SSAOPassVk> ssaoPass_;
 	std::unique_ptr<WaterPassVk> waterPass_;
+	std::unique_ptr<ChunkPassVk> chunkPass_;
 };
 
 #endif

@@ -13,7 +13,6 @@
 class VulkanMain;
 class ShaderModuleVk;
 struct RenderInputs;
-struct RenderContext;
 class ChunkPassVk;
 struct FrameContext;
 
