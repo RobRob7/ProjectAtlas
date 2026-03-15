@@ -91,138 +91,63 @@ void WaterPassVk::renderOffscreen(
 } // end of renderOffscreen()
 
 void WaterPassVk::renderWater(
-	FrameContext& frame,
-	ChunkPassVk& chunk,
-	const RenderInputs& in
+	const RenderInputs& in,
+	vk::CommandBuffer cmd,
+	const glm::mat4& view,
+	const glm::mat4& proj,
+	int width, int height
 )
 {
-	// render water
-	vk::CommandBuffer cmd = frame.cmd;
+	ChunkDrawList list;
+	in.world->buildWaterDrawList(view, proj, list);
 
-	if (frame.colorLayout != vk::ImageLayout::eColorAttachmentOptimal)
+	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.getPipeline());
+
+	vk::DescriptorSet set = descriptorSet_.getSet();
+
+	ChunkWaterUBO ubo{};
+	ubo.u_time = in.time;
+	ubo.u_view = view;
+	ubo.u_proj = proj;
+	ubo.u_screenSize = glm::vec2(width, height);
+	ubo.u_ambientStrength = in.world->getAmbientStrength();
+
+	ubo.u_near = in.camera->getNearPlane();
+	ubo.u_far = in.camera->getFarPlane();
+	ubo.u_viewPos = in.camera->getCameraPosition();
+
+	ubo.u_lightPos = in.light->getPosition();
+	ubo.u_lightColor = in.light->getColor();
+
+	uboBuffer_.upload(&ubo, sizeof(ubo), 0);
+
+	cmd.bindDescriptorSets(
+		vk::PipelineBindPoint::eGraphics,
+		pipeline_.getLayout(),
+		0,
+		1, &set,
+		0, nullptr
+	);
+
+	for (const auto& item : list.items)
 	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			frame.colorImage,
-			vk::ImageAspectFlagBits::eColor,
-			frame.colorLayout,
-			vk::ImageLayout::eColorAttachmentOptimal,
-			1,
-			1
-		);
-		frame.colorLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	}
+		glm::mat4 model = glm::translate(
+			glm::mat4(1.0f),
+			item.chunkOrigin);
 
-	if (frame.depthLayout != vk::ImageLayout::eDepthAttachmentOptimal)
-	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			frame.depthImage,
-			vk::ImageAspectFlagBits::eDepth,
-			frame.depthLayout,
-			vk::ImageLayout::eDepthAttachmentOptimal,
-			1,
-			1
-		);
-		frame.depthLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-	}
+		ChunkWaterPushConstants pc{};
+		pc.u_model = model;
 
-	vk::RenderingAttachmentInfo colorAttachment{};
-	colorAttachment.imageView = frame.colorImageView;
-	colorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	colorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
-	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-
-	vk::RenderingAttachmentInfo depthAttachment{};
-	depthAttachment.imageView = frame.depthImageView;
-	depthAttachment.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-	depthAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
-	depthAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-
-	vk::RenderingInfo renderingInfo{};
-	renderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
-	renderingInfo.renderArea.extent = frame.extent;
-	renderingInfo.layerCount = 1;
-	renderingInfo.colorAttachmentCount = 1;
-	renderingInfo.pColorAttachments = &colorAttachment;
-	renderingInfo.pDepthAttachment = &depthAttachment;
-
-	cmd.beginRendering(renderingInfo);
-	{
-		vk::Viewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(frame.extent.width);
-		viewport.height = static_cast<float>(frame.extent.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		cmd.setViewport(0, 1, &viewport);
-
-		vk::Rect2D scissor{};
-		scissor.offset = vk::Offset2D{ 0, 0 };
-		scissor.extent = frame.extent;
-		cmd.setScissor(0, 1, &scissor);
-
-		// render water
-		const glm::mat4 view = in.camera->getViewMatrix();
-		const float aspect = (fullH_ > 0)
-			? (static_cast<float>(fullW_) / static_cast<float>(fullH_))
-			: 1.0f;
-		glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
-		proj[1][1] *= -1.0f;
-
-		ChunkDrawList list;
-		in.world->buildWaterDrawList(view, proj, list);
-
-		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.getPipeline());
-
-		vk::DescriptorSet set = descriptorSet_.getSet();
-
-		ChunkWaterUBO ubo{};
-		ubo.u_time = in.time;
-		ubo.u_view = view;
-		ubo.u_proj = proj;
-		ubo.u_screenSize = glm::vec2(width_, height_);
-		ubo.u_ambientStrength = in.world->getAmbientStrength();
-
-		ubo.u_near = in.camera->getNearPlane();
-		ubo.u_far = in.camera->getFarPlane();
-		ubo.u_viewPos = in.camera->getCameraPosition();
-
-		ubo.u_lightPos = in.light->getPosition();
-		ubo.u_lightColor = in.light->getColor();
-
-		uboBuffer_.upload(&ubo, sizeof(ubo), 0);
-
-		cmd.bindDescriptorSets(
-			vk::PipelineBindPoint::eGraphics,
+		cmd.pushConstants(
 			pipeline_.getLayout(),
+			vk::ShaderStageFlagBits::eVertex,
 			0,
-			1, &set,
-			0, nullptr
+			sizeof(ChunkWaterPushConstants),
+			&pc
 		);
 
-		for (const auto& item : list.items)
-		{
-			glm::mat4 model = glm::translate(
-				glm::mat4(1.0f),
-				item.chunkOrigin);
-
-			ChunkWaterPushConstants pc{};
-			pc.u_model = model;
-
-			cmd.pushConstants(
-				pipeline_.getLayout(),
-				vk::ShaderStageFlagBits::eVertex,
-				0,
-				sizeof(ChunkWaterPushConstants),
-				&pc
-			);
-
-			item.gpu->drawWater(cmd);
-		} // end for
-	}
-	cmd.endRendering();
+		item.gpu->drawWater(cmd);
+	} // end for
 } // end of renderWater()
 
 
@@ -479,8 +404,8 @@ void WaterPassVk::createPipeline()
 
 	desc.setLayouts = { descriptorSet_.getLayout() };
 
-	desc.colorFormat = vk_.getSwapChainImageFormat();
-	desc.depthFormat = vk_.getDepthFormat();
+	desc.colorFormat = vk::Format::eR32G32B32A32Sfloat;
+	desc.depthFormat = vk::Format::eD32Sfloat;
 
 	desc.cullMode = vk::CullModeFlagBits::eBack;
 	desc.frontFace = vk::FrontFace::eClockwise;

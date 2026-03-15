@@ -1,5 +1,6 @@
 #include "fxaa_pass.h"
 
+#include "constants.h"
 #include "bindings.h"
 
 #include "shader.h"
@@ -8,6 +9,8 @@
 #include <glad/glad.h>
 
 #include <stdexcept>
+
+using namespace FXAA_Constants;
 
 //--- PUBLIC ---//
 FXAAPass::FXAAPass() = default;
@@ -64,9 +67,9 @@ void FXAAPass::render(uint32_t sceneColorTex)
 
 	shader_->use();
 	fxaaPassUBO_.u_inverseScreenSize = glm::vec2(1.0f / static_cast<float>(width_), 1.0f / static_cast<float>(height_));
-	fxaaPassUBO_.u_edgeSharpnessQuality = edgeSharpnessQuality_;
-	fxaaPassUBO_.u_edgeThresholdMax = edgeThresholdMax_;
-	fxaaPassUBO_.u_edgeThresholdMin = edgeThresholdMin_;
+	fxaaPassUBO_.u_edgeSharpnessQuality = EDGE_SHARP_QUALITY;
+	fxaaPassUBO_.u_edgeThresholdMax = EDGE_THRESH_MAX;
+	fxaaPassUBO_.u_edgeThresholdMin = EDGE_THRESH_MIN;
 	ubo_.update(&fxaaPassUBO_, sizeof(fxaaPassUBO_));
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -75,21 +78,6 @@ void FXAAPass::render(uint32_t sceneColorTex)
 
 	if (prevDepth) glEnable(GL_DEPTH_TEST);
 } // end of render()
-
-void FXAAPass::setSharpnessQuality(float v)
-{ 
-	edgeSharpnessQuality_ = v;
-} // end of setSubpix()
-
-void FXAAPass::setEdgeThresholdMax(float v)
-{ 
-	edgeThresholdMax_ = v;
-} // end of setEdgeThreshold()
-
-void FXAAPass::setEdgeThresholdMin(float v) 
-{
-	edgeThresholdMin_ = v; 
-} // end of setEdgeThresholdMin()
 
 uint32_t FXAAPass::getOutputTex() const
 {
