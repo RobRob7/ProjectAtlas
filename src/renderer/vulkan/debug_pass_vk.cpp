@@ -11,7 +11,6 @@
 #include "buffer_vk.h"
 #include "descriptor_set_vk.h"
 #include "graphics_pipeline_vk.h"
-#include "ui_vk.h"
 
 #include "vulkan_main.h"
 
@@ -69,8 +68,7 @@ void DebugPassVk::render(
 	vk::ImageLayout oldLayout,
 	float nearPlane,
 	float farPlane,
-	int mode,
-	UIVk* ui
+	int mode
 )
 {
 	vk::CommandBuffer cmd = frame.cmd;
@@ -140,9 +138,6 @@ void DebugPassVk::render(
 		);
 
 		cmd.draw(3, 1, 0, 0);
-
-		// render UI last
-		ui->render(cmd);
 	}
 	cmd.endRendering();
 	

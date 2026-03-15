@@ -12,7 +12,6 @@ class GBufferPassVk;
 class ShaderModuleVk;
 struct FrameContext;
 class ImageVk;
-class UIVk;
 
 class DebugPassVk
 {
@@ -28,8 +27,7 @@ public:
 		vk::ImageLayout oldLayout,
 		float nearPlane,
 		float farPlane,
-		int mode,
-		UIVk* ui
+		int mode
 	);
 
 private:

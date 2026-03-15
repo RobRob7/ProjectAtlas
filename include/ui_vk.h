@@ -13,6 +13,7 @@
 class IScene;
 struct GLFWwindow;
 struct RenderSettings;
+struct FrameContext;
 class VulkanMain;
 class Texture2DVk;
 
@@ -27,7 +28,7 @@ public:
 
 	void beginFrame();
 	void buildUI(float dt, IScene& scene);
-	void render(vk::CommandBuffer cmd);
+	void render(vk::CommandBuffer cmd, FrameContext& frame);
 	void setUIInputEnabled(bool enabled);
 	void setUIDisplayEnabled(bool enabled);
 	void setCameraModeUIEnabled(bool enabled);

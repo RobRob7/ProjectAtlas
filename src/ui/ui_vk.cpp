@@ -2,6 +2,7 @@
 
 #include "vulkan_main.h"
 #include "render_settings.h"
+#include "frame_context_vk.h"
 
 #include "i_scene.h"
 #include "i_light.h"
@@ -129,12 +130,29 @@ void UIVk::buildUI(float dt, IScene& scene)
 	ImGui::Render();
 } // end of drawFullUI()
 
-void UIVk::render(vk::CommandBuffer cmd)
+void UIVk::render(vk::CommandBuffer cmd, FrameContext& frame)
 {
-	ImGui_ImplVulkan_RenderDrawData(
-		ImGui::GetDrawData(), 
-		cmd
-	);
+	vk::RenderingAttachmentInfo uiColorAttach{};
+	uiColorAttach.imageView = frame.colorImageView;
+	uiColorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	uiColorAttach.loadOp = vk::AttachmentLoadOp::eLoad;
+	uiColorAttach.storeOp = vk::AttachmentStoreOp::eStore;
+
+	vk::RenderingInfo uiRenderingInfo{};
+	uiRenderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
+	uiRenderingInfo.renderArea.extent = frame.extent;
+	uiRenderingInfo.layerCount = 1;
+	uiRenderingInfo.colorAttachmentCount = 1;
+	uiRenderingInfo.pColorAttachments = &uiColorAttach;
+	uiRenderingInfo.pDepthAttachment = nullptr;
+	cmd.beginRendering(uiRenderingInfo);
+	{
+		ImGui_ImplVulkan_RenderDrawData(
+			ImGui::GetDrawData(),
+			cmd
+		);
+	}
+	cmd.endRendering();
 } // end of render()
 
 void UIVk::setUIInputEnabled(bool enabled)
