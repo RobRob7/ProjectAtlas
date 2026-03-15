@@ -269,51 +269,6 @@ uint32_t VulkanMain::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags
 	throw std::runtime_error("failed to find suitable memory type!");
 } // end of findMemoryType()
 
-void VulkanMain::createBuffer(
-	vk::DeviceSize size,
-	vk::BufferUsageFlags usage,
-	vk::MemoryPropertyFlags properties,
-	vk::Buffer& buffer,
-	vk::DeviceMemory& bufferMemory) const
-{
-	vk::BufferCreateInfo bufferInfo{};
-	bufferInfo.size = size;
-	bufferInfo.usage = usage;
-	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
-	{
-		vk::ResultValue rv = device_->createBuffer(bufferInfo, nullptr);
-		if (rv.result != vk::Result::eSuccess)
-		{
-			throw std::runtime_error("createBuffer failed: " + vk::to_string(rv.result));
-		}
-		buffer = rv.value;
-	}
-
-	vk::MemoryRequirements memRequirements = device_->getBufferMemoryRequirements(buffer);
-
-	vk::MemoryAllocateInfo allocInfo{};
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-	{
-		vk::ResultValue rv = device_->allocateMemory(allocInfo, nullptr);
-		if (rv.result != vk::Result::eSuccess)
-		{
-			throw std::runtime_error("allocateMemory failed: " + vk::to_string(rv.result));
-		}
-		bufferMemory = rv.value;
-	}
-
-	{
-		vk::Result res = device_->bindBufferMemory(buffer, bufferMemory, 0);
-		if (res != vk::Result::eSuccess)
-		{
-			throw std::runtime_error("bindBufferMemory failed: " + vk::to_string(res));
-		}
-	}
-} // end of createBuffer()
-
 vk::CommandBuffer VulkanMain::beginSingleTimeCommands() const
 {
 	vk::CommandBufferAllocateInfo allocInfo{};
@@ -381,7 +336,10 @@ void VulkanMain::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::Devi
 	vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
 
 	vk::BufferCopy copyRegion{};
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
 	copyRegion.size = size;
+
 	commandBuffer.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
 
 	endSingleTimeCommands(commandBuffer);

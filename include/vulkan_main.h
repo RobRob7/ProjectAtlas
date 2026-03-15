@@ -55,13 +55,6 @@ public:
 
     uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
 
-    void createBuffer(
-        vk::DeviceSize size,
-        vk::BufferUsageFlags usage,
-        vk::MemoryPropertyFlags properties,
-        vk::Buffer& buffer,
-        vk::DeviceMemory& bufferMemory) const;
-
     vk::CommandBuffer beginSingleTimeCommands() const;
     void endSingleTimeCommands(vk::CommandBuffer commandBuffer) const;
 
