@@ -32,7 +32,7 @@ namespace VkUtils
 		vk::CommandBuffer cmd,
 		vk::Image image,
 		vk::ImageAspectFlags aspectMask,
-		vk::ImageLayout oldLayout,
+		vk::ImageLayout& oldLayout,
 		vk::ImageLayout newLayout,
 		uint32_t layers,
 		uint32_t mipLevels

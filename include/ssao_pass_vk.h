@@ -70,10 +70,10 @@ private:
 	GraphicsPipelineVk ssaoBlurPipeline_;
 
 	vk::Format noiseFormat_ = vk::Format::eR16G16B16A16Sfloat;
+	vk::Format singleChannelFormat_ = vk::Format::eR8Unorm;
 
 	vk::ImageLayout singleChannelRawLayout_ = vk::ImageLayout::eUndefined;
 	vk::ImageLayout singleChannelBlurLayout_ = vk::ImageLayout::eUndefined;
-	vk::Format singleChannelFormat_ = vk::Format::eR8Unorm;
 
 	std::array<glm::vec4, SSAO_Constants::MAX_KERNEL_SIZE> samples_{};
 };

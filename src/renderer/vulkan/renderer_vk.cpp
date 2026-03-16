@@ -150,33 +150,26 @@ void RendererVk::renderFrame(
 
 	// --------------- FORWARD RENDER --------------- //
 	// scene color transition to attachment
-	if (sceneColorLayout_ != vk::ImageLayout::eColorAttachmentOptimal)
-	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			sceneColor_.image(),
-			vk::ImageAspectFlagBits::eColor,
-			sceneColorLayout_,
-			vk::ImageLayout::eColorAttachmentOptimal,
-			1,
-			1
-		);
-		sceneColorLayout_ = vk::ImageLayout::eColorAttachmentOptimal;
-	}
+	VkUtils::TransitionImageLayout(
+		cmd,
+		sceneColor_.image(),
+		vk::ImageAspectFlagBits::eColor,
+		sceneColorLayout_,
+		vk::ImageLayout::eColorAttachmentOptimal,
+		1,
+		1
+	);
+
 	// scene depth transition to attachment
-	if (sceneDepthLayout_ != vk::ImageLayout::eDepthAttachmentOptimal)
-	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			sceneDepth_.image(),
-			vk::ImageAspectFlagBits::eDepth,
-			sceneDepthLayout_,
-			vk::ImageLayout::eDepthAttachmentOptimal,
-			1,
-			1
-		);
-		sceneDepthLayout_ = vk::ImageLayout::eDepthAttachmentOptimal;
-	}
+	VkUtils::TransitionImageLayout(
+		cmd,
+		sceneDepth_.image(),
+		vk::ImageAspectFlagBits::eDepth,
+		sceneDepthLayout_,
+		vk::ImageLayout::eDepthAttachmentOptimal,
+		1,
+		1
+	);
 
 	vk::ClearValue clear{};
 	clear.color.float32[0] = 0.0f;
@@ -245,64 +238,64 @@ void RendererVk::renderFrame(
 	cmd.endRendering();
 
 	// scene color transition to shader read
-	if (sceneColorLayout_ != vk::ImageLayout::eShaderReadOnlyOptimal)
-	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			sceneColor_.image(),
-			vk::ImageAspectFlagBits::eColor,
-			sceneColorLayout_,
-			vk::ImageLayout::eShaderReadOnlyOptimal,
-			1,
-			1
-		);
-		sceneColorLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
-	}
-	// scene depth transition to shader read
-	if (sceneDepthLayout_ != vk::ImageLayout::eShaderReadOnlyOptimal)
-	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			sceneDepth_.image(),
-			vk::ImageAspectFlagBits::eDepth,
-			sceneDepthLayout_,
-			vk::ImageLayout::eShaderReadOnlyOptimal,
-			1,
-			1
-		);
-		sceneDepthLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
-	}
+	VkUtils::TransitionImageLayout(
+		cmd,
+		sceneColor_.image(),
+		vk::ImageAspectFlagBits::eColor,
+		sceneColorLayout_,
+		vk::ImageLayout::eShaderReadOnlyOptimal,
+		1,
+		1
+	);
 
-	if (frame.colorLayout != vk::ImageLayout::eColorAttachmentOptimal)
-	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			frame.colorImage,
-			vk::ImageAspectFlagBits::eColor,
-			frame.colorLayout,
-			vk::ImageLayout::eColorAttachmentOptimal,
-			1,
-			1
-		);
-		frame.colorLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	}
+	// scene depth transition to shader read
+	VkUtils::TransitionImageLayout(
+		cmd,
+		sceneDepth_.image(),
+		vk::ImageAspectFlagBits::eDepth,
+		sceneDepthLayout_,
+		vk::ImageLayout::eShaderReadOnlyOptimal,
+		1,
+		1
+	);
+
+
+	// swap swapchain color image to color attachment
+	VkUtils::TransitionImageLayout(
+		cmd,
+		frame.colorImage,
+		vk::ImageAspectFlagBits::eColor,
+		frame.colorLayout,
+		vk::ImageLayout::eColorAttachmentOptimal,
+		1,
+		1
+	);
+
+	// swap swapchain depth image to depth attachment
+	VkUtils::TransitionImageLayout(
+		cmd,
+		frame.depthImage,
+		vk::ImageAspectFlagBits::eDepth,
+		frame.depthLayout,
+		vk::ImageLayout::eDepthAttachmentOptimal,
+		1,
+		1
+	);
 	// --------------- END FORWARD RENDER --------------- //
 
 
 	// --------------- POST-PROCESSING --------------- //
 	// FXAA
-	//if (renderSettings_->useFXAA)
-	//{
-	//	//fxaaPass_->render(forwardColorTex_);
-	//	//finalColorTex = fxaaPass_->getOutputTex();
-	//}
+	if (renderSettings_->useFXAA)
+	{
+		
+	}
 
-	//// FOG
-	//if (renderSettings_->useFog)
-	//{
-	//	fogPass_->render(finalColorTex, forwardDepthTex_,
-	//		in.camera->getNearPlane(), in.camera->getFarPlane(), in.world->getAmbientStrength());
-	//}
+	// FOG
+	if (renderSettings_->useFog)
+	{
+
+	}
 	// --------------- END POST-PROCESSING --------------- //
 
 
@@ -336,7 +329,6 @@ void RendererVk::renderFrame(
 		1,
 		1
 	);
-	frame.colorLayout = vk::ImageLayout::ePresentSrcKHR;
 	vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
 } // end of renderFrame()
 

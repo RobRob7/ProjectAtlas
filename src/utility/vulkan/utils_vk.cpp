@@ -1,5 +1,7 @@
 #include "utils_vk.h"
 
+#include <vulkan/vulkan.hpp>
+
 #include <vector>
 #include <stdexcept>
 
@@ -105,12 +107,18 @@ namespace VkUtils
 		vk::CommandBuffer cmd,
 		vk::Image image,
 		vk::ImageAspectFlags aspectMask,
-		vk::ImageLayout oldLayout,
+		vk::ImageLayout& oldLayout,
 		vk::ImageLayout newLayout,
 		uint32_t layers,
 		uint32_t mipLevels
 	)
 	{
+		// early return if old == new
+		if (oldLayout == newLayout)
+		{
+			return;
+		}
+
 		vk::ImageMemoryBarrier barrier{};
 		barrier.oldLayout = oldLayout;
 		barrier.newLayout = newLayout;
@@ -192,7 +200,9 @@ namespace VkUtils
 		}
 		else
 		{
-			throw std::runtime_error("Unsupported frame image layout transition");
+			throw std::runtime_error(
+				"Unsupported frame image layout transition: " + vk::to_string(oldLayout) + " -> " + vk::to_string(newLayout)
+			);
 		}
 
 		cmd.pipelineBarrier(
@@ -203,5 +213,7 @@ namespace VkUtils
 			{},
 			barrier
 		);
+
+		oldLayout = newLayout;
 	} // end of TransitionImageLayout()
-}
+};
