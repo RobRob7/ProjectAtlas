@@ -265,7 +265,7 @@ void ImageVk::createSampler(
 
 	sci.mipmapMode = mipmapMode;
 	sci.minLod = 0.0f;
-	sci.maxLod = static_cast<float>(mipLevels_);
+	sci.maxLod = std::min(5.0f, static_cast<float>(mipLevels_ - 1));
 	sci.mipLodBias = 0.0f;
 
 	vk::ResultValue rv = vk_.getDevice().createSamplerUnique(sci);

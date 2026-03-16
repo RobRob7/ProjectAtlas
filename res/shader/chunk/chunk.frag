@@ -39,19 +39,50 @@ layout(location = 0) out vec4 FragColor;
 const float ATLAS_COLS = 32.0;
 const float ATLAS_ROWS = 32.0;
 
+const float INNER_TILE_SIZE = 16.0;
+const float PADDED_TILE_SIZE = 32.0;
+const float PADDING = 8.0;
+const float INSET = 0.0;
+
 vec2 atlasUV(uvec2 tile, vec2 local01)
 {
-    vec2 tileW = vec2(1.0 / ATLAS_COLS, 1.0 / ATLAS_ROWS);
-    return (vec2(tile) + local01) * tileW;
-}
+    vec2 atlasPixelSize = vec2(
+        ATLAS_COLS * PADDED_TILE_SIZE,
+        ATLAS_ROWS * PADDED_TILE_SIZE
+    );
+
+    vec2 cellOriginPx = vec2(tile) * PADDED_TILE_SIZE;
+    vec2 innerOriginPx = cellOriginPx + vec2(PADDING);
+
+    vec2 innerSpan = vec2(INNER_TILE_SIZE - 1.0 - 2.0 * INSET);
+
+    vec2 innerUVPx = innerOriginPx
+                   + vec2(0.5 + INSET)
+                   + local01 * innerSpan;
+
+    return innerUVPx / atlasPixelSize;
+} // end of atlasUV()
 
 void main()
 {
     // get correct UV (due to greedy meshing)
-    vec2 local = fract(TileUV);
+    vec2 tiled = TileUV;
+    vec2 local = fract(tiled);
+
     vec2 uv = atlasUV(Tile, local);
 
-    vec4 texColor = texture(u_atlasTex, uv);
+    vec2 atlasPixelSize = vec2(
+        ATLAS_COLS * PADDED_TILE_SIZE,
+        ATLAS_ROWS * PADDED_TILE_SIZE
+    );
+
+    vec2 innerSpan = vec2(INNER_TILE_SIZE - 1.0 - 2.0 * INSET);
+    vec2 uvScale = innerSpan / atlasPixelSize;
+
+    vec2 dudx = dFdx(tiled) * uvScale;
+    vec2 dudy = dFdy(tiled) * uvScale;
+
+    vec4 texColor = textureGrad(u_atlasTex, uv, dudx, dudy);
 
     // allow textures to be see-through
     // (like tree canopy texture)

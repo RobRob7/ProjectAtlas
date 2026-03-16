@@ -431,17 +431,6 @@ uint32_t ChunkMesh::computeRenderedBlockCount()
 	return count;
 } // end of computeRenderedBlockCount()
 
-glm::vec2 ChunkMesh::atlasUV(const glm::vec2& localUV, int tileX, int tileY)
-{
-	float tileW = 1.0f / ATLAS_COLS;
-	float tileH = 1.0f / ATLAS_ROWS;
-
-	return glm::vec2(
-		(tileX + localUV.x) * tileW,
-		(tileY + localUV.y) * tileH
-	);
-} // end of atlasUV()
-
 void ChunkMesh::getBlockTile(BlockID id, int& tileX, int& tileY, std::optional<FaceDir> face)
 {
 	switch (id)

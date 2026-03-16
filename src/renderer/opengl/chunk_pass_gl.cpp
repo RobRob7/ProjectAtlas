@@ -25,7 +25,7 @@ void ChunkPassGL::init()
 {
 	opaqueShader_ = std::make_unique<Shader>("chunk/chunk.vert", "chunk/chunk.frag");
 
-	atlas_ = std::make_unique<Texture>("blocks.png", true);
+	atlas_ = std::make_unique<Texture>("blocks_padded.png", true);
 
     uboOpaque_.init<sizeof(ChunkOpaqueUBO)>();
 } // end of init()
