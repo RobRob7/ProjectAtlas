@@ -5,13 +5,13 @@
 #include "bindings.h"
 #include "shader_vk.h"
 #include "vulkan_main.h"
+#include "image_vk.h"
 
 #include <vulkan/vulkan.hpp>
 
 //--- PUBLIC ---//
-PresentPassVk::PresentPassVk(VulkanMain& vk, ImageVk& inputImage)
+PresentPassVk::PresentPassVk(VulkanMain& vk)
 	: vk_(vk),
-	inputImage_(inputImage),
 	descriptorSet_(vk),
 	pipeline_(vk)
 {
@@ -31,18 +31,19 @@ void PresentPassVk::init()
     createPipeline();
 } // end of init()
 
-void PresentPassVk::refreshInput()
+void PresentPassVk::setInput(ImageVk& input)
 {
-    descriptorSet_.writeCombinedImageSampler(
-        TO_API_FORM(PresentPassBinding::ForwardColorTex),
-        inputImage_.view(),
-        inputImage_.sampler()
-    );
-} // end of refreshInput()
+    inputImage_ = &input;
+} // end of setInput()
 
-void PresentPassVk::render(vk::CommandBuffer cmd, FrameContext& frame)
+void PresentPassVk::render(
+    vk::CommandBuffer cmd,
+    FrameContext& frame
+)
 {
-    if (!descriptorSet_.valid() || !pipeline_.valid())
+    refreshInput();
+
+    if (!inputImage_ || !descriptorSet_.valid() || !pipeline_.valid())
     {
         return;
     }
@@ -102,6 +103,27 @@ void PresentPassVk::render(vk::CommandBuffer cmd, FrameContext& frame)
 
 
 //--- PRIVATE ---//
+void PresentPassVk::refreshInput()
+{
+    if (!inputImage_)
+        return;
+
+    if (boundInputImage_ == inputImage_ &&
+        inputGeneration_ == inputImage_->generation())
+    {
+        return;
+    }
+
+    descriptorSet_.writeCombinedImageSampler(
+        TO_API_FORM(PresentPassBinding::ForwardColorTex),
+        inputImage_->view(),
+        inputImage_->sampler()
+    );
+
+    boundInputImage_ = inputImage_;
+    inputGeneration_ = inputImage_->generation();
+} // end of refreshInput()
+
 void PresentPassVk::createDescriptorSet()
 {
     vk::DescriptorSetLayoutBinding inputBinding{};
@@ -128,7 +150,6 @@ void PresentPassVk::createPipeline()
 
     desc.setLayouts = { descriptorSet_.getLayout() };
 
-    // output is swapchain image
     desc.colorFormat = vk_.getSwapChainImageFormat();
     desc.depthFormat = vk::Format::eUndefined;
 
@@ -137,6 +158,5 @@ void PresentPassVk::createPipeline()
     desc.depthTestEnable = false;
     desc.depthWriteEnable = false;
 
-    // no vertex input needed for fullscreen triangle
     pipeline_.create(desc);
 } // end of createPipeline()
