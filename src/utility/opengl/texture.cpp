@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <filesystem>
+#include <cmath>
 
 //--- PUBLIC ---//
 Texture::Texture(const std::string& filePath, const bool needToFlip)
@@ -64,8 +65,11 @@ Texture::Texture(const std::string& filePath, const bool needToFlip)
 
 	// generate texture OpenGL
 	glCreateTextures(GL_TEXTURE_2D, 1, &id_);
+
 	int levels = 1 + static_cast<int>(std::floor(std::log2(std::max(width_, height_))));
 	glTextureStorage2D(id_, levels, internalFormat, width_, height_);
+	glTextureParameteri(id_, GL_TEXTURE_MAX_LEVEL, std::min(levels - 1, 4));
+
 	glTextureSubImage2D(id_, 0, 0, 0, width_, height_, format, GL_UNSIGNED_BYTE, data);
 	glGenerateTextureMipmap(id_);
 

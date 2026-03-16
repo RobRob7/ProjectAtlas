@@ -55,7 +55,7 @@ void ChunkPassVk::init()
 		"gbuffer/gbuffer.frag.spv"
 	);
 
-	atlas_.loadFromFile("blocks.png", true);
+	atlas_.loadFromFile("blocks_padded.png", true);
 
 	createOpaqueResources();
 	createOpaqueOffscreenResources();

@@ -120,7 +120,6 @@ private:
     uint32_t computeRenderedBlockCount();
 
     // atlas
-    glm::vec2 atlasUV(const glm::vec2& localUV, int tileX, int tileY);
     void getBlockTile(BlockID id, int& tileX, int& tileY, std::optional<FaceDir> face);
 };
 
