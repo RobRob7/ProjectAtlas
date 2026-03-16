@@ -58,6 +58,8 @@ public:
 
 	void destroy();
 
+    uint64_t generation() const { return generation_; }
+
     bool valid() const { return static_cast<bool>(image_); }
 
     vk::Image image() const { return image_.get(); }
@@ -86,6 +88,7 @@ private:
 
     uint32_t mipLevels_{ 1 };
 
+    uint64_t generation_{ 0 };
 };
 
 #endif

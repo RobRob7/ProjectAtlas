@@ -22,6 +22,7 @@ class ChunkPassVk;
 class WaterPassVk;
 
 class FXAAPassVk;
+class FogPassVk;
 class PresentPassVk;
 
 class RendererVk final : public IRenderer
@@ -68,7 +69,9 @@ private:
 	std::unique_ptr<WaterPassVk> waterPass_;
 	std::unique_ptr<ChunkPassVk> chunkPass_;
 
-	//std::unique_ptr<FXAAPassVk> fxaaPass_;
+	std::unique_ptr<FXAAPassVk> fxaaPass_;
+	//std::unique_ptr<FogPassVk> fogPass_;
+
 	std::unique_ptr<PresentPassVk> presentPass_;
 };
 

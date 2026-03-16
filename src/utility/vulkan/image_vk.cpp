@@ -274,6 +274,8 @@ void ImageVk::createSampler(
 		throw std::runtime_error("ImageVk::createSampler - createSamplerUnique failed: " + vk::to_string(rv.result));
 	}
 	sampler_ = std::move(rv.value);
+
+    ++generation_;
 } // end of createSampler()
 
 void ImageVk::destroy()
@@ -288,4 +290,6 @@ void ImageVk::destroy()
 	height_ = 0;
 	layers_ = 0;
 	mipLevels_ = 1;
+
+    ++generation_;
 } // end of destroy()

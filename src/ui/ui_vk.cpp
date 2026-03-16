@@ -455,8 +455,8 @@ void UIVk::drawInspector(IScene& scene)
 		// SSAO toggle
 		ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
 
-		//// FXAA toggle
-		//ImGui::Checkbox("FXAA##render", &renderSettings_.useFXAA);
+		// FXAA toggle
+		ImGui::Checkbox("FXAA##render", &renderSettings_.useFXAA);
 
 		//// Fog toggle
 		//ImGui::Checkbox("Fog##render", &renderSettings_.useFog);

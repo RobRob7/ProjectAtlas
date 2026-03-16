@@ -19,6 +19,7 @@
 #include "ssao_pass_vk.h"
 #include "water_pass_vk.h"
 #include "chunk_pass_vk.h"
+#include "fxaa_pass_vk.h"
 #include "present_pass_vk.h"
 
 #include <glm/glm.hpp>
@@ -44,7 +45,8 @@ void RendererVk::init()
 	if (!waterPass_)	waterPass_ = std::make_unique<WaterPassVk>(vk_);
 	if (!chunkPass_)	chunkPass_ = std::make_unique<ChunkPassVk>(vk_, ssaoPass_->ssaoBlurImage());
 
-	if (!presentPass_)	presentPass_ = std::make_unique<PresentPassVk>(vk_, sceneColor_);
+	if (!fxaaPass_)		fxaaPass_ = std::make_unique<FXAAPassVk>(vk_);
+	if (!presentPass_)	presentPass_ = std::make_unique<PresentPassVk>(vk_);
 
 	gbufferPass_->init();
 	debugPass_->init();
@@ -54,6 +56,7 @@ void RendererVk::init()
 	chunkPass_->init();
 	chunkPass_->refreshSSAOBinding();
 
+	fxaaPass_->init();
 	presentPass_->init();
 } // end of init()
 
@@ -72,9 +75,9 @@ void RendererVk::resize(int w, int h)
 	if (waterPass_)		waterPass_->resize(width_, height_);
 	if (chunkPass_)		chunkPass_->refreshSSAOBinding();
 
-	createSceneAttachments();
+	if (fxaaPass_)		fxaaPass_->resize(width_, height_);
 
-	if (presentPass_)	presentPass_->refreshInput();
+	createSceneAttachments();
 } // end of resize()
 
 void RendererVk::renderFrame(
@@ -83,9 +86,9 @@ void RendererVk::renderFrame(
 	UIVk* ui
 )
 {
-	FrameContext& frame = *const_cast<FrameContext*>(pFrame);
-
 	in.world->update(in.camera->getCameraPosition());
+
+	FrameContext& frame = *const_cast<FrameContext*>(pFrame);
 
 	if (frame.extent.width != width_ || frame.extent.height != height_)
 	{
@@ -122,8 +125,10 @@ void RendererVk::renderFrame(
 			(renderSettings_->debugMode == DebugMode::Normals) ? 1 : 2
 		);
 
-		// render UI last
-		ui->render(cmd, frame);
+		if (ui)
+		{
+			ui->render(cmd, frame);
+		}
 
 		// present
 		vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
@@ -270,25 +275,17 @@ void RendererVk::renderFrame(
 		1,
 		1
 	);
-
-	// swap swapchain depth image to depth attachment
-	VkUtils::TransitionImageLayout(
-		cmd,
-		frame.depthImage,
-		vk::ImageAspectFlagBits::eDepth,
-		frame.depthLayout,
-		vk::ImageLayout::eDepthAttachmentOptimal,
-		1,
-		1
-	);
 	// --------------- END FORWARD RENDER --------------- //
 
 
 	// --------------- POST-PROCESSING --------------- //
+	ImageVk* postColor = &sceneColor_;
 	// FXAA
 	if (renderSettings_->useFXAA)
 	{
-		
+		fxaaPass_->setInput(*postColor);
+		fxaaPass_->render(cmd);
+		postColor = &fxaaPass_->getOutputImage();
 	}
 
 	// FOG
@@ -302,6 +299,7 @@ void RendererVk::renderFrame(
 	// --------------- PRESENT PASS --------------- //
 	if (presentPass_)
 	{
+		presentPass_->setInput(*postColor);
 		presentPass_->render(cmd, frame);
 	}
 	// --------------- END PRESENT PASS --------------- //
