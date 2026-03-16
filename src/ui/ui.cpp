@@ -181,7 +181,7 @@ void UI::drawTopBar()
 	ImGui::SameLine(0.0f, 1.0f);
 
 	// ----- title -----
-	ImGui::TextUnformatted("Project Atlas");
+	ImGui::TextUnformatted("Project Atlas (OpenGL)");
 	ImGui::SameLine();
 
 	// right-aligned window buttons
