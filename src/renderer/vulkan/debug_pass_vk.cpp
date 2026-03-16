@@ -65,7 +65,7 @@ void DebugPassVk::resize(int w, int h)
 
 void DebugPassVk::render(
 	const FrameContext& frame,
-	vk::ImageLayout oldLayout,
+	vk::ImageLayout layout,
 	float nearPlane,
 	float farPlane,
 	int mode
@@ -84,7 +84,7 @@ void DebugPassVk::render(
 		cmd,
 		frame.colorImage,
 		vk::ImageAspectFlagBits::eColor,
-		oldLayout,
+		layout,
 		vk::ImageLayout::eColorAttachmentOptimal,
 		1,
 		1
@@ -145,7 +145,7 @@ void DebugPassVk::render(
 		cmd,
 		frame.colorImage,
 		vk::ImageAspectFlagBits::eColor,
-		vk::ImageLayout::eColorAttachmentOptimal,
+		layout,
 		vk::ImageLayout::ePresentSrcKHR,
 		1,
 		1

@@ -448,7 +448,6 @@ void WaterPassVk::waterPass(
 		1,
 		1
 	);
-	reflColorLayout_ = vk::ImageLayout::eColorAttachmentOptimal;
 
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -459,7 +458,6 @@ void WaterPassVk::waterPass(
 		1,
 		1
 	);
-	reflDepthLayout_ = vk::ImageLayout::eDepthAttachmentOptimal;
 
 	waterReflectionPass(frame, chunk, in);
 
@@ -467,23 +465,21 @@ void WaterPassVk::waterPass(
 		cmd,
 		reflColorImage_.image(),
 		vk::ImageAspectFlagBits::eColor,
-		vk::ImageLayout::eColorAttachmentOptimal,
+		reflColorLayout_,
 		vk::ImageLayout::eShaderReadOnlyOptimal,
 		1,
 		1
 	);
-	reflColorLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 	VkUtils::TransitionImageLayout(
 		cmd,
 		reflDepthImage_.image(),
 		vk::ImageAspectFlagBits::eDepth,
-		vk::ImageLayout::eDepthAttachmentOptimal,
+		reflDepthLayout_,
 		vk::ImageLayout::eShaderReadOnlyOptimal,
 		1,
 		1
 	);
-	reflDepthLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 
 	// REFRACTION
@@ -496,7 +492,6 @@ void WaterPassVk::waterPass(
 		1,
 		1
 	);
-	refrColorLayout_ = vk::ImageLayout::eColorAttachmentOptimal;
 
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -507,7 +502,6 @@ void WaterPassVk::waterPass(
 		1,
 		1
 	);
-	refrDepthLayout_ = vk::ImageLayout::eDepthAttachmentOptimal;
 
 	waterRefractionPass(frame, chunk, in);
 
@@ -515,23 +509,21 @@ void WaterPassVk::waterPass(
 		cmd,
 		refrColorImage_.image(),
 		vk::ImageAspectFlagBits::eColor,
-		vk::ImageLayout::eColorAttachmentOptimal,
+		refrColorLayout_,
 		vk::ImageLayout::eShaderReadOnlyOptimal,
 		1,
 		1
 	);
-	refrColorLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 	VkUtils::TransitionImageLayout(
 		cmd,
 		refrDepthImage_.image(),
 		vk::ImageAspectFlagBits::eDepth,
-		vk::ImageLayout::eDepthAttachmentOptimal,
+		refrDepthLayout_,
 		vk::ImageLayout::eShaderReadOnlyOptimal,
 		1,
 		1
 	);
-	refrDepthLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 } // end of waterPass()
 
 void WaterPassVk::waterReflectionPass(

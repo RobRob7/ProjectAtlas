@@ -93,7 +93,6 @@ void SSAOPassVk::renderOffscreen(
 			1,
 			1
 		);
-		singleChannelRawLayout_ = vk::ImageLayout::eColorAttachmentOptimal;
 
 		vk::ClearValue aoClear{};
 		aoClear.color.float32[0] = 1.0f;
@@ -167,12 +166,11 @@ void SSAOPassVk::renderOffscreen(
 			cmd,
 			ssaoRawImage_.image(),
 			vk::ImageAspectFlagBits::eColor,
-			vk::ImageLayout::eColorAttachmentOptimal,
+			singleChannelRawLayout_,
 			vk::ImageLayout::eShaderReadOnlyOptimal,
 			1,
 			1
 		);
-		singleChannelRawLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 	}
 
 	// SSAO BLUR RENDER
@@ -186,7 +184,6 @@ void SSAOPassVk::renderOffscreen(
 			1,
 			1
 		);
-		singleChannelBlurLayout_ = vk::ImageLayout::eColorAttachmentOptimal;
 
 		vk::ClearValue aoClear{};
 		aoClear.color.float32[0] = 1.0f;
@@ -253,12 +250,11 @@ void SSAOPassVk::renderOffscreen(
 			cmd,
 			ssaoBlurImage_.image(),
 			vk::ImageAspectFlagBits::eColor,
-			vk::ImageLayout::eColorAttachmentOptimal,
+			singleChannelBlurLayout_,
 			vk::ImageLayout::eShaderReadOnlyOptimal,
 			1,
 			1
 		);
-		singleChannelBlurLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 	}
 } // end of renderOffscreen()
 
@@ -266,6 +262,10 @@ void SSAOPassVk::renderOffscreen(
 //--- PRIVATE ---//
 void SSAOPassVk::createAttachments()
 {
+	// RESET
+	singleChannelRawLayout_ = vk::ImageLayout::eUndefined;
+	singleChannelBlurLayout_ = vk::ImageLayout::eUndefined;
+
 	// RAW
 	ssaoRawImage_.createImage(
 		width_,
@@ -326,7 +326,7 @@ void SSAOPassVk::createAttachments()
 		cmd,
 		ssaoBlurImage_.image(),
 		vk::ImageAspectFlagBits::eColor,
-		vk::ImageLayout::eUndefined,
+		singleChannelBlurLayout_,
 		vk::ImageLayout::eColorAttachmentOptimal,
 		1,
 		1
@@ -362,15 +362,13 @@ void SSAOPassVk::createAttachments()
 		cmd,
 		ssaoBlurImage_.image(),
 		vk::ImageAspectFlagBits::eColor,
-		vk::ImageLayout::eColorAttachmentOptimal,
+		singleChannelBlurLayout_,
 		vk::ImageLayout::eShaderReadOnlyOptimal,
 		1,
 		1
 	);
 
 	vk_.endSingleTimeCommands(cmd);
-
-	singleChannelBlurLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 } // end of createAttachments()
 
 void SSAOPassVk::createBuffers()

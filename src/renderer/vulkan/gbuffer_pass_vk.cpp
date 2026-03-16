@@ -61,7 +61,6 @@ void GBufferPassVk::render(
 		1,
 		1
 	);
-	normalLayout_ = vk::ImageLayout::eColorAttachmentOptimal;
 
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -72,7 +71,6 @@ void GBufferPassVk::render(
 		1,
 		1
 	);
-	depthLayout_ = vk::ImageLayout::eDepthAttachmentOptimal;
 
 	vk::ClearValue normalClear{};
 	normalClear.color.float32[0] = 0.0f;
@@ -136,23 +134,21 @@ void GBufferPassVk::render(
 		cmd,
 		gNormalImage_.image(),
 		vk::ImageAspectFlagBits::eColor,
-		vk::ImageLayout::eColorAttachmentOptimal,
+		normalLayout_,
 		vk::ImageLayout::eShaderReadOnlyOptimal,
 		1,
 		1
 	);
-	normalLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 
 	VkUtils::TransitionImageLayout(
 		cmd,
 		gDepthImage_.image(),
 		vk::ImageAspectFlagBits::eDepth,
-		vk::ImageLayout::eDepthAttachmentOptimal,
+		depthLayout_,
 		vk::ImageLayout::eShaderReadOnlyOptimal,
 		1,
 		1
 	);
-	depthLayout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 } // end of render()
 
 

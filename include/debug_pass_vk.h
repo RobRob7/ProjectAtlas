@@ -24,7 +24,7 @@ public:
 
 	void render(
 		const FrameContext& frame,
-		vk::ImageLayout oldLayout,
+		vk::ImageLayout layout,
 		float nearPlane,
 		float farPlane,
 		int mode
