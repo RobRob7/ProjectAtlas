@@ -154,14 +154,24 @@ void RendererGL::renderFrame(
     // FOG
     if (renderSettings_->useFog)
     {
-        fogPass_->render(finalColorTex, forwardDepthTex_,
-            in.camera->getNearPlane(), in.camera->getFarPlane(), in.world->getAmbientStrength());
+        fogPass_->render(
+            finalColorTex, 
+            forwardDepthTex_,
+            in.camera->getNearPlane(), 
+            in.camera->getFarPlane(), 
+            in.world->getAmbientStrength()
+        );
+        finalColorTex = fogPass_->getOutputTex();
     }
-    else
+    // --------------- END POST-PROCESSING --------------- //
+
+
+    // --------------- PRESENT PASS --------------- //
+    if (presentPass_)
     {
         presentPass_->render(finalColorTex);
     }
-    // --------------- END POST-PROCESSING --------------- //
+    // --------------- END PRESENT PASS --------------- //
 
 
     // --------------- UI ELEMENTS --------------- //

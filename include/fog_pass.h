@@ -45,6 +45,8 @@ public:
         float ambStr
     );
 
+    uint32_t getOutputTex() const { return outputTex_; }
+
     void setFogColor(glm::vec3 v);
     void setFogStart(float v);
     void setFogEnd(float v);
@@ -54,11 +56,15 @@ private:
 private:
     int width_{};
     int height_{};
+
     glm::vec3 fogColor_{ 1.0f, 1.0f, 1.0f };
     float fogStart_{ 50.0f };
     float fogEnd_{ 500.0f };
 
     uint32_t fsVao_{};
+    uint32_t fbo_{};
+    uint32_t outputTex_{};
+
     std::unique_ptr<Shader> shader_;
 
     UBOGL ubo_{ TO_API_FORM(FogPassBinding::UBO) };

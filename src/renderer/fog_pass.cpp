@@ -6,6 +6,8 @@
 
 #include <glad/glad.h>
 
+#include <stdexcept>
+
 //--- PUBLIC ---//
 FogPass::FogPass() = default;
 
@@ -36,6 +38,34 @@ void FogPass::resize(int w, int h)
 
 	width_ = w;
 	height_ = h;
+
+	if (outputTex_)
+	{
+		glDeleteTextures(1, &outputTex_);
+		outputTex_ = 0;
+	}
+
+	if (fbo_ == 0)
+	{
+		glCreateFramebuffers(1, &fbo_);
+	}
+
+	glCreateTextures(GL_TEXTURE_2D, 1, &outputTex_);
+	glTextureStorage2D(outputTex_, 1, GL_RGBA8, width_, height_);
+	glTextureParameteri(outputTex_, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(outputTex_, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(outputTex_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(outputTex_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glNamedFramebufferTexture(fbo_, GL_COLOR_ATTACHMENT0, outputTex_, 0);
+
+	GLenum drawBuf = GL_COLOR_ATTACHMENT0;
+	glNamedFramebufferDrawBuffers(fbo_, 1, &drawBuf);
+
+	if (glCheckNamedFramebufferStatus(fbo_, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		throw std::runtime_error("FogPass framebuffer is incomplete!");
+	}
 } // end of resize()
 
 void FogPass::render(
@@ -58,10 +88,13 @@ void FogPass::render(
 
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
 	glViewport(0, 0, width_, height_);
 	glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(fsVao_);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 	
 	shader_->use();
 	fogPassUBO_.u_near = nearPlane;
@@ -96,6 +129,18 @@ void FogPass::setFogEnd(float v)
 //--- PRIVATE ---//
 void FogPass::destroyGL()
 {
+	if (outputTex_)
+	{
+		glDeleteTextures(1, &outputTex_);
+		outputTex_ = 0;
+	}
+
+	if (fbo_)
+	{
+		glDeleteFramebuffers(1, &fbo_);
+		fbo_ = 0;
+	}
+
 	if (fsVao_)
 	{
 		glDeleteVertexArrays(1, &fsVao_);
