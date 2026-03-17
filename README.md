@@ -1,5 +1,5 @@
 # Project Atlas
-A voxel-based rendering engine built with OpenGL 4.6 Core and C++17 for Windows.
+C++17 voxel-based rendering engine for Windows featuring a modular, interchangeable backend architecture supporting Vulkan 1.4 (Dynamic Rendering) and OpenGL 4.6 Core.
 
 <h3>
 Features:
@@ -12,15 +12,15 @@ Features:
 - Camera View Frustum Culling
 - Greedy Meshing for Chunks
 - Memory-Efficient Vertex Storage
-- Terrain generation using LibNoise
-- Placement and deletion of blocks
+- Procedural terrain generation using LibNoise
+- Block placement and destruction
 - World data persistence:
     - Auto-saving world state
     - Manual save system
 
 ## Controls
 - WASD – Move
-- Mouse – Look (camera mode)
+- Mouse – Free-look camera (when in camera mode)
 - Left Click – Break block
 - Right Click – Place block
 
@@ -44,11 +44,15 @@ Preview
 Rendering & Engine Techniques
 </h2>
 
-This project focuses on implementing real-time rendering techniques that are commonly used in modern game engines. Each technique was implemented from scratch and integrated into a multi-pass rendering pipeline.
+
+> Multi-frame-in-flight architecture with per-frame resources (descriptor sets, UBOs) to avoid CPU-GPU synchronization hazards.
+
+This project focuses on implementing real-time rendering techniques that are commonly used in modern game engines. Each technique was implemented from scratch with explicit control over GPU resources and pipeline state.
 
 > **Note:** FPS comparisons were recorded at the same camera position. Relative gains are hardware-agnostic; absolute FPS varies by GPU.
 
 ### Rendering Pipeline Overview
+> Vulkan backend utilizes dynamic rendering (no render passes/framebuffers) for flexible multi-pass composition.
 
 1. G-buffer pass (normals + depth)
 2. SSAO pass + blur
@@ -158,7 +162,7 @@ Memory-Efficient Vertex Storage
 ![optimized](milestones/10_OPT_ON.png)
 
 - Significantly reduced the per-vertex memory footprint for opaque geometry.
-- Previously, each vertex stored position (vec3), normal (vec3), and UV (vec2) totaling 32 bytes. New version packs this data inside a single uint32_t (4 bytes).
+- Previously, each vertex stored position (vec3), normal (vec3), and UV (vec2) totaling 32 bytes. The optimized format packs this data into a single uint32_t (4 bytes).
 - ~88% reduction in RAM usage: 1579 MB -> 185 MB.
 - ~14% reduction in VRAM usage: 5282 MB -> 4526 MB.
 
@@ -177,7 +181,7 @@ Procedural Terrain Generation
 - This allows for varied terrain features such as hills, oceans, and trees.
 
 **Why it matters:**  
-Procedural generation allows for large and varied worlds without having to worry about doing so by hand, while also maintaining a deterministic state.
+Procedural generation allows for large, varied worlds without having to worry about doing so by hand, while maintaining a deterministic state.
 
 <!--  -->
 ---
@@ -254,6 +258,11 @@ Milestones
 | ![](milestones/10a1_OPT_OFF.png) | ![](milestones/10b1_OPT_ON.png) |
 | ![](milestones/10a2_OPT_OFF.png) | ![](milestones/10b2_OPT_ON.png) |
 
+| OpenGL Render | Vulkan Render |
+|----------------------------|--------------------------------|
+| *Scene rendered in OpenGL.* | *Scene rendered in Vulkan.* |
+| ![](milestones/11a_opengl.png) | ![](milestones/11b_vulkan.png) |
+
 <h2>
 Requirements
 </h2>
@@ -303,7 +312,6 @@ Dependencies
 Libraries already provided, the following are used:
 |Library|Usage|Version|
 |-------|-------|-----|
-|[FreeType](https://freetype.org/download.html)|Font rendering|v2.10.0|
 |[Glad](https://glad.dav1d.de/)|OpenGL loader generator|N/A|
 |[GLFW](https://www.glfw.org/download.html)|API for creating windows, contexts and surfaces, receiving input and events|v3.4|
 |[GLM](https://github.com/g-truc/glm/releases/tag/1.0.1)|Header only C++ mathematics library|v1.01|
@@ -320,35 +328,71 @@ Project layout:
 - **src/**
     - main.cpp → main driver
     - **chunk/**
-        - chunkdata.cpp → chunk data
-        - chunkmanager.cpp → management of chunk meshes
-        - chunkmesh.cpp → chunk mesh
+        - **opengl/**
+            - chunk_mesh_gpu_gl.cpp → chunk mesh opengl
+        - **vulkan/**
+            - chunk_mesh_gpu_vk.cpp → chunk mesh vulkan
+        - chunk_data.cpp → chunk data
+        - chunk_manager.cpp → management of chunk meshes
+        - chunk_mesh.cpp → chunk mesh
     - **core/**
         - application.cpp → main application
-        - scene.cpp → object setup + renderer call
+        - scene.cpp → object setup + renderer call opengl
+        - scene_vk.cpp → object setup + renderer call vulkan
     - **light/**
-        - light.cpp → light cube object
+        - light.cpp → light cube object opengl
+        - light_vk.cpp → light cube object vulkan
+    - **main_opengl/**
+        - opengl_main.cpp → opengl main instance
+    - **main_vulkan/**
+        - buffer_vk.cpp → buffer helper class
+        - descriptor_set_vk.cpp → descriptor set helper class
+        - graphics_pipeline_vk.cpp → pipeline helper class
+        - vulkan_main.cpp → vulkan main instance
     - **player/**
-        - crosshair.cpp → crosshair UI icon
+        - crosshair.cpp → crosshair UI icon opengl
+        - crosshair_vk.cpp → crosshair UI icon vulkan
     - **renderer/**
-        - debugpass.cpp → G-buffer normal + depth view
-        - fogpass.cpp → fog pass
-        - fxaapass.cpp → FXAA pass
-        - gbufferpass.cpp → G-buffer pass
-        - presentpass.cpp → helper pass
-        - renderer.cpp → render pipeline
-        - ssaopass.cpp → SSAO pass
-        - waterpass.cpp → water pass
+        - **opengl/**
+            - chunk_pass_gl.cpp → opaque chunk render
+            - debug_pass.cpp → G-buffer normal + depth view
+            - fog_pass.cpp → fog pass
+            - fxaa_pass.cpp → FXAA pass
+            - gbuffer_pass.cpp → G-buffer pass
+            - present_pass.cpp → final image pass
+            - renderer_gl.cpp → render pipeline
+            - ssao_pass.cpp → SSAO pass
+            - water_pass.cpp → water pass
+        - **vulkan/**
+            - chunk_pass_vk.cpp → opaque chunk render
+            - debug_pass_vk.cpp → G-buffer normal + depth view
+            - fog_pass_vk.cpp → fog pass
+            - fxaa_pass_vk.cpp → FXAA pass
+            - gbuffer_pass_vk.cpp → G-buffer pass
+            - present_pass_vk.cpp → final image pass
+            - renderer_vk.cpp → render pipeline
+            - ssao_pass_vk.cpp → SSAO pass
+            - water_pass_vk.cpp → water pass
     - **save/**
         - save.cpp → world state saving
     - **system/**
         - camera.cpp → camera system
     - **ui/**
-        - ui.cpp → UI system
+        - ui.cpp → UI system opengl
+        - ui_vk.cpp → UI system vulkan
     - **utility/**
-        - cubemap.cpp → setup + render cubemap
-        - shader.cpp → shader helper class
-        - texture.cpp → setup texture
+        - **opengl/**
+            - cubemap_gl.cpp → setup + render cubemap
+            - shader.cpp → shader helper class
+            - texture.cpp → setup texture
+            - ubo_gl.cpp → UBO upload
+        - **vulkan/**
+            - cubemap_vk.cpp → setup + render cubemap
+            - image_vk.cpp → texture base
+            - shader_vk.cpp → shader helper
+            - texture_2d_vk.cpp → load texture from file
+            - texture_cubemap_vk.cpp → load multiple textures from file
+            - utils_vk.cpp → transition image helpers
 - **res/**
   - **shader/** → Shaders
   - **texture/** → Textures
