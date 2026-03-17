@@ -1,5 +1,5 @@
-#ifndef FXAA_PASS_VK_H
-#define FXAA_PASS_VK_H
+#ifndef FOG_PASS_VK_H
+#define FOG_PASS_VK_H
 
 #include "constants.h"
 
@@ -15,19 +15,25 @@
 
 class VulkanMain;
 class ShaderModuleVk;
+struct RenderSettings;
 
-class FXAAPassVk
+class FogPassVk
 {
 public:
-	FXAAPassVk(VulkanMain& vk);
-	~FXAAPassVk();
+	FogPassVk(VulkanMain& vk, RenderSettings& rs);
+	~FogPassVk();
 
 	void init();
 	void resize(int w, int h);
 
-	void setInput(ImageVk& input);
+	void setInput(ImageVk& inputColor, ImageVk& inputDepth);
 
-	void render(vk::CommandBuffer cmd);
+	void render(
+		vk::CommandBuffer cmd,
+		float nearPlane,
+		float farPlane,
+		float ambStr
+	);
 
 	ImageVk& getOutputImage() { return outputImage_; }
 
@@ -42,14 +48,19 @@ private:
 	int height_{};
 
 	VulkanMain& vk_;
-	ImageVk* inputImage_{ nullptr };
-	ImageVk* boundInputImage_{ nullptr };
+	RenderSettings& rs_;
 
-	uint64_t inputGeneration_ = 0;
+	ImageVk* inputColorImage_{ nullptr };
+	ImageVk* boundInputColorImage_{ nullptr };
+	ImageVk* inputDepthImage_{ nullptr };
+	ImageVk* boundInputDepthImage_{ nullptr };
+
+	uint64_t inputColorGeneration_ = 0;
+	uint64_t inputDepthGeneration_ = 0;
 
 	ImageVk outputImage_;
 
-	FXAA_Constants::FXAAPassUBO ubo_;
+	Fog_Constants::FogPassUBO ubo_;
 
 	std::unique_ptr<ShaderModuleVk> shader_;
 

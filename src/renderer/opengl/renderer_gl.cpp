@@ -40,7 +40,7 @@ void RendererGL::init()
     if (!debugPass_)   debugPass_ = std::make_unique<DebugPass>();
     if (!ssaoPass_)    ssaoPass_ = std::make_unique<SSAOPass>();
     if (!fxaaPass_)    fxaaPass_ = std::make_unique<FXAAPass>();
-    if (!fogPass_)     fogPass_ = std::make_unique<FogPass>();
+    if (!fogPass_)     fogPass_ = std::make_unique<FogPass>(*renderSettings_);
     if (!presentPass_) presentPass_ = std::make_unique<PresentPass>();
     if (!waterPass_)   waterPass_ = std::make_unique<WaterPass>();
 
@@ -57,7 +57,7 @@ void RendererGL::init()
 
     waterPass_->init();
     fxaaPass_->init();
-    fogPass_->init(*renderSettings_);
+    fogPass_->init();
     presentPass_->init();
 } // end of init()
 

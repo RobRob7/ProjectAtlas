@@ -343,4 +343,26 @@ namespace FXAA_Constants
 	};
 };
 
+namespace Fog_Constants
+{
+	const glm::vec3 FOG_COLOR{ 1.0f, 1.0f, 1.0f };
+	const float FOG_START{ 50.0f };
+	const float FOG_END{ 500.0f };
+
+	struct FogPassUBO
+	{
+		float u_near;
+		float u_far;
+		glm::vec2 _pad0;
+
+		glm::vec3 u_fogColor;
+		float _pad1;
+
+		float u_fogStart;
+		float u_fogEnd;
+		float u_ambStr;
+		float _pad2;
+	};
+};
+
 #endif
