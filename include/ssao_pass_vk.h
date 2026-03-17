@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <array>
+#include <vector>
 
 class VulkanMain;
 class ShaderModuleVk;
@@ -35,7 +36,7 @@ public:
 
 private:
 	void createAttachments();
-	void createBuffers();
+	void createResources();
 	void createDescriptorSets();
 	void createPipelines();
 
@@ -60,11 +61,11 @@ private:
 	ImageVk ssaoRawImage_;
 	ImageVk ssaoBlurImage_;
 
-	BufferVk ssaoRawUBOBuffer_;
-	BufferVk ssaoBlurUBOBuffer_;
+	std::vector<BufferVk> ssaoRawUBOBuffers_;
+	std::vector<BufferVk> ssaoBlurUBOBuffers_;
 
-	DescriptorSetVk ssaoRawDescriptorSet_;
-	DescriptorSetVk ssaoBlurDescriptorSet_;
+	std::vector<DescriptorSetVk> ssaoRawDescriptorSets_;
+	std::vector<DescriptorSetVk> ssaoBlurDescriptorSets_;
 
 	GraphicsPipelineVk ssaoRawPipeline_;
 	GraphicsPipelineVk ssaoBlurPipeline_;

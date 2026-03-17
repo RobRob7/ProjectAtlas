@@ -14,6 +14,7 @@
 #include <random>
 #include <vector>
 #include <memory>
+#include <cstdint>
 
 using namespace SSAO_Constants;
 
@@ -25,13 +26,21 @@ SSAOPassVk::SSAOPassVk(VulkanMain& vk, ImageVk& gNormalImage, ImageVk& gDepthIma
 	ssaoNoiseImage_(vk),
 	ssaoRawImage_(vk),
 	ssaoBlurImage_(vk),
-	ssaoRawUBOBuffer_(vk),
-	ssaoRawDescriptorSet_(vk),
 	ssaoRawPipeline_(vk),
-	ssaoBlurUBOBuffer_(vk),
-	ssaoBlurDescriptorSet_(vk),
 	ssaoBlurPipeline_(vk)
 {
+	ssaoRawUBOBuffers_.reserve(vk.getMaxFramesInFlight());
+	ssaoRawDescriptorSets_.reserve(vk.getMaxFramesInFlight());
+	ssaoBlurUBOBuffers_.reserve(vk.getMaxFramesInFlight());
+	ssaoBlurDescriptorSets_.reserve(vk.getMaxFramesInFlight());
+	for (uint32_t i = 0; i < vk_.getMaxFramesInFlight(); ++i)
+	{
+		ssaoRawUBOBuffers_.emplace_back(vk_);
+		ssaoRawDescriptorSets_.emplace_back(vk_);
+		ssaoBlurUBOBuffers_.emplace_back(vk_);
+		ssaoBlurDescriptorSets_.emplace_back(vk_);
+	} // end for
+	
 } // end of constructor
 
 SSAOPassVk::~SSAOPassVk() = default;
@@ -54,7 +63,7 @@ void SSAOPassVk::init()
 
 	createNoiseTexture();
 	createAttachments();
-	createBuffers();
+	createResources();
 	createKernel();
 	createDescriptorSets();
 	createPipelines();
@@ -145,11 +154,11 @@ void SSAOPassVk::renderOffscreen(
 				static_cast<float>(width_) / static_cast<float>(K_NOISE_SIZE),
 				static_cast<float>(height_) / static_cast<float>(K_NOISE_SIZE));
 
-			ssaoRawUBOBuffer_.upload(&rawUBO_, sizeof(rawUBO_));
+			ssaoRawUBOBuffers_[frame.frameIndex].upload(&rawUBO_, sizeof(rawUBO_));
 
 			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, ssaoRawPipeline_.getPipeline());
 
-			vk::DescriptorSet set = ssaoRawDescriptorSet_.getSet();
+			vk::DescriptorSet set = ssaoRawDescriptorSets_[frame.frameIndex].getSet();
 			cmd.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
 				ssaoRawPipeline_.getLayout(),
@@ -229,11 +238,11 @@ void SSAOPassVk::renderOffscreen(
 
 			blurUBO_.u_texelSize = glm::vec2(1.0f / width_, 1.0f / height_);
 
-			ssaoBlurUBOBuffer_.upload(&blurUBO_, sizeof(blurUBO_));
+			ssaoBlurUBOBuffers_[frame.frameIndex].upload(&blurUBO_, sizeof(blurUBO_));
 
 			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, ssaoBlurPipeline_.getPipeline());
 
-			vk::DescriptorSet set = ssaoBlurDescriptorSet_.getSet();
+			vk::DescriptorSet set = ssaoBlurDescriptorSets_[frame.frameIndex].getSet();
 			cmd.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
 				ssaoBlurPipeline_.getLayout(),
@@ -371,135 +380,144 @@ void SSAOPassVk::createAttachments()
 	vk_.endSingleTimeCommands(cmd);
 } // end of createAttachments()
 
-void SSAOPassVk::createBuffers()
+void SSAOPassVk::createResources()
 {
-	ssaoRawUBOBuffer_.create(
-		sizeof(SSAORawUBO),
-		vk::BufferUsageFlagBits::eUniformBuffer,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-	);
+	for (auto& buffer : ssaoRawUBOBuffers_)
+	{
+		buffer.create(
+			sizeof(SSAORawUBO),
+			vk::BufferUsageFlagBits::eUniformBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+	} // end for
 
-	ssaoBlurUBOBuffer_.create(
-		sizeof(SSAOBlurUBO),
-		vk::BufferUsageFlagBits::eUniformBuffer,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-	);
-} // end of createBuffers()
+	for (auto& buffer : ssaoBlurUBOBuffers_)
+	{
+		buffer.create(
+			sizeof(SSAOBlurUBO),
+			vk::BufferUsageFlagBits::eUniformBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+	} // end for
+} // end of createResources()
 
 void SSAOPassVk::createDescriptorSets()
 {
-	// RAW DS
+	for (uint32_t i = 0; i < vk_.getMaxFramesInFlight(); ++i)
 	{
-		vk::DescriptorSetLayoutBinding uboBinding{};
-		uboBinding.binding = TO_API_FORM(SSAORawBinding::UBO);
-		uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-		uboBinding.descriptorCount = 1;
-		uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+		// RAW DS
+		{
+			vk::DescriptorSetLayoutBinding uboBinding{};
+			uboBinding.binding = TO_API_FORM(SSAORawBinding::UBO);
+			uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+			uboBinding.descriptorCount = 1;
+			uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
-		vk::DescriptorSetLayoutBinding gNormalBinding{};
-		gNormalBinding.binding = TO_API_FORM(SSAORawBinding::GNormalTex);
-		gNormalBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		gNormalBinding.descriptorCount = 1;
-		gNormalBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+			vk::DescriptorSetLayoutBinding gNormalBinding{};
+			gNormalBinding.binding = TO_API_FORM(SSAORawBinding::GNormalTex);
+			gNormalBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			gNormalBinding.descriptorCount = 1;
+			gNormalBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		vk::DescriptorSetLayoutBinding gDepthBinding{};
-		gDepthBinding.binding = TO_API_FORM(SSAORawBinding::GDepthTex);
-		gDepthBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		gDepthBinding.descriptorCount = 1;
-		gDepthBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+			vk::DescriptorSetLayoutBinding gDepthBinding{};
+			gDepthBinding.binding = TO_API_FORM(SSAORawBinding::GDepthTex);
+			gDepthBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			gDepthBinding.descriptorCount = 1;
+			gDepthBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		vk::DescriptorSetLayoutBinding noiseBinding{};
-		noiseBinding.binding = TO_API_FORM(SSAORawBinding::NoiseTex);
-		noiseBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		noiseBinding.descriptorCount = 1;
-		noiseBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+			vk::DescriptorSetLayoutBinding noiseBinding{};
+			noiseBinding.binding = TO_API_FORM(SSAORawBinding::NoiseTex);
+			noiseBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			noiseBinding.descriptorCount = 1;
+			noiseBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		ssaoRawDescriptorSet_.createLayout({ uboBinding, gNormalBinding, gDepthBinding, noiseBinding });
+			ssaoRawDescriptorSets_[i].createLayout({uboBinding, gNormalBinding, gDepthBinding, noiseBinding});
 
-		vk::DescriptorPoolSize uboPool{};
-		uboPool.type = vk::DescriptorType::eUniformBuffer;
-		uboPool.descriptorCount = 1;
+			vk::DescriptorPoolSize uboPool{};
+			uboPool.type = vk::DescriptorType::eUniformBuffer;
+			uboPool.descriptorCount = 1;
 
-		vk::DescriptorPoolSize gNormalPool{};
-		gNormalPool.type = vk::DescriptorType::eCombinedImageSampler;
-		gNormalPool.descriptorCount = 1;
+			vk::DescriptorPoolSize gNormalPool{};
+			gNormalPool.type = vk::DescriptorType::eCombinedImageSampler;
+			gNormalPool.descriptorCount = 1;
 
-		vk::DescriptorPoolSize gDepthPool{};
-		gDepthPool.type = vk::DescriptorType::eCombinedImageSampler;
-		gDepthPool.descriptorCount = 1;
+			vk::DescriptorPoolSize gDepthPool{};
+			gDepthPool.type = vk::DescriptorType::eCombinedImageSampler;
+			gDepthPool.descriptorCount = 1;
 
-		vk::DescriptorPoolSize noisePool{};
-		noisePool.type = vk::DescriptorType::eCombinedImageSampler;
-		noisePool.descriptorCount = 1;
+			vk::DescriptorPoolSize noisePool{};
+			noisePool.type = vk::DescriptorType::eCombinedImageSampler;
+			noisePool.descriptorCount = 1;
 
-		ssaoRawDescriptorSet_.createPool({ uboPool, gNormalPool, gDepthPool, noisePool }, 1);
-		ssaoRawDescriptorSet_.allocate();
+			ssaoRawDescriptorSets_[i].createPool({uboPool, gNormalPool, gDepthPool, noisePool}, 1);
+			ssaoRawDescriptorSets_[i].allocate();
 
-		ssaoRawDescriptorSet_.writeUniformBuffer(
-			TO_API_FORM(SSAORawBinding::UBO),
-			ssaoRawUBOBuffer_.getBuffer(),
-			sizeof(SSAORawUBO)
-		);
+			ssaoRawDescriptorSets_[i].writeUniformBuffer(
+				TO_API_FORM(SSAORawBinding::UBO),
+				ssaoRawUBOBuffers_[i].getBuffer(),
+				sizeof(SSAORawUBO)
+			);
 
-		ssaoRawDescriptorSet_.writeCombinedImageSampler(
-			TO_API_FORM(SSAORawBinding::GNormalTex),
-			gNormalImage_.view(),
-			gNormalImage_.sampler()
-		);
+			ssaoRawDescriptorSets_[i].writeCombinedImageSampler(
+				TO_API_FORM(SSAORawBinding::GNormalTex),
+				gNormalImage_.view(),
+				gNormalImage_.sampler()
+			);
 
-		ssaoRawDescriptorSet_.writeCombinedImageSampler(
-			TO_API_FORM(SSAORawBinding::GDepthTex),
-			gDepthImage_.view(),
-			gDepthImage_.sampler()
-		);
+			ssaoRawDescriptorSets_[i].writeCombinedImageSampler(
+				TO_API_FORM(SSAORawBinding::GDepthTex),
+				gDepthImage_.view(),
+				gDepthImage_.sampler()
+			);
 
-		ssaoRawDescriptorSet_.writeCombinedImageSampler(
-			TO_API_FORM(SSAORawBinding::NoiseTex),
-			ssaoNoiseImage_.view(),
-			ssaoNoiseImage_.sampler()
-		);
-	}
+			ssaoRawDescriptorSets_[i].writeCombinedImageSampler(
+				TO_API_FORM(SSAORawBinding::NoiseTex),
+				ssaoNoiseImage_.view(),
+				ssaoNoiseImage_.sampler()
+			);
+		}
 
 
-	// BLUR DS
-	{
-		vk::DescriptorSetLayoutBinding uboBinding{};
-		uboBinding.binding = TO_API_FORM(SSAOBlurBinding::UBO);
-		uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-		uboBinding.descriptorCount = 1;
-		uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+		// BLUR DS
+		{
+			vk::DescriptorSetLayoutBinding uboBinding{};
+			uboBinding.binding = TO_API_FORM(SSAOBlurBinding::UBO);
+			uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+			uboBinding.descriptorCount = 1;
+			uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
-		vk::DescriptorSetLayoutBinding ssaoRawBinding{};
-		ssaoRawBinding.binding = TO_API_FORM(SSAOBlurBinding::SSAORawTex);
-		ssaoRawBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		ssaoRawBinding.descriptorCount = 1;
-		ssaoRawBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+			vk::DescriptorSetLayoutBinding ssaoRawBinding{};
+			ssaoRawBinding.binding = TO_API_FORM(SSAOBlurBinding::SSAORawTex);
+			ssaoRawBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ssaoRawBinding.descriptorCount = 1;
+			ssaoRawBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		ssaoBlurDescriptorSet_.createLayout({ uboBinding, ssaoRawBinding });
+			ssaoBlurDescriptorSets_[i].createLayout({uboBinding, ssaoRawBinding});
 
-		vk::DescriptorPoolSize uboPool{};
-		uboPool.type = vk::DescriptorType::eUniformBuffer;
-		uboPool.descriptorCount = 1;
+			vk::DescriptorPoolSize uboPool{};
+			uboPool.type = vk::DescriptorType::eUniformBuffer;
+			uboPool.descriptorCount = 1;
 
-		vk::DescriptorPoolSize ssaoRawPool{};
-		ssaoRawPool.type = vk::DescriptorType::eCombinedImageSampler;
-		ssaoRawPool.descriptorCount = 1;
+			vk::DescriptorPoolSize ssaoRawPool{};
+			ssaoRawPool.type = vk::DescriptorType::eCombinedImageSampler;
+			ssaoRawPool.descriptorCount = 1;
 
-		ssaoBlurDescriptorSet_.createPool({ uboPool, ssaoRawPool }, 1);
-		ssaoBlurDescriptorSet_.allocate();
+			ssaoBlurDescriptorSets_[i].createPool({uboPool, ssaoRawPool}, 1);
+			ssaoBlurDescriptorSets_[i].allocate();
 
-		ssaoBlurDescriptorSet_.writeUniformBuffer(
-			TO_API_FORM(SSAOBlurBinding::UBO),
-			ssaoBlurUBOBuffer_.getBuffer(),
-			sizeof(SSAOBlurUBO)
-		);
+			ssaoBlurDescriptorSets_[i].writeUniformBuffer(
+				TO_API_FORM(SSAOBlurBinding::UBO),
+				ssaoBlurUBOBuffers_[i].getBuffer(),
+				sizeof(SSAOBlurUBO)
+			);
 
-		ssaoBlurDescriptorSet_.writeCombinedImageSampler(
-			TO_API_FORM(SSAOBlurBinding::SSAORawTex),
-			ssaoRawImage_.view(),
-			ssaoRawImage_.sampler()
-		);
-	}
+			ssaoBlurDescriptorSets_[i].writeCombinedImageSampler(
+				TO_API_FORM(SSAOBlurBinding::SSAORawTex),
+				ssaoRawImage_.view(),
+				ssaoRawImage_.sampler()
+			);
+		}
+	} // end for
 } // end of createDescriptorSets()
 
 void SSAOPassVk::createPipelines()
@@ -510,7 +528,7 @@ void SSAOPassVk::createPipelines()
 		desc.vertShader = ssaoRawShader_->vertShader();
 		desc.fragShader = ssaoRawShader_->fragShader();
 
-		desc.setLayouts = { ssaoRawDescriptorSet_.getLayout() };
+		desc.setLayouts = { ssaoRawDescriptorSets_[0].getLayout()};
 
 		desc.colorFormat = singleChannelFormat_;
 		desc.depthFormat = vk::Format::eUndefined;
@@ -528,7 +546,7 @@ void SSAOPassVk::createPipelines()
 		desc.vertShader = ssaoBlurShader_->vertShader();
 		desc.fragShader = ssaoBlurShader_->fragShader();
 
-		desc.setLayouts = { ssaoBlurDescriptorSet_.getLayout() };
+		desc.setLayouts = { ssaoBlurDescriptorSets_[0].getLayout()};
 
 		desc.colorFormat = singleChannelFormat_;
 		desc.depthFormat = vk::Format::eUndefined;
