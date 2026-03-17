@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include <string>
 #include <filesystem>
+#include <iostream>
 
 //--- HELPER ---//
 static void RunShaderCompilerScript()
@@ -57,6 +58,30 @@ static void RunShaderCompilerScript()
 		throw std::runtime_error("Shader compilation script failed. Exit code: " + std::to_string(code));
 	}
 } // end of RunShaderCompilerScript()
+
+static void WarmupOpenGLContext()
+{
+	glfwDefaultWindowHints();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+	GLFWwindow* warmup = glfwCreateWindow(64, 64, "", nullptr, nullptr);
+	if (!warmup)
+	{
+		throw std::runtime_error("Failed to create GL warmup window");
+	}
+
+	glfwMakeContextCurrent(warmup);
+
+	glfwMakeContextCurrent(nullptr);
+	glfwDestroyWindow(warmup);
+
+#ifdef _DEBUG
+	std::cout << "[TEST] OpenGL warmup context created/destroyed\n";
+#endif
+} // end of WarmupOpenGLContext()
 
 
 //--- PUBLIC ---//
@@ -283,10 +308,13 @@ void Application::shutdownBackend()
 
 void Application::initVk()
 {
+	WarmupOpenGLContext();
+
+	RunShaderCompilerScript();
+
 	initWindowVk();
 	vulkanMain_ = std::make_unique<VulkanMain>(window_);
 	vulkanMain_->init();
-	RunShaderCompilerScript();
 
 	// setup scene + renderer
 	scene_ = std::make_unique<SceneVk>(*vulkanMain_, width_, height_);
