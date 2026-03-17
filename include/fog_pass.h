@@ -1,11 +1,10 @@
 #ifndef FOG_PASS_H
 #define FOG_PASS_H
 
+#include "constants.h"
 #include "bindings.h"
 
 #include "ubo_gl.h"
-
-#include <glm/glm.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -13,28 +12,13 @@
 class Shader;
 struct RenderSettings;
 
-struct FogPassUBO
-{
-    float u_near;
-    float u_far;
-    glm::vec2 _pad0;
-
-    glm::vec3 u_fogColor;
-    float _pad1;
-
-    float u_fogStart;
-    float u_fogEnd;
-    float u_ambStr;
-    float _pad2;
-};
-
 class FogPass
 {
 public:
-    FogPass();
+    FogPass(RenderSettings& rs);
     ~FogPass();
 
-    void init(RenderSettings& rs);
+    void init();
     void resize(int w, int h);
 
     void render(
@@ -47,19 +31,13 @@ public:
 
     uint32_t getOutputTex() const { return outputTex_; }
 
-    void setFogColor(glm::vec3 v);
-    void setFogStart(float v);
-    void setFogEnd(float v);
-
 private:
     void destroyGL();
 private:
     int width_{};
     int height_{};
 
-    glm::vec3 fogColor_{ 1.0f, 1.0f, 1.0f };
-    float fogStart_{ 50.0f };
-    float fogEnd_{ 500.0f };
+    RenderSettings& rs_;
 
     uint32_t fsVao_{};
     uint32_t fbo_{};
@@ -68,7 +46,7 @@ private:
     std::unique_ptr<Shader> shader_;
 
     UBOGL ubo_{ TO_API_FORM(FogPassBinding::UBO) };
-    FogPassUBO fogPassUBO_;
+    Fog_Constants::FogPassUBO fogPassUBO_{};
 };
 
 #endif

@@ -458,49 +458,49 @@ void UIVk::drawInspector(IScene& scene)
 		// FXAA toggle
 		ImGui::Checkbox("FXAA##render", &renderSettings_.useFXAA);
 
-		//// Fog toggle
-		//ImGui::Checkbox("Fog##render", &renderSettings_.useFog);
+		// Fog toggle
+		ImGui::Checkbox("Fog##render", &renderSettings_.useFog);
 
-		//ImGui::Separator();
+		ImGui::Separator();
 	}
 
 	// ------- fog -------
-	//if (ImGui::CollapsingHeader("Fog", ImGuiTreeNodeFlags_DefaultOpen))
-	//{
-	//	bool changed = false;
+	if (ImGui::CollapsingHeader("Fog", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		bool changed = false;
 
-	//	changed |= ImGui::DragFloat3("Color##fog", glm::value_ptr(renderSettings_.fogSettings.color), 0.1f, 0.0f, 1.0f);
-	//	if (ImGui::Button("Reset##fog_color"))
-	//	{
-	//		renderSettings_.fogSettings.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
-	//	}
-	//	changed |= ImGui::DragFloat("Start Pos##fog", &renderSettings_.fogSettings.start, 0.1f, 0.0f, renderSettings_.fogSettings.end);
-	//	if (ImGui::Button("Reset##fog_start"))
-	//	{
-	//		renderSettings_.fogSettings.start = 50.0f;
-	//	}
-	//	changed |= ImGui::DragFloat("End Pos##fog", &renderSettings_.fogSettings.end, 0.1f, renderSettings_.fogSettings.start, 2000.0f);
-	//	if (ImGui::Button("Reset##fog_end"))
-	//	{
-	//		renderSettings_.fogSettings.end = 200.0f;
-	//	}
+		changed |= ImGui::DragFloat3("Color##fog", glm::value_ptr(renderSettings_.fogSettings.color), 0.1f, 0.0f, 1.0f);
+		if (ImGui::Button("Reset##fog_color"))
+		{
+			renderSettings_.fogSettings.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+		}
+		changed |= ImGui::DragFloat("Start Pos##fog", &renderSettings_.fogSettings.start, 0.1f, 0.0f, renderSettings_.fogSettings.end);
+		if (ImGui::Button("Reset##fog_start"))
+		{
+			renderSettings_.fogSettings.start = 50.0f;
+		}
+		changed |= ImGui::DragFloat("End Pos##fog", &renderSettings_.fogSettings.end, 0.1f, renderSettings_.fogSettings.start, 2000.0f);
+		if (ImGui::Button("Reset##fog_end"))
+		{
+			renderSettings_.fogSettings.end = 200.0f;
+		}
 
-	//	// ensure start + kMinGap <= end ALWAYS
-	//	if (changed)
-	//	{
-	//		const float kMinGap = 100.0f;
-	//		const float minFogStart = 25.0f;
-	//		if (renderSettings_.fogSettings.start < minFogStart)
-	//			renderSettings_.fogSettings.start = minFogStart;
+		// ensure start + kMinGap <= end ALWAYS
+		if (changed)
+		{
+			const float kMinGap = 100.0f;
+			const float minFogStart = 25.0f;
+			if (renderSettings_.fogSettings.start < minFogStart)
+				renderSettings_.fogSettings.start = minFogStart;
 
-	//		if (renderSettings_.fogSettings.start > renderSettings_.fogSettings.end - kMinGap)
-	//		{
-	//			renderSettings_.fogSettings.start = std::max(minFogStart, renderSettings_.fogSettings.end - kMinGap);
-	//			renderSettings_.fogSettings.end = renderSettings_.fogSettings.start + kMinGap;
-	//		}
-	//	}
-	//	ImGui::Separator();
-	//}
+			if (renderSettings_.fogSettings.start > renderSettings_.fogSettings.end - kMinGap)
+			{
+				renderSettings_.fogSettings.start = std::max(minFogStart, renderSettings_.fogSettings.end - kMinGap);
+				renderSettings_.fogSettings.end = renderSettings_.fogSettings.start + kMinGap;
+			}
+		}
+		ImGui::Separator();
+	}
 
 	// ------- camera -------
 	if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))

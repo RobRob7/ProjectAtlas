@@ -1,32 +1,38 @@
 #include "fog_pass.h"
 
+#include "constants.h"
 #include "render_settings.h"
-
 #include "shader.h"
 
 #include <glad/glad.h>
 
+#include <memory>
 #include <stdexcept>
 
+using namespace Fog_Constants;
+
 //--- PUBLIC ---//
-FogPass::FogPass() = default;
+FogPass::FogPass(RenderSettings& rs)
+	: rs_(rs)
+{
+} // end of constructor
 
 FogPass::~FogPass()
 {
 	destroyGL();
 } // end of destructor
 
-void FogPass::init(RenderSettings& rs)
+void FogPass::init()
 {
 	destroyGL();
+
+	rs_.fogSettings.color = FOG_COLOR;
+	rs_.fogSettings.start = FOG_START;
+	rs_.fogSettings.end = FOG_END;
 
 	shader_ = std::make_unique<Shader>("fogpass/fog.vert", "fogpass/fog.frag");
 
 	ubo_.init<sizeof(FogPassUBO)>();
-
-	rs.fogSettings.color = fogColor_;
-	rs.fogSettings.start = fogStart_;
-	rs.fogSettings.end = fogEnd_;
 
 	glCreateVertexArrays(1, &fsVao_);
 } // end of init()
@@ -99,9 +105,9 @@ void FogPass::render(
 	shader_->use();
 	fogPassUBO_.u_near = nearPlane;
 	fogPassUBO_.u_far = farPlane;
-	fogPassUBO_.u_fogColor = fogColor_;
-	fogPassUBO_.u_fogStart = fogStart_;
-	fogPassUBO_.u_fogEnd = fogEnd_;
+	fogPassUBO_.u_fogColor = rs_.fogSettings.color;
+	fogPassUBO_.u_fogStart = rs_.fogSettings.start;
+	fogPassUBO_.u_fogEnd = rs_.fogSettings.end;
 	fogPassUBO_.u_ambStr = ambStr;
 	ubo_.update(&fogPassUBO_, sizeof(fogPassUBO_));
 
@@ -109,21 +115,6 @@ void FogPass::render(
 
 	if (prevDepth) glEnable(GL_DEPTH_TEST);
 } // end of render()
-
-void FogPass::setFogColor(glm::vec3 v)
-{
-	fogColor_ = v;
-} // end of setFogColor()
-
-void FogPass::setFogStart(float v)
-{
-	fogStart_ = v;
-} // end of setFogStart()
-
-void FogPass::setFogEnd(float v)
-{
-	fogEnd_ = v;
-} // end of setFogEnd()
 
 
 //--- PRIVATE ---//

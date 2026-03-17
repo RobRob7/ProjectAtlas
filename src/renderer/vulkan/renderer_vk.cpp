@@ -20,6 +20,7 @@
 #include "water_pass_vk.h"
 #include "chunk_pass_vk.h"
 #include "fxaa_pass_vk.h"
+#include "fog_pass_vk.h"
 #include "present_pass_vk.h"
 
 #include <glm/glm.hpp>
@@ -46,6 +47,7 @@ void RendererVk::init()
 	if (!chunkPass_)	chunkPass_ = std::make_unique<ChunkPassVk>(vk_, ssaoPass_->ssaoBlurImage());
 
 	if (!fxaaPass_)		fxaaPass_ = std::make_unique<FXAAPassVk>(vk_);
+	if (!fogPass_)		fogPass_ = std::make_unique<FogPassVk>(vk_, *renderSettings_);
 	if (!presentPass_)	presentPass_ = std::make_unique<PresentPassVk>(vk_);
 
 	gbufferPass_->init();
@@ -57,6 +59,7 @@ void RendererVk::init()
 	chunkPass_->refreshSSAOBinding();
 
 	fxaaPass_->init();
+	fogPass_->init();
 	presentPass_->init();
 } // end of init()
 
@@ -76,6 +79,7 @@ void RendererVk::resize(int w, int h)
 	if (chunkPass_)		chunkPass_->refreshSSAOBinding();
 
 	if (fxaaPass_)		fxaaPass_->resize(width_, height_);
+	if (fogPass_)		fogPass_->resize(width_, height_);
 
 	createSceneAttachments();
 } // end of resize()
@@ -86,14 +90,14 @@ void RendererVk::renderFrame(
 	UIVk* ui
 )
 {
-	in.world->update(in.camera->getCameraPosition());
-
 	FrameContext& frame = *const_cast<FrameContext*>(pFrame);
 
 	if (frame.extent.width != width_ || frame.extent.height != height_)
 	{
 		resize(frame.extent.width, frame.extent.height);
 	}
+
+	in.world->update(in.camera->getCameraPosition());
 
 	const glm::mat4 view = in.camera->getViewMatrix();
 	const float aspect = (height_ > 0)
@@ -252,7 +256,6 @@ void RendererVk::renderFrame(
 		1,
 		1
 	);
-
 	// scene depth transition to shader read
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -263,6 +266,33 @@ void RendererVk::renderFrame(
 		1,
 		1
 	);
+	// --------------- END FORWARD RENDER --------------- //
+
+
+	// --------------- POST-PROCESSING --------------- //
+	ImageVk* postColor = &sceneColor_;
+	ImageVk* postDepth = &sceneDepth_;
+	// FXAA
+	if (renderSettings_->useFXAA)
+	{
+		fxaaPass_->setInput(*postColor);
+		fxaaPass_->render(cmd);
+		postColor = &fxaaPass_->getOutputImage();
+	}
+
+	// FOG
+	if (renderSettings_->useFog)
+	{
+		fogPass_->setInput(*postColor, *postDepth);
+		fogPass_->render(
+			cmd,
+			in.camera->getNearPlane(),
+			in.camera->getFarPlane(),
+			in.world->getAmbientStrength()
+		);
+		postColor = &fogPass_->getOutputImage();
+	}
+	// --------------- END POST-PROCESSING --------------- //
 
 
 	// swap swapchain color image to color attachment
@@ -275,25 +305,6 @@ void RendererVk::renderFrame(
 		1,
 		1
 	);
-	// --------------- END FORWARD RENDER --------------- //
-
-
-	// --------------- POST-PROCESSING --------------- //
-	ImageVk* postColor = &sceneColor_;
-	// FXAA
-	if (renderSettings_->useFXAA)
-	{
-		fxaaPass_->setInput(*postColor);
-		fxaaPass_->render(cmd);
-		postColor = &fxaaPass_->getOutputImage();
-	}
-
-	// FOG
-	if (renderSettings_->useFog)
-	{
-
-	}
-	// --------------- END POST-PROCESSING --------------- //
 
 
 	// --------------- PRESENT PASS --------------- //
