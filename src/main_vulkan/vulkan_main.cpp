@@ -1196,13 +1196,25 @@ vk::SurfaceFormatKHR VulkanMain::chooseSwapSurfaceFormat(const std::vector<vk::S
 
 vk::PresentModeKHR VulkanMain::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes)
 {
-	for (const auto& m : availablePresentModes) 
+	// on
+	if (vsyncEnabled_)
 	{
-		if (m == vk::PresentModeKHR::eMailbox) 
+		vsyncMode_ = vk::PresentModeKHR::eFifo;
+		return vk::PresentModeKHR::eFifo;
+	}
+
+	// off
+	for (const auto& m : availablePresentModes)
+	{
+		if (m == vk::PresentModeKHR::eImmediate)
 		{
+			vsyncMode_ = m;
 			return m;
 		}
 	} // end for
+
+	// fallback
+	vsyncMode_ = vk::PresentModeKHR::eFifo;
 	return vk::PresentModeKHR::eFifo;
 } // end of chooseSwapPresentMode()
 
