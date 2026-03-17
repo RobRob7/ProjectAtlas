@@ -365,4 +365,21 @@ namespace Fog_Constants
 	};
 };
 
+namespace Crosshair_Constants
+{
+	const float SIZE{ 0.004f };
+
+	const glm::vec2 CENTER{ 0.0f, 0.0f };
+
+	const float VERTICES[] = {
+		// h
+		CENTER.x - SIZE, CENTER.y,
+		CENTER.x + SIZE, CENTER.y,
+
+		// v
+		CENTER.x, CENTER.y - SIZE,
+		CENTER.x, CENTER.y + SIZE
+	};
+};
+
 #endif

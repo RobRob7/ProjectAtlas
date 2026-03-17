@@ -2,6 +2,7 @@
 #define FOG_PASS_VK_H
 
 #include "constants.h"
+#include "frame_context_vk.h"
 
 #include "buffer_vk.h"
 #include "descriptor_set_vk.h"
@@ -11,7 +12,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include <memory>
-#include <cstdint>
+#include <vector>
 
 class VulkanMain;
 class ShaderModuleVk;
@@ -29,7 +30,7 @@ public:
 	void setInput(ImageVk& inputColor, ImageVk& inputDepth);
 
 	void render(
-		vk::CommandBuffer cmd,
+		FrameContext& frame,
 		float nearPlane,
 		float farPlane,
 		float ambStr
@@ -38,7 +39,7 @@ public:
 	ImageVk& getOutputImage() { return outputImage_; }
 
 private:
-	void refreshInput();
+	void refreshInput(FrameContext& frame);
 	void createAttachment();
 	void createResources();
 	void createDescriptorSet();
@@ -51,12 +52,7 @@ private:
 	RenderSettings& rs_;
 
 	ImageVk* inputColorImage_{ nullptr };
-	ImageVk* boundInputColorImage_{ nullptr };
 	ImageVk* inputDepthImage_{ nullptr };
-	ImageVk* boundInputDepthImage_{ nullptr };
-
-	uint64_t inputColorGeneration_ = 0;
-	uint64_t inputDepthGeneration_ = 0;
 
 	ImageVk outputImage_;
 
@@ -64,8 +60,8 @@ private:
 
 	std::unique_ptr<ShaderModuleVk> shader_;
 
-	BufferVk uboBuffer_;
-	DescriptorSetVk descriptorSet_;
+	std::vector<BufferVk> uboBuffers_;
+	std::vector<DescriptorSetVk> descriptorSets_;
 	GraphicsPipelineVk pipeline_;
 
 	vk::ImageLayout outputLayout_{ vk::ImageLayout::eUndefined };

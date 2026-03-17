@@ -1,6 +1,7 @@
 #include "fxaa_pass_vk.h"
 
 #include "constants.h"
+#include "frame_context_vk.h"
 
 #include "bindings.h"
 #include "shader_vk.h"
@@ -18,10 +19,15 @@ using namespace FXAA_Constants;
 FXAAPassVk::FXAAPassVk(VulkanMain& vk)
 	: vk_(vk),
 	outputImage_(vk),
-	uboBuffer_(vk),
-	descriptorSet_(vk),
 	pipeline_(vk)
 {
+	uboBuffers_.reserve(vk.getMaxFramesInFlight());
+	descriptorSets_.reserve(vk.getMaxFramesInFlight());
+	for (uint32_t i = 0; i < vk_.getMaxFramesInFlight(); ++i)
+	{
+		uboBuffers_.emplace_back(vk_);
+		descriptorSets_.emplace_back(vk_);
+	} // end for
 } // end of constuctor
 
 FXAAPassVk::~FXAAPassVk() = default;
@@ -39,7 +45,7 @@ void FXAAPassVk::init()
 
 	createAttachment();
 	createResources();
-	createDescriptorSet();
+	createDescriptorSets();
 	createPipeline();
 } // end of init()
 
@@ -61,14 +67,17 @@ void FXAAPassVk::setInput(ImageVk& input)
 	inputImage_ = &input;
 } // end of setInput()
 
-void FXAAPassVk::render(vk::CommandBuffer cmd)
+void FXAAPassVk::render(FrameContext& frame)
 {
-	refreshInput();
+	refreshInput(frame);
 
-	if (!inputImage_ || !uboBuffer_.valid() || !descriptorSet_.valid() || !pipeline_.valid())
+	if (!inputImage_ || 
+		!uboBuffers_[frame.frameIndex].valid() || !descriptorSets_[frame.frameIndex].valid() || !pipeline_.valid())
 	{
 		return;
 	}
+
+	vk::CommandBuffer cmd = frame.cmd;
 
 	// update UBO
 	ubo_.u_inverseScreenSize = glm::vec2(1.0f / static_cast<float>(width_), 1.0f / static_cast<float>(height_));
@@ -76,7 +85,7 @@ void FXAAPassVk::render(vk::CommandBuffer cmd)
 	ubo_.u_edgeThresholdMax = EDGE_THRESH_MAX;
 	ubo_.u_edgeThresholdMin = EDGE_THRESH_MIN;
 
-	uboBuffer_.upload(&ubo_, sizeof(ubo_));
+	uboBuffers_[frame.frameIndex].upload(&ubo_, sizeof(ubo_));
 
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -131,7 +140,7 @@ void FXAAPassVk::render(vk::CommandBuffer cmd)
 		};
 		cmd.setScissor(0, 1, &scissor);
 
-		vk::DescriptorSet set = descriptorSet_.getSet();
+		vk::DescriptorSet set = descriptorSets_[frame.frameIndex].getSet();
 
 		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.getPipeline());
 		cmd.bindDescriptorSets(
@@ -159,25 +168,16 @@ void FXAAPassVk::render(vk::CommandBuffer cmd)
 
 
 //--- PRIVATE ---//
-void FXAAPassVk::refreshInput()
+void FXAAPassVk::refreshInput(FrameContext& frame)
 {
 	if (!inputImage_)
 		return;
 
-	if (boundInputImage_ == inputImage_ &&
-		inputGeneration_ == inputImage_->generation())
-	{
-		return;
-	}
-
-	descriptorSet_.writeCombinedImageSampler(
+	descriptorSets_[frame.frameIndex].writeCombinedImageSampler(
 		TO_API_FORM(FXAAPassBinding::ForwardColorTex),
 		inputImage_->view(),
 		inputImage_->sampler()
 	);
-
-	boundInputImage_ = inputImage_;
-	inputGeneration_ = inputImage_->generation();
 } // end of refreshInput()
 
 void FXAAPassVk::createAttachment()
@@ -215,45 +215,51 @@ void FXAAPassVk::createAttachment()
 
 void FXAAPassVk::createResources()
 {
-	uboBuffer_.create(
-		sizeof(FXAAPassUBO),
-		vk::BufferUsageFlagBits::eUniformBuffer,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-	);
+	for (auto& buffer : uboBuffers_)
+	{
+		buffer.create(
+			sizeof(FXAAPassUBO),
+			vk::BufferUsageFlagBits::eUniformBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+	} // end for
 } // end of createResources()
 
-void FXAAPassVk::createDescriptorSet()
+void FXAAPassVk::createDescriptorSets()
 {
-	vk::DescriptorSetLayoutBinding uboBinding{};
-	uboBinding.binding = TO_API_FORM(FXAAPassBinding::UBO);
-	uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-	uboBinding.descriptorCount = 1;
-	uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+	for (uint32_t i = 0; i < vk_.getMaxFramesInFlight(); ++i)
+	{
+		vk::DescriptorSetLayoutBinding uboBinding{};
+		uboBinding.binding = TO_API_FORM(FXAAPassBinding::UBO);
+		uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+		uboBinding.descriptorCount = 1;
+		uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
-	vk::DescriptorSetLayoutBinding inputImgBinding{};
-	inputImgBinding.binding = TO_API_FORM(FXAAPassBinding::ForwardColorTex);
-	inputImgBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	inputImgBinding.descriptorCount = 1;
-	inputImgBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		vk::DescriptorSetLayoutBinding inputImgBinding{};
+		inputImgBinding.binding = TO_API_FORM(FXAAPassBinding::ForwardColorTex);
+		inputImgBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		inputImgBinding.descriptorCount = 1;
+		inputImgBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	descriptorSet_.createLayout({ uboBinding, inputImgBinding });
-	
-	vk::DescriptorPoolSize uboPool;
-	uboPool.type = vk::DescriptorType::eUniformBuffer;
-	uboPool.descriptorCount = 1;
+		descriptorSets_[i].createLayout({uboBinding, inputImgBinding});
 
-	vk::DescriptorPoolSize inputImgPool;
-	inputImgPool.type = vk::DescriptorType::eCombinedImageSampler;
-	inputImgPool.descriptorCount = 1;
+		vk::DescriptorPoolSize uboPool;
+		uboPool.type = vk::DescriptorType::eUniformBuffer;
+		uboPool.descriptorCount = 1;
 
-	descriptorSet_.createPool({ uboPool, inputImgPool });
-	descriptorSet_.allocate();
+		vk::DescriptorPoolSize inputImgPool;
+		inputImgPool.type = vk::DescriptorType::eCombinedImageSampler;
+		inputImgPool.descriptorCount = 1;
 
-	descriptorSet_.writeUniformBuffer(
-		TO_API_FORM(FXAAPassBinding::UBO),
-		uboBuffer_.getBuffer(),
-		sizeof(FXAAPassUBO)
-	);
+		descriptorSets_[i].createPool({ uboPool, inputImgPool });
+		descriptorSets_[i].allocate();
+
+		descriptorSets_[i].writeUniformBuffer(
+			TO_API_FORM(FXAAPassBinding::UBO),
+			uboBuffers_[i].getBuffer(),
+			sizeof(FXAAPassUBO)
+		);
+	} // end for
 } // end of createDescriptorSet()
 
 void FXAAPassVk::createPipeline()
@@ -262,7 +268,7 @@ void FXAAPassVk::createPipeline()
 	desc.vertShader = shader_->vertShader();
 	desc.fragShader = shader_->fragShader();
 
-	desc.setLayouts = { descriptorSet_.getLayout() };
+	desc.setLayouts = { descriptorSets_[0].getLayout()};
 
 	desc.colorFormat = vk::Format::eR32G32B32A32Sfloat;
 	desc.depthFormat = vk::Format::eUndefined;

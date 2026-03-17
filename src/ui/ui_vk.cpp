@@ -132,8 +132,10 @@ void UIVk::buildUI(float dt, IScene& scene)
 	ImGui::Render();
 } // end of drawFullUI()
 
-void UIVk::render(vk::CommandBuffer cmd, FrameContext& frame)
+void UIVk::render(FrameContext& frame)
 {
+	vk::CommandBuffer cmd = frame.cmd;
+
 	vk::RenderingAttachmentInfo uiColorAttach{};
 	uiColorAttach.imageView = frame.colorImageView;
 	uiColorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;

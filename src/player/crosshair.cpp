@@ -1,15 +1,16 @@
 #include "crosshair.h"
 
+#include "constants.h"
 #include "shader.h"
 
 #include <glad/glad.h>
-#include <glm/glm.hpp>
+
+#include <memory>
+
+using namespace Crosshair_Constants;
 
 //--- PUBLIC ---//
-Crosshair::Crosshair(float size)
-	: size_(size)
-{
-} // end of constructor
+Crosshair::Crosshair() = default;
 
 Crosshair::~Crosshair()
 {
@@ -22,22 +23,10 @@ void Crosshair::init()
 
 	crosshairShader_ = std::make_unique<Shader>("crosshair/crosshair.vert", "crosshair/crosshair.frag");
 
-	glm::vec2 center{ 0.0f, 0.0f };
-
-	float vertices[] = {
-		// Horizontal line (x from -size_ to +size_ at y = 0)
-		center.x - size_, center.y,
-		center.x + size_, center.y,
-
-		// Vertical line (y from -size_ to +size_ at x = 0)
-		center.x, center.y - size_,
-		center.x, center.y + size_
-	};
-
 	glCreateVertexArrays(1, &vao_);
 	glCreateBuffers(1, &vbo_);
 
-	glNamedBufferData(vbo_, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glNamedBufferData(vbo_, sizeof(VERTICES), VERTICES, GL_STATIC_DRAW);
 
 	// attach buffer to vao
 	glVertexArrayVertexBuffer(vao_, 0, vbo_, 0, sizeof(float) * 2);

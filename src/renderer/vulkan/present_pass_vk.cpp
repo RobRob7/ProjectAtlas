@@ -9,12 +9,18 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include <cstdint>
+
 //--- PUBLIC ---//
 PresentPassVk::PresentPassVk(VulkanMain& vk)
 	: vk_(vk),
-	descriptorSet_(vk),
 	pipeline_(vk)
 {
+    descriptorSets_.reserve(vk.getMaxFramesInFlight());
+    for (uint32_t i = 0; i < vk_.getMaxFramesInFlight(); ++i)
+    {
+        descriptorSets_.emplace_back(vk_);
+    } // end for
 } // end of constructor
 
 PresentPassVk::~PresentPassVk() = default;
@@ -27,7 +33,7 @@ void PresentPassVk::init()
         "presentpass/present.frag.spv"
     );
 
-    createDescriptorSet();
+    createDescriptorSets();
     createPipeline();
 } // end of init()
 
@@ -37,16 +43,17 @@ void PresentPassVk::setInput(ImageVk& input)
 } // end of setInput()
 
 void PresentPassVk::render(
-    vk::CommandBuffer cmd,
     FrameContext& frame
 )
 {
-    refreshInput();
+    refreshInput(frame);
 
-    if (!inputImage_ || !descriptorSet_.valid() || !pipeline_.valid())
+    if (!inputImage_ || !descriptorSets_[frame.frameIndex].valid() || !pipeline_.valid())
     {
         return;
     }
+
+    vk::CommandBuffer cmd = frame.cmd;
 
     vk::ClearValue clear{};
     clear.color.float32[0] = 0.0f;
@@ -54,22 +61,22 @@ void PresentPassVk::render(
     clear.color.float32[2] = 0.0f;
     clear.color.float32[3] = 1.0f;
 
-    vk::RenderingAttachmentInfo presentColorAttach{};
-    presentColorAttach.imageView = frame.colorImageView;
-    presentColorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-    presentColorAttach.loadOp = vk::AttachmentLoadOp::eDontCare;
-    presentColorAttach.storeOp = vk::AttachmentStoreOp::eStore;
-    presentColorAttach.clearValue = clear;
+    vk::RenderingAttachmentInfo colorAttach{};
+    colorAttach.imageView = frame.colorImageView;
+    colorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    colorAttach.loadOp = vk::AttachmentLoadOp::eDontCare;
+    colorAttach.storeOp = vk::AttachmentStoreOp::eStore;
+    colorAttach.clearValue = clear;
 
-    vk::RenderingInfo presentRenderingInfo{};
-    presentRenderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
-    presentRenderingInfo.renderArea.extent = frame.extent;
-    presentRenderingInfo.layerCount = 1;
-    presentRenderingInfo.colorAttachmentCount = 1;
-    presentRenderingInfo.pColorAttachments = &presentColorAttach;
-    presentRenderingInfo.pDepthAttachment = nullptr;
+    vk::RenderingInfo renderingInfo{};
+    renderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
+    renderingInfo.renderArea.extent = frame.extent;
+    renderingInfo.layerCount = 1;
+    renderingInfo.colorAttachmentCount = 1;
+    renderingInfo.pColorAttachments = &colorAttach;
+    renderingInfo.pDepthAttachment = nullptr;
 
-    cmd.beginRendering(presentRenderingInfo);
+    cmd.beginRendering(renderingInfo);
     {
         vk::Viewport viewport{};
         viewport.x = 0.0f;
@@ -85,7 +92,7 @@ void PresentPassVk::render(
         scissor.extent = frame.extent;
         cmd.setScissor(0, 1, &scissor);
 
-        vk::DescriptorSet set = descriptorSet_.getSet();
+        vk::DescriptorSet set = descriptorSets_[frame.frameIndex].getSet();
 
         cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.getPipeline());
         cmd.bindDescriptorSets(
@@ -103,43 +110,37 @@ void PresentPassVk::render(
 
 
 //--- PRIVATE ---//
-void PresentPassVk::refreshInput()
+void PresentPassVk::refreshInput(FrameContext& frame)
 {
     if (!inputImage_)
         return;
 
-    if (boundInputImage_ == inputImage_ &&
-        inputGeneration_ == inputImage_->generation())
-    {
-        return;
-    }
-
-    descriptorSet_.writeCombinedImageSampler(
+    descriptorSets_[frame.frameIndex].writeCombinedImageSampler(
         TO_API_FORM(PresentPassBinding::ForwardColorTex),
         inputImage_->view(),
         inputImage_->sampler()
     );
-
-    boundInputImage_ = inputImage_;
-    inputGeneration_ = inputImage_->generation();
 } // end of refreshInput()
 
-void PresentPassVk::createDescriptorSet()
+void PresentPassVk::createDescriptorSets()
 {
-    vk::DescriptorSetLayoutBinding inputBinding{};
-    inputBinding.binding = TO_API_FORM(PresentPassBinding::ForwardColorTex);
-    inputBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-    inputBinding.descriptorCount = 1;
-    inputBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+    for (auto& set : descriptorSets_)
+    {
+        vk::DescriptorSetLayoutBinding inputBinding{};
+        inputBinding.binding = TO_API_FORM(PresentPassBinding::ForwardColorTex);
+        inputBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+        inputBinding.descriptorCount = 1;
+        inputBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-    descriptorSet_.createLayout({ inputBinding });
+        set.createLayout({inputBinding});
 
-    vk::DescriptorPoolSize inputPool{};
-    inputPool.type = vk::DescriptorType::eCombinedImageSampler;
-    inputPool.descriptorCount = 1;
+        vk::DescriptorPoolSize inputPool{};
+        inputPool.type = vk::DescriptorType::eCombinedImageSampler;
+        inputPool.descriptorCount = 1;
 
-    descriptorSet_.createPool({ inputPool }, 1);
-    descriptorSet_.allocate();
+        set.createPool({ inputPool }, 1);
+        set.allocate();
+    } // end for
 } // end of createDescriptorSet()
 
 void PresentPassVk::createPipeline()
@@ -148,7 +149,7 @@ void PresentPassVk::createPipeline()
     desc.vertShader = shader_->vertShader();
     desc.fragShader = shader_->fragShader();
 
-    desc.setLayouts = { descriptorSet_.getLayout() };
+    desc.setLayouts = { descriptorSets_[0].getLayout()};
 
     desc.colorFormat = vk_.getSwapChainImageFormat();
     desc.depthFormat = vk::Format::eUndefined;
