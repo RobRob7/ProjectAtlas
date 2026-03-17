@@ -268,6 +268,7 @@ Requirements
 </h2>
 
 > - [Download](https://git-scm.com/install/) and install Git.
+> - [Download](https://vulkan.lunarg.com/sdk/home) and install latest Vulkan SDK.
 > - [Download](https://visualstudio.microsoft.com/vs/community/) Visual Studio 2022 Community Edition or newer.
 > -- Install workloads: *Desktop development with C++*.
 > - [Download](https://cmake.org/download/) and install CMake (>= v3.31.0).
