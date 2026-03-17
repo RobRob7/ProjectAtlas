@@ -140,7 +140,18 @@ public:
                 std::move(waterIB)
             }
         );
-    }
+    } // end of retireChunkBuffers()
+
+    vk::PresentModeKHR getVsyncMode() const{ return vsyncMode_; }
+    bool getVSync() const { return vsyncEnabled_; }
+    void setVSync(bool enabled)
+    {
+        if (vsyncEnabled_ == enabled)
+            return;
+
+        vsyncEnabled_ = enabled;
+        framebufferResized_ = true;
+    } // end of setVSync
 
 private:
     void createInstance();
@@ -196,6 +207,9 @@ private:
 
     bool framebufferResized_{ false };
     uint32_t currentFrame_ = 0;
+
+    bool vsyncEnabled_ = true;
+    vk::PresentModeKHR vsyncMode_;
 
     vk::SampleCountFlagBits msaaSamples_{ vk::SampleCountFlagBits::e1 };
 

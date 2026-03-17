@@ -46,6 +46,8 @@ UIVk::UIVk(VulkanMain& vk, GLFWwindow* window, RenderSettings& rs, Backend activ
 	activeBackend_(activeBackend),
 	selectedBackend_(activeBackend)
 {
+	renderSettings_.enableVsync = vk_.getVSync();
+
 	// window top nav bar logo
 	logoTex_ = std::make_unique<Texture2DVk>(vk_);
 	logoTex_->loadFromFile("blocks.png", false);
@@ -377,45 +379,47 @@ void UIVk::drawInspector(IScene& scene)
 		ImGui::Separator();
 #endif
 
-		// backend mode
-		ImGui::Text("Backend: %s", backendToString(activeBackend_).data());
-
-		int backendIndex = 0;
-		switch (selectedBackend_)
 		{
-		case Backend::OpenGL: backendIndex = 0; break;
-		case Backend::Vulkan: backendIndex = 1; break;
-		case Backend::DX12:   backendIndex = 2; break;
-		}
+			// backend mode
+			ImGui::Text("Backend: %s", backendToString(activeBackend_).data());
 
-		const char* backendItems[] = { "OpenGL", "Vulkan" };
-
-		if (ImGui::Combo("Graphics API##render", &backendIndex, backendItems, 2))
-		{
-			switch (backendIndex)
+			int backendIndex = 0;
+			switch (selectedBackend_)
 			{
-			case 0: selectedBackend_ = Backend::OpenGL; break;
-			case 1: selectedBackend_ = Backend::Vulkan; break;
-			}
-		}
-
-		if (selectedBackend_ != activeBackend_)
-		{
-			ImGui::Text("Backend change pending.");
-
-			if (ImGui::Button("Apply Backend"))
-			{
-				// save world
-				scene.getWorld().saveWorld();
-
-				backendApplyRequested_ = true;
+			case Backend::OpenGL: backendIndex = 0; break;
+			case Backend::Vulkan: backendIndex = 1; break;
+			case Backend::DX12:   backendIndex = 2; break;
 			}
 
-			ImGui::SameLine();
+			const char* backendItems[] = { "OpenGL", "Vulkan" };
 
-			if (ImGui::Button("Cancel Backend Change"))
+			if (ImGui::Combo("Graphics API##render", &backendIndex, backendItems, 2))
 			{
-				selectedBackend_ = activeBackend_;
+				switch (backendIndex)
+				{
+				case 0: selectedBackend_ = Backend::OpenGL; break;
+				case 1: selectedBackend_ = Backend::Vulkan; break;
+				}
+			}
+
+			if (selectedBackend_ != activeBackend_)
+			{
+				ImGui::Text("Backend change pending.");
+
+				if (ImGui::Button("Apply Backend"))
+				{
+					// save world
+					scene.getWorld().saveWorld();
+
+					backendApplyRequested_ = true;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel Backend Change"))
+				{
+					selectedBackend_ = activeBackend_;
+				}
 			}
 		}
 
@@ -445,9 +449,10 @@ void UIVk::drawInspector(IScene& scene)
 		// DISPLAY OPTIONS
 		ImGui::Text("Display Options:");
 		// VSync toggle
-		if (ImGui::Checkbox("VSync##render", &renderSettings_.enableVsync))
+		std::string vsyncMode = "VSync [" + vk::to_string(vk_.getVsyncMode()) + "]##render";
+		if (ImGui::Checkbox(vsyncMode.data(), &renderSettings_.enableVsync))
 		{
-			//glfwSwapInterval(renderSettings_.enableVsync);
+			vk_.setVSync(renderSettings_.enableVsync);
 		}
 
 		// GRAPHICS OPTIONS
