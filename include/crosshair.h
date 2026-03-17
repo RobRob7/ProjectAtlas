@@ -9,7 +9,7 @@ class Shader;
 class Crosshair
 {
 public:
-	Crosshair(float size = 0.004f);
+	Crosshair();
 	~Crosshair();
 
 	void init();
@@ -21,7 +21,6 @@ private:
 	std::unique_ptr<Shader> crosshairShader_;
 	uint32_t vao_{};
 	uint32_t vbo_{};
-	const float size_{};
 };
 
 #endif

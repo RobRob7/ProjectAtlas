@@ -3,7 +3,6 @@
 
 #include "constants.h"
 
-#include "vulkan/vulkan.hpp"
 #include <imgui.h>
 #include <imgui_impl_vulkan.h>
 
@@ -28,7 +27,7 @@ public:
 
 	void beginFrame();
 	void buildUI(float dt, IScene& scene);
-	void render(vk::CommandBuffer cmd, FrameContext& frame);
+	void render(FrameContext& frame);
 	void setUIInputEnabled(bool enabled);
 	void setUIDisplayEnabled(bool enabled);
 	void setCameraModeUIEnabled(bool enabled);

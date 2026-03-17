@@ -6,6 +6,7 @@
 #include "chunk_mesh_data.h"
 
 #include <vector>
+#include <utility>
 
 using namespace World;
 

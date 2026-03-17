@@ -21,6 +21,7 @@
 #include <glad/glad.h>
 
 #include <stdexcept>
+#include <memory>
 
 //--- PUBLIC ---//
 RendererGL::RendererGL() = default;
@@ -102,7 +103,7 @@ void RendererGL::renderFrame(
     const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
 
 
-    // --------------- PASSES --------------- //
+    // ----------------- PASSES ----------------- //
     // gbuffer pass
     gbuffer_->render(*chunkPass_, in, view, proj);
 
@@ -129,7 +130,7 @@ void RendererGL::renderFrame(
     // --------------- END PASSES --------------- //
 
 
-    // --------------- FORWARD RENDER --------------- //
+    // ----------------- FORWARD RENDER ----------------- //
     glBindFramebuffer(GL_FRAMEBUFFER, forwardFBO_);
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -142,7 +143,7 @@ void RendererGL::renderFrame(
     // --------------- END FORWARD RENDER --------------- //
 
 
-    // --------------- POST-PROCESSING --------------- //
+    // ----------------- POST-PROCESSING ----------------- //
     // FXAA
     uint32_t finalColorTex = forwardColorTex_;
     if (renderSettings_->useFXAA)
@@ -166,7 +167,7 @@ void RendererGL::renderFrame(
     // --------------- END POST-PROCESSING --------------- //
 
 
-    // --------------- PRESENT PASS --------------- //
+    // ----------------- PRESENT PASS ----------------- //
     if (presentPass_)
     {
         presentPass_->render(finalColorTex);
@@ -174,8 +175,11 @@ void RendererGL::renderFrame(
     // --------------- END PRESENT PASS --------------- //
 
 
-    // --------------- UI ELEMENTS --------------- //
-    in.crosshair->render();
+    // ----------------- UI ELEMENTS ----------------- //
+    if (in.crosshair)
+    {
+        in.crosshair->render();
+    }
     // --------------- END UI ELEMENTS --------------- //
 } // end of renderFrame()
 

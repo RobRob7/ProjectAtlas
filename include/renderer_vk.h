@@ -13,6 +13,7 @@ class ILight;
 class ICubemap;
 struct RenderInputs;
 struct RenderSettings;
+struct FrameContext;
 
 class GBufferPassVk;
 class DebugPassVk;
@@ -24,6 +25,9 @@ class WaterPassVk;
 class FXAAPassVk;
 class FogPassVk;
 class PresentPassVk;
+
+class UIVk;
+class CrosshairVk;
 
 class RendererVk final : public IRenderer
 {
@@ -73,6 +77,8 @@ private:
 	std::unique_ptr<FogPassVk> fogPass_;
 
 	std::unique_ptr<PresentPassVk> presentPass_;
+
+	std::unique_ptr<CrosshairVk> crosshair_;
 };
 
 #endif

@@ -5,7 +5,7 @@
 #include "graphics_pipeline_vk.h"
 
 #include <memory>
-#include <cstdint>
+#include <vector>
 
 class VulkanMain;
 class ShaderModuleVk;
@@ -23,24 +23,20 @@ public:
 	void setInput(ImageVk& input);
 
 	void render(
-		vk::CommandBuffer cmd, 
 		FrameContext& frame
 	);
 
 private:
-	void refreshInput();
-	void createDescriptorSet();
+	void refreshInput(FrameContext& frame);
+	void createDescriptorSets();
 	void createPipeline();
 private:
 	VulkanMain& vk_;
 	ImageVk* inputImage_{ nullptr };
-	ImageVk* boundInputImage_{ nullptr };
-
-	uint64_t inputGeneration_ = 0;
 
 	std::unique_ptr<ShaderModuleVk> shader_;
 
-	DescriptorSetVk descriptorSet_;
+	std::vector<DescriptorSetVk> descriptorSets_;
 	GraphicsPipelineVk pipeline_;
 };
 

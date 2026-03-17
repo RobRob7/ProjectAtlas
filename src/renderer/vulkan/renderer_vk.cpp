@@ -13,6 +13,7 @@
 #include "i_cubemap.h"
 #include "chunk_manager.h"
 #include "ui_vk.h"
+#include "crosshair_vk.h"
 
 #include "gbuffer_pass_vk.h"
 #include "debug_pass_vk.h"
@@ -50,6 +51,8 @@ void RendererVk::init()
 	if (!fogPass_)		fogPass_ = std::make_unique<FogPassVk>(vk_, *renderSettings_);
 	if (!presentPass_)	presentPass_ = std::make_unique<PresentPassVk>(vk_);
 
+	if (!crosshair_)	crosshair_ = std::make_unique<CrosshairVk>(vk_);
+
 	gbufferPass_->init();
 	debugPass_->init();
 	ssaoPass_->init();
@@ -61,6 +64,8 @@ void RendererVk::init()
 	fxaaPass_->init();
 	fogPass_->init();
 	presentPass_->init();
+
+	crosshair_->init();
 } // end of init()
 
 void RendererVk::resize(int w, int h)
@@ -108,7 +113,7 @@ void RendererVk::renderFrame(
 
 	vk::CommandBuffer cmd = frame.cmd;
 
-	// --------------- PASSES --------------- //
+	// ----------------- PASSES ----------------- //
 	// gbuffer pass
 	if (gbufferPass_)
 	{
@@ -131,7 +136,7 @@ void RendererVk::renderFrame(
 
 		if (ui)
 		{
-			ui->render(cmd, frame);
+			ui->render(frame);
 		}
 
 		// present
@@ -157,7 +162,7 @@ void RendererVk::renderFrame(
 	// --------------- END PASSES --------------- //
 
 
-	// --------------- FORWARD RENDER --------------- //
+	// ----------------- FORWARD RENDER ----------------- //
 	// scene color transition to attachment
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -269,14 +274,14 @@ void RendererVk::renderFrame(
 	// --------------- END FORWARD RENDER --------------- //
 
 
-	// --------------- POST-PROCESSING --------------- //
+	// ----------------- POST-PROCESSING ----------------- //
 	ImageVk* postColor = &sceneColor_;
 	ImageVk* postDepth = &sceneDepth_;
 	// FXAA
 	if (renderSettings_->useFXAA)
 	{
 		fxaaPass_->setInput(*postColor);
-		fxaaPass_->render(cmd);
+		fxaaPass_->render(frame);
 		postColor = &fxaaPass_->getOutputImage();
 	}
 
@@ -285,7 +290,7 @@ void RendererVk::renderFrame(
 	{
 		fogPass_->setInput(*postColor, *postDepth);
 		fogPass_->render(
-			cmd,
+			frame,
 			in.camera->getNearPlane(),
 			in.camera->getFarPlane(),
 			in.world->getAmbientStrength()
@@ -307,23 +312,26 @@ void RendererVk::renderFrame(
 	);
 
 
-	// --------------- PRESENT PASS --------------- //
+	// ----------------- PRESENT PASS ----------------- //
 	if (presentPass_)
 	{
 		presentPass_->setInput(*postColor);
-		presentPass_->render(cmd, frame);
+		presentPass_->render(frame);
 	}
 	// --------------- END PRESENT PASS --------------- //
 
 
-	// --------------- UI ELEMENTS --------------- //
+	// ----------------- UI ELEMENTS ----------------- //
 	// CROSSHAIR RENDER
-	
+	if (crosshair_)
+	{
+		crosshair_->render(frame);
+	}
 
 	// UI RENDER
 	if (ui)
 	{
-		ui->render(cmd, frame);
+		ui->render(frame);
 	}
 	// --------------- END UI ELEMENTS --------------- //
 
