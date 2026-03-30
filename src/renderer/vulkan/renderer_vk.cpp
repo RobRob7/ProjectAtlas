@@ -174,8 +174,8 @@ void RendererVk::renderFrame(
 	// water refl + refr pass
 	if (waterPass_)
 	{
-		//waterPass_->updateShadowMapImage(shadowMapPass_->getImage());
 		waterPass_->renderOffscreen(
+			*renderSettings_,
 			frame,
 			*chunkPass_,
 			in,
@@ -277,6 +277,7 @@ void RendererVk::renderFrame(
 		if (waterPass_)
 		{
 			waterPass_->renderWater(
+				*renderSettings_,
 				in,
 				cmd,
 				view,

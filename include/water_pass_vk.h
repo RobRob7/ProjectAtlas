@@ -19,6 +19,7 @@ class ShaderModuleVk;
 struct RenderInputs;
 class ChunkPassVk;
 struct FrameContext;
+struct RenderSettings;
 
 class WaterPassVk
 {
@@ -33,6 +34,7 @@ public:
 	void resize(int w, int h);
 
 	void renderOffscreen(
+		const RenderSettings& rs,
 		const FrameContext& frame,
 		ChunkPassVk& chunk,
 		const RenderInputs& in,
@@ -40,6 +42,7 @@ public:
 	);
 
 	void renderWater(
+		const RenderSettings& rs,
 		const RenderInputs& in,
 		vk::CommandBuffer cmd,
 		const glm::mat4& view,
@@ -60,18 +63,21 @@ private:
 	void createDescriptorSet();
 	void createPipeline();
 	void waterPass(
+		const RenderSettings& rs,
 		const FrameContext& frame,
 		ChunkPassVk& chunk, 
 		const RenderInputs& in,
 		const glm::mat4& lightSpaceMatrix
 	);
 	void waterReflectionPass(
+		const RenderSettings& rs,
 		const FrameContext& frame,
 		ChunkPassVk& chunk, 
 		const RenderInputs& in,
 		const glm::mat4& lightSpaceMatrix
 	) const;
 	void waterRefractionPass(
+		const RenderSettings& rs,
 		const FrameContext& frame,
 		ChunkPassVk& chunk, 
 		const RenderInputs& in,

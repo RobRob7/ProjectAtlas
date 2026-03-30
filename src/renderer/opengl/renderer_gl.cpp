@@ -74,7 +74,6 @@ void RendererGL::resize(int w, int h)
     height_ = h;
 
     gbuffer_->resize(width_, height_);
-    shadowMapPass_->resize(width_, height_);
     ssaoPass_->resize(width_, height_);
     fxaaPass_->resize(width_, height_);
     waterPass_->resize(width_, height_);
@@ -151,6 +150,7 @@ void RendererGL::renderFrame(
 
     // water pass
     waterPass_->renderOffscreen(
+        *renderSettings_,
         shadowMapPass_.get(),
         *chunkPass_, 
         in
@@ -176,6 +176,7 @@ void RendererGL::renderFrame(
     );
 
     waterPass_->renderWater(
+        *renderSettings_,
         shadowMapPass_.get(),
         in, 
         view, 

@@ -41,6 +41,7 @@ void ChunkPassGL::updateShader(
 {
     // update uniforms of opaque shader
     opaqueShader_->use();
+    chunkOpaqueUBO_.u_useShadowMap = rs.useShadowMap ? 1 : 0;
     chunkOpaqueUBO_.u_ambientStrength = in.world->getAmbientStrength();
     chunkOpaqueUBO_.u_viewPos = in.camera->getCameraPosition();
     chunkOpaqueUBO_.u_lightDir = in.light->getDirection();

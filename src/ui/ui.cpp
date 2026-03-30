@@ -391,6 +391,9 @@ void UI::drawInspector(IScene& scene)
 
 		// GRAPHICS OPTIONS
 		ImGui::Text("Graphics Options:");
+		// Shadow Map Toggle
+		ImGui::Checkbox("Shadows##render", &renderSettings_.useShadowMap);
+
 		// SSAO toggle
 		ImGui::Checkbox("SSAO##render", &renderSettings_.useSSAO);
 

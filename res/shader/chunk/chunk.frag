@@ -31,7 +31,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
 
     vec2 u_screenSize;
     int u_useSSAO;
-    int _pad3;
+    int u_useShadowMap;
 };
 
 layout (binding = 1) uniform sampler2D u_atlasTex;
@@ -157,8 +157,12 @@ void main()
     vec3 specular = vec3(0.0);
 
     // shadow calc
-    float shadow = ShadowCalculation(FragPosLightSpace);
-    float shadowFactor = clamp(1.0 - shadow, 0.0, 1.0);
+    float shadowFactor = 1.0;
+    if (u_useShadowMap != 0)
+    {
+        float shadow = ShadowCalculation(FragPosLightSpace);
+        shadowFactor = clamp(1.0 - shadow, 0.0, 1.0);
+    }
 
     vec3 direct = (diffuse + specular);
     // final color

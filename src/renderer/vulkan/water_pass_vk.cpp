@@ -1,5 +1,6 @@
 #include "water_pass_vk.h"
 
+#include "render_settings.h"
 #include "frame_context_vk.h"
 #include "constants.h"
 #include "render_inputs.h"
@@ -85,6 +86,7 @@ void WaterPassVk::resize(int w, int h)
 } // end of resize()
 
 void WaterPassVk::renderOffscreen(
+	const RenderSettings& rs,
 	const FrameContext& frame,
 	ChunkPassVk& chunk,
 	const RenderInputs& in,
@@ -92,10 +94,11 @@ void WaterPassVk::renderOffscreen(
 )
 {
 	// refl + refr passes
-	waterPass(frame, chunk, in, lightSpaceMatrix);
+	waterPass(rs, frame, chunk, in, lightSpaceMatrix);
 } // end of renderOffscreen()
 
 void WaterPassVk::renderWater(
+	const RenderSettings& rs,
 	const RenderInputs& in,
 	vk::CommandBuffer cmd,
 	const glm::mat4& view,
@@ -112,6 +115,7 @@ void WaterPassVk::renderWater(
 	vk::DescriptorSet set = descriptorSet_.getSet();
 
 	ChunkWaterUBO ubo{};
+	ubo.u_useShadowMap = rs.useShadowMap ? 1 : 0;
 	ubo.u_lightSpaceMatrix = lightSpaceMatrix;
 	ubo.u_time = in.time;
 	ubo.u_view = view;
@@ -454,6 +458,7 @@ void WaterPassVk::createPipeline()
 } // end of createPipeline()
 
 void WaterPassVk::waterPass(
+	const RenderSettings& rs,
 	const FrameContext& frame,
 	ChunkPassVk& chunk, 
 	const RenderInputs& in,
@@ -483,7 +488,7 @@ void WaterPassVk::waterPass(
 		1
 	);
 
-	waterReflectionPass(frame, chunk, in, lightSpaceMatrix);
+	waterReflectionPass(rs, frame, chunk, in, lightSpaceMatrix);
 
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -527,7 +532,7 @@ void WaterPassVk::waterPass(
 		1
 	);
 
-	waterRefractionPass(frame, chunk, in, lightSpaceMatrix);
+	waterRefractionPass(rs, frame, chunk, in, lightSpaceMatrix);
 
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -551,6 +556,7 @@ void WaterPassVk::waterPass(
 } // end of waterPass()
 
 void WaterPassVk::waterReflectionPass(
+	const RenderSettings& rs,
 	const FrameContext& frame,
 	ChunkPassVk& chunk, 
 	const RenderInputs& in,
@@ -632,6 +638,7 @@ void WaterPassVk::waterReflectionPass(
 		proj[1][1] *= -1.0f;
 
 		ChunkOpaqueUBO ubo{};
+		ubo.u_useShadowMap = rs.useShadowMap ? 1 : 0;
 		ubo.u_lightSpaceMatrix = lightSpaceMatrix;
 		ubo.u_clipPlane = clipPlane;
 		ubo.u_useSSAO = 0;
@@ -665,6 +672,7 @@ void WaterPassVk::waterReflectionPass(
 } // end of waterReflectionPass()
 
 void WaterPassVk::waterRefractionPass(
+	const RenderSettings& rs,
 	const FrameContext& frame,
 	ChunkPassVk& chunk, 
 	const RenderInputs& in,
@@ -738,6 +746,7 @@ void WaterPassVk::waterRefractionPass(
 		proj[1][1] *= -1.0f;
 
 		ChunkOpaqueUBO ubo{};
+		ubo.u_useShadowMap = rs.useShadowMap ? 1 : 0;
 		ubo.u_lightSpaceMatrix = lightSpaceMatrix;
 		ubo.u_clipPlane = clipPlane;
 		ubo.u_useSSAO = 0;

@@ -77,6 +77,7 @@ void WaterPass::updateShader(
 {
     // update uniforms of water shader
     shader_->use();
+    waterUBO_.u_useShadowMap = rs.useShadowMap ? 1 : 0;
     waterUBO_.u_time = in.time;
     waterUBO_.u_near = in.camera->getNearPlane();
     waterUBO_.u_far = in.camera->getFarPlane();
@@ -97,15 +98,17 @@ void WaterPass::destroyGL()
 } // end of destroyGL()
 
 void WaterPass::renderOffscreen(
+    const RenderSettings& rs,
     ShadowMapPassGL* shadowMap,
     ChunkPassGL& chunk,
     const RenderInputs& in
 )
 {
-    waterPass(shadowMap, chunk, in);
+    waterPass(rs, shadowMap, chunk, in);
 } // end of renderOffscreen()
 
 void WaterPass::renderWater(
+    const RenderSettings& rs,
     ShadowMapPassGL* shadowMap,
     const RenderInputs& in,
     const glm::mat4& view,
@@ -127,6 +130,7 @@ void WaterPass::renderWater(
     in.world->buildWaterDrawList(view, proj, list);
 
     shader_->use();
+    waterUBO_.u_useShadowMap = rs.useShadowMap ? 1 : 0;
     waterUBO_.u_lightSpaceMatrix = shadowMap->getLightSpaceMatrix();
     waterUBO_.u_view = view;
     waterUBO_.u_proj = proj;
@@ -268,6 +272,7 @@ void WaterPass::destroyTargets()
 } // end of destroyTargets()
 
 void WaterPass::waterPass(
+    const RenderSettings& rs,
     ShadowMapPassGL* shadowMap,
     ChunkPassGL& chunk, 
     const RenderInputs& in
@@ -275,8 +280,8 @@ void WaterPass::waterPass(
 {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CLIP_DISTANCE0);
-    waterReflectionPass(shadowMap, chunk, in);
-    waterRefractionPass(shadowMap, chunk, in);
+    waterReflectionPass(rs, shadowMap, chunk, in);
+    waterRefractionPass(rs, shadowMap, chunk, in);
 
     // restore framebuffer + viewport
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -286,6 +291,7 @@ void WaterPass::waterPass(
 } // end of waterPass()
 
 void WaterPass::waterReflectionPass(
+    const RenderSettings& rs,
     ShadowMapPassGL* shadowMap,
     ChunkPassGL& chunk, 
     const RenderInputs& in
@@ -311,6 +317,7 @@ void WaterPass::waterReflectionPass(
     auto chunkOpaqueUBOCopy = chunkOpaqueUBO;
 
     opaqueShader.use();
+    chunkOpaqueUBO.u_useShadowMap = rs.useShadowMap ? 1 : 0;
     chunkOpaqueUBO.u_clipPlane = clipPlane;
     chunkOpaqueUBO.u_useSSAO = 0;
 
@@ -349,6 +356,7 @@ void WaterPass::waterReflectionPass(
 } // end of waterReflectionPass()
 
 void WaterPass::waterRefractionPass(
+    const RenderSettings& rs,
     ShadowMapPassGL* shadowMap,
     ChunkPassGL& chunk, 
     const RenderInputs& in
@@ -367,6 +375,7 @@ void WaterPass::waterRefractionPass(
     auto chunkOpaqueUBOCopy = chunkOpaqueUBO;
 
     opaqueShader.use();
+    chunkOpaqueUBO.u_useShadowMap = rs.useShadowMap ? 1 : 0;
     chunkOpaqueUBO.u_clipPlane = clipPlane;
     chunkOpaqueUBO.u_useSSAO = 0;
 
