@@ -41,15 +41,22 @@ public:
 		int width, int height
 	);
 	void renderOpaque(
-		Shader& shader,
+		uint32_t ssaoTex,
+		uint32_t shadowTex,
+		const RenderInputs& in,
+		const glm::mat4& view,
+		const glm::mat4& proj,
+		const glm::mat4& lightSpaceMatrix,
+		int width, int height
+	);
+	void renderOpaqueOffscreen(
 		UBOGL& uboGL,
 		void* ubo,
 		uint32_t uboSize,
 		glm::vec3& chunkOrigin,
 		const RenderInputs& in,
 		const glm::mat4& view,
-		const glm::mat4& proj,
-		int width, int height
+		const glm::mat4& proj
 	);
 
 	Shader& getOpaqueShader() { return *opaqueShader_; }

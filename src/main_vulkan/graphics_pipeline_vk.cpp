@@ -64,8 +64,9 @@ void GraphicsPipelineVk::create(const GraphicsPipelineDescVk& desc)
 	cba.blendEnable = desc.blendEnable;
 
 	vk::PipelineColorBlendStateCreateInfo cb{};
-	cb.attachmentCount = 1;
-	cb.pAttachments = &cba;
+	const bool hasColorAttachment = (desc.colorFormat != vk::Format::eUndefined);
+	cb.attachmentCount = hasColorAttachment ? 1u : 0u;
+	cb.pAttachments = hasColorAttachment ? &cba : nullptr;
 
 	// depth
 	vk::PipelineDepthStencilStateCreateInfo ds{};
@@ -82,11 +83,9 @@ void GraphicsPipelineVk::create(const GraphicsPipelineDescVk& desc)
 	vk::PipelineLayoutCreateInfo pli{};
 	pli.setLayoutCount = static_cast<uint32_t>(desc.setLayouts.size());
 	pli.pSetLayouts = desc.setLayouts.data();
+	pli.pushConstantRangeCount = static_cast<uint32_t>(desc.pushConstantRanges.size());
+	pli.pPushConstantRanges = desc.pushConstantRanges.empty() ? nullptr : desc.pushConstantRanges.data();
 
-	pli.pushConstantRangeCount =
-		static_cast<uint32_t>(desc.pushConstantRanges.size());
-	pli.pPushConstantRanges =
-		desc.pushConstantRanges.empty() ? nullptr : desc.pushConstantRanges.data();
 	{
 		vk::ResultValue rv = device.createPipelineLayoutUnique(pli);
 		if (rv.result != vk::Result::eSuccess)
@@ -101,8 +100,8 @@ void GraphicsPipelineVk::create(const GraphicsPipelineDescVk& desc)
 
 	// dynamic rendering info
 	vk::PipelineRenderingCreateInfo rendering{};
-	rendering.colorAttachmentCount = 1;
-	rendering.pColorAttachmentFormats = &desc.colorFormat;
+	rendering.colorAttachmentCount = hasColorAttachment ? 1u : 0u;
+	rendering.pColorAttachmentFormats = hasColorAttachment ? &desc.colorFormat : nullptr;
 	rendering.depthAttachmentFormat = desc.depthFormat;
 
 	// pipeline creation

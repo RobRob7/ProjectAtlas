@@ -30,11 +30,12 @@ public:
 		ChunkPassGL& chunk,
 		const RenderInputs& in, 
 		const glm::mat4& view, 
-		const glm::mat4& proj);
+		const glm::mat4& proj
+	);
 
-	uint32_t getNormalTexture() const;
-	uint32_t getDepthTexture() const;
-	uint32_t getFBO() const;
+	uint32_t getFBO() const { return fbo_; }
+	uint32_t getNormalTexture() const { return gNormalTexture_; }
+	uint32_t getDepthTexture() const { return gDepthTexture_; }
 
 private:
 	int width_{};

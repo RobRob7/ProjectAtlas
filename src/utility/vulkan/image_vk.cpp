@@ -258,7 +258,7 @@ void ImageVk::createSampler(
         ? vk_.getPhysicalDeviceProperties().limits.maxSamplerAnisotropy
         : 1.0f;
 
-	sci.borderColor = vk::BorderColor::eIntOpaqueBlack;
+	sci.borderColor = vk::BorderColor::eFloatOpaqueWhite;
 	sci.unnormalizedCoordinates = vk::False;
 	sci.compareEnable = vk::False;
 	sci.compareOp = vk::CompareOp::eAlways;
@@ -266,7 +266,7 @@ void ImageVk::createSampler(
 	sci.mipmapMode = mipmapMode;
 	sci.minLod = 0.0f;
 	sci.maxLod = std::min(5.0f, static_cast<float>(mipLevels_ - 1));
-	sci.mipLodBias = 0.0f;
+	sci.mipLodBias = 0.0f; 
 
 	vk::ResultValue rv = vk_.getDevice().createSamplerUnique(sci);
 	if (rv.result != vk::Result::eSuccess)

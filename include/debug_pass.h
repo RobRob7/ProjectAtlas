@@ -24,6 +24,7 @@ public:
 	void render(
 		uint32_t normalTex, 
 		uint32_t depthTex, 
+		uint32_t shadowMapTex,
 		float nearPlane, 
 		float farPlane, 
 		int mode

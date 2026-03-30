@@ -1,6 +1,7 @@
 #include "application.h"
 
- #include <iostream>
+#include <iostream>
+#include <exception>
 
 // window settings
 unsigned int width = 1600;

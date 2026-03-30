@@ -38,8 +38,22 @@ public:
 
 	void update(const glm::vec3& cameraPos);
 
-	void buildOpaqueDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out);
-	void buildWaterDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out);
+	bool buildVisibleChunkBounds(
+		glm::vec3& outMin,
+		glm::vec3& outMax,
+		int paddingChunks = 1
+	);
+
+	void buildOpaqueDrawList(
+		const glm::mat4& view, 
+		const glm::mat4& proj, 
+		ChunkDrawList& out
+	);
+	void buildWaterDrawList(
+		const glm::mat4& view, 
+		const glm::mat4& proj, 
+		ChunkDrawList& out
+	);
 
 	BlockID getBlock(int wx, int wy, int wz) const;
 	void setBlock(int wx, int wy, int wz, BlockID id);
@@ -66,10 +80,10 @@ public:
 	void enableDistanceCulling(bool enable);
 
 private:
-	float ambientStrength_{ 0.5f };
+	float ambientStrength_{ MIN_AMBSTR };
 	Save saveWorld_;
 
-	// culling toggles
+	// culling toggles 
 	bool enableFrustumCulling_ = true;
 	bool enableDistanceCulling_ = true;
 

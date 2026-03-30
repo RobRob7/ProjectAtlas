@@ -27,7 +27,7 @@ namespace World
 
 	const int MIN_RADIUS = 5;
 	const int MAX_RADIUS = 100;
-	const float MIN_AMBSTR = 0.05f;
+	const float MIN_AMBSTR = 0.03f;
 	const float MAX_AMBSTR = 0.5f;
 
 	// blocks
@@ -66,8 +66,12 @@ namespace World
 
 namespace Light_Constants
 {
-	inline constexpr float MIN_COLOR = 0.0f;
-	inline constexpr float MAX_COLOR = 1.0f;
+	const float MIN_COLOR = 0.0f;
+	const float MAX_COLOR = 1.0f;
+
+	const float MIN_SPEED = 0.01f;
+	const float MAX_SPEED = 0.5f;
+
 
 	struct LightUBO
 	{
@@ -207,6 +211,8 @@ namespace Chunk_Constants
 	struct ChunkOpaqueUBO
 	{
 		// vert
+		glm::mat4 u_lightSpaceMatrix;
+
 		glm::vec3 u_chunkOrigin;
 		float _pad0;
 
@@ -219,7 +225,7 @@ namespace Chunk_Constants
 		glm::vec3 u_viewPos;
 		float _pad1;
 
-		glm::vec3 u_lightPos;
+		glm::vec3 u_lightDir;
 		float _pad2;
 
 		glm::vec3 u_lightColor;
@@ -238,6 +244,8 @@ namespace Chunk_Constants
 	struct ChunkWaterUBO
 	{
 		// vert
+		glm::mat4 u_lightSpaceMatrix;
+
 		glm::mat4 u_model;
 		glm::mat4 u_view;
 		glm::mat4 u_proj;
@@ -257,7 +265,7 @@ namespace Chunk_Constants
 		glm::vec3 u_viewPos;
 		int32_t _pad0;
 
-		glm::vec3 u_lightPos;
+		glm::vec3 u_lightDir;
 		int32_t _pad1;
 
 		glm::vec3 u_lightColor;
@@ -289,6 +297,17 @@ namespace Debug_Constants
 		int32_t u_mode;
 		float u_near;
 		float u_far;
+		float _pad0;
+	};
+};
+
+namespace Shadow_Map_Constants
+{
+	struct ShadowMapPassUBO
+	{
+		glm::mat4 u_lightSpaceMatrix;
+
+		glm::vec3 u_chunkOrigin;
 		float _pad0;
 	};
 };

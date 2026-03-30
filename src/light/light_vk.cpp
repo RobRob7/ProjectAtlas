@@ -19,7 +19,12 @@
 using namespace Light_Constants;
 
 //--- PUBLIC ---//
-LightVk::LightVk(VulkanMain& vk, const glm::vec3& pos, const glm::vec3& color)
+LightVk::LightVk(
+	VulkanMain& vk, 
+	const glm::vec3& pos, 
+	const glm::vec3& dir,
+	const glm::vec3& color
+)
 	: vk_(vk),
 	vertexBuffer_(vk),
 	uboBuffer_(vk),
@@ -30,6 +35,7 @@ LightVk::LightVk(VulkanMain& vk, const glm::vec3& pos, const glm::vec3& color)
 	pipelineOffscreen_(vk),
 	position_(pos)
 {
+	setDirection(dir);
 	setColor(color);
 } // end of constructor
 
@@ -142,6 +148,23 @@ void LightVk::renderOffscreen(
 
 	cmd.draw(vertexCount_, 1, 0, 0);
 } // end of renderOffscreen()
+
+void LightVk::updateLightDirection(float time)
+{
+	float t = time * speed_;
+	float cycle = t * glm::two_pi<float>();
+
+	float azimuth = cycle;
+	float elevation = glm::sin(cycle) * glm::radians(75.0f);
+
+	glm::vec3 sunDir = glm::normalize(glm::vec3(
+		glm::cos(elevation) * glm::cos(azimuth),
+		glm::sin(elevation),
+		glm::cos(elevation) * glm::sin(azimuth)
+	));
+
+	setDirection(sunDir);
+} // end of updateLightDirection()
 
 
 //--- PRIVATE ---//

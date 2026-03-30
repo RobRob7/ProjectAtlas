@@ -39,6 +39,7 @@ void DebugPass::destroyGL()
 void DebugPass::render(
 	uint32_t normalTex,
 	uint32_t depthTex,
+	uint32_t shadowMapTex,
 	float nearPlane,
 	float farPlane,
 	int mode
@@ -52,7 +53,8 @@ void DebugPass::render(
 	// bind textures
 	glBindTextureUnit(TO_API_FORM(DebugBinding::GNormalTex), normalTex);
 	glBindTextureUnit(TO_API_FORM(DebugBinding::GDepthTex), depthTex);
-
+	glBindTextureUnit(TO_API_FORM(DebugBinding::ShadowMapTex), shadowMapTex);
+	
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);

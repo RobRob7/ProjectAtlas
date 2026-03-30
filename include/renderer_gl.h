@@ -16,6 +16,7 @@ class CubeMap;
 class Crosshair;
 
 class GBufferPass;
+class ShadowMapPassGL;
 class DebugPass;
 class SSAOPass;
 class FXAAPass;
@@ -54,6 +55,7 @@ private:
 
 	// passes
 	std::unique_ptr<GBufferPass> gbuffer_;
+	std::unique_ptr<ShadowMapPassGL> shadowMapPass_;
 	std::unique_ptr<DebugPass> debugPass_;
 	std::unique_ptr<SSAOPass> ssaoPass_;
 	std::unique_ptr<FXAAPass> fxaaPass_;

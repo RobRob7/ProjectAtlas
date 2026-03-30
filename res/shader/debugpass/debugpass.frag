@@ -12,6 +12,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
 
 layout (binding = 1) uniform sampler2D u_gNormal;
 layout (binding = 2) uniform sampler2D u_gDepth;
+layout (binding = 3) uniform sampler2D u_shadowTex;
 
 layout (location = 0) out vec4 FragColor;
 
@@ -42,5 +43,16 @@ void main()
         FragColor = vec4(vec3(vis), 1.0);
         return;
     }
+
+    // shadow map
+    if (u_mode == 3)
+    {
+        float d = texture(u_shadowTex, vUV).r;
+        float vis = 1.0 - d;
+        FragColor = vec4(vec3(vis), 1.0);
+        return;
+    }
+
+    // default
     FragColor = vec4(1.0, 0.0, 1.0, 1.0);
 }

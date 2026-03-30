@@ -1,6 +1,7 @@
 #include "chunk_pass_gl.h"
 
 #include "bindings.h"
+#include "ubo_gl.h"
 
 #include "chunk_draw_list.h"
 
@@ -17,6 +18,8 @@
 
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include <cstdint>
 
 //--- PUBLIC ---//
 ChunkPassGL::~ChunkPassGL() = default;
@@ -40,7 +43,7 @@ void ChunkPassGL::updateShader(
     opaqueShader_->use();
     chunkOpaqueUBO_.u_ambientStrength = in.world->getAmbientStrength();
     chunkOpaqueUBO_.u_viewPos = in.camera->getCameraPosition();
-    chunkOpaqueUBO_.u_lightPos = in.light->getPosition();
+    chunkOpaqueUBO_.u_lightDir = in.light->getDirection();
     chunkOpaqueUBO_.u_lightColor = in.light->getColor();
     // ssao
     chunkOpaqueUBO_.u_screenSize = glm::vec2{ w, h };
@@ -50,10 +53,11 @@ void ChunkPassGL::updateShader(
 
 void ChunkPassGL::renderOpaque(
     uint32_t ssaoTex,
-	const RenderInputs& in,
-	const glm::mat4& view,
-	const glm::mat4& proj,
-	int width, int height)
+    const RenderInputs& in,
+    const glm::mat4& view,
+    const glm::mat4& proj,
+    int width, int height
+)
 {
     // bind ubo
     uboOpaque_.bind();
@@ -79,20 +83,52 @@ void ChunkPassGL::renderOpaque(
 } // end of renderOpaque()
 
 void ChunkPassGL::renderOpaque(
-    Shader& shader,
+    uint32_t ssaoTex,
+    uint32_t shadowTex,
+	const RenderInputs& in,
+	const glm::mat4& view,
+	const glm::mat4& proj,
+    const glm::mat4& lightSpaceMatrix,
+	int width, int height
+)
+{
+    // bind ubo
+    uboOpaque_.bind();
+
+    // bind textures
+    glBindTextureUnit(TO_API_FORM(ChunkBinding::AtlasTex), atlas_->ID());
+    glBindTextureUnit(TO_API_FORM(ChunkBinding::SSAOTex), ssaoTex);
+    glBindTextureUnit(TO_API_FORM(ChunkBinding::ShadowTex), shadowTex);
+
+    ChunkDrawList list;
+    in.world->buildOpaqueDrawList(view, proj, list);
+
+    opaqueShader_->use();
+    chunkOpaqueUBO_.u_lightSpaceMatrix = lightSpaceMatrix;
+    chunkOpaqueUBO_.u_view = view;
+    chunkOpaqueUBO_.u_proj = proj;
+    chunkOpaqueUBO_.u_screenSize = glm::vec2{ width, height };
+
+    for (const auto& item : list.items)
+    {
+        chunkOpaqueUBO_.u_chunkOrigin = item.chunkOrigin;
+        uboOpaque_.update(&chunkOpaqueUBO_, sizeof(chunkOpaqueUBO_));
+        item.gpu->drawOpaque({});
+    }
+} // end of renderOpaque()
+
+void ChunkPassGL::renderOpaqueOffscreen(
     UBOGL& uboGL,
     void* ubo,
     uint32_t uboSize,
     glm::vec3& chunkOrigin,
     const RenderInputs& in,
     const glm::mat4& view,
-    const glm::mat4& proj,
-    int width, int height)
+    const glm::mat4& proj
+)
 {
     ChunkDrawList list;
     in.world->buildOpaqueDrawList(view, proj, list);
-
-    shader.use();
 
     for (const auto& item : list.items)
     {

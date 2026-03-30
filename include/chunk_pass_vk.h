@@ -23,12 +23,16 @@ struct FrameContext;
 class ChunkPassVk
 {
 public:
-	explicit ChunkPassVk(VulkanMain& vk, ImageVk& ssaoBlurImage);
+	explicit ChunkPassVk(
+		VulkanMain& vk, 
+		ImageVk& ssaoBlurImage, 
+		ImageVk& shadowMapImage
+	);
 	~ChunkPassVk();
 
 	void init();
 
-	void refreshSSAOBinding();
+	void refreshTexBinding();
 
 	void renderOpaque(
 		const RenderInputs& in, 
@@ -36,6 +40,7 @@ public:
 		const FrameContext& frame, 
 		const glm::mat4& view, 
 		const glm::mat4& proj,
+		const glm::mat4& lightSpaceMatrix,
 		int width, int height,
 		Chunk_Constants::ChunkOpaqueUBO& ubo
 	);
@@ -55,6 +60,13 @@ public:
 		const glm::mat4& view,
 		const glm::mat4& proj,
 		int width, int height
+	);
+	void renderOpaqueShadowMap(
+		const RenderInputs& in,
+		const FrameContext& frame,
+		const vk::PipelineLayout& layout,
+		const glm::mat4& view,
+		const glm::mat4& proj
 	);
 
 	BufferVk& getOpaqueOffscreenUBOBufferReflection() { return opaqueOffscreenUBOBufferReflection_; }
@@ -78,6 +90,7 @@ private:
 	VulkanMain& vk_;
 
 	ImageVk& ssaoBlurImage_;
+	ImageVk& shadowMapImage_;
 
 	std::unique_ptr<ShaderModuleVk> opaqueShader_;
 	std::unique_ptr<ShaderModuleVk> opaqueGBufferShader_;

@@ -25,7 +25,8 @@ public:
 		const RenderInputs& in,
 		const FrameContext& frame,
 		const glm::mat4& view,
-		const glm::mat4& proj);
+		const glm::mat4& proj
+	);
 
 	ImageVk& getNormalImage() { return gNormalImage_; }
 	ImageVk& getDepthImage() { return gDepthImage_; }
