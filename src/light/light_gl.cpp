@@ -12,9 +12,14 @@
 using namespace Light_Constants;
 
 //--- PUBLIC ---//
-LightGL::LightGL(const glm::vec3& pos, const glm::vec3& color)
+LightGL::LightGL(
+	const glm::vec3& pos, 
+	const glm::vec3& dir,
+	const glm::vec3& color
+)
 	: position_(pos)
 {
+	setDirection(dir);
 	setColor(color);
 } // end of constructor
 
@@ -74,6 +79,23 @@ void LightGL::render(
 	glBindVertexArray(vao_);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 } // end of render
+
+void LightGL::updateLightDirection(float time)
+{
+	float t = time * speed_;
+	float cycle = t * glm::two_pi<float>();
+
+	float azimuth = cycle;
+	float elevation = glm::sin(cycle) * glm::radians(75.0f);
+
+	glm::vec3 sunDir = glm::normalize(glm::vec3(
+		glm::cos(elevation) * glm::cos(azimuth),
+		glm::sin(elevation),
+		glm::cos(elevation) * glm::sin(azimuth)
+	));
+
+	setDirection(sunDir);
+} // end of updateLightDirection()
 
 
 //--- PRIVATE ---//

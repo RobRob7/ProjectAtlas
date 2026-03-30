@@ -16,6 +16,7 @@
 #include "crosshair_vk.h"
 
 #include "gbuffer_pass_vk.h"
+#include "shadow_map_pass_vk.h"
 #include "debug_pass_vk.h"
 #include "ssao_pass_vk.h"
 #include "water_pass_vk.h"
@@ -40,26 +41,28 @@ void RendererVk::init()
 {
 	if (!renderSettings_) renderSettings_ = std::make_unique<RenderSettings>();
 
-	if (!gbufferPass_)	gbufferPass_ = std::make_unique<GBufferPassVk>(vk_);
-	if (!debugPass_)	debugPass_ = std::make_unique<DebugPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage());
-	if (!ssaoPass_)		ssaoPass_ = std::make_unique<SSAOPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage());
+	if (!gbufferPass_)		gbufferPass_ = std::make_unique<GBufferPassVk>(vk_);
+	if (!shadowMapPass_)	shadowMapPass_ = std::make_unique<ShadowMapPassVk>(vk_);
+	if (!debugPass_)		debugPass_ = std::make_unique<DebugPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage(), shadowMapPass_->getImage());
+	if (!ssaoPass_)			ssaoPass_ = std::make_unique<SSAOPassVk>(vk_, gbufferPass_->getNormalImage(), gbufferPass_->getDepthImage());
 
-	if (!waterPass_)	waterPass_ = std::make_unique<WaterPassVk>(vk_);
-	if (!chunkPass_)	chunkPass_ = std::make_unique<ChunkPassVk>(vk_, ssaoPass_->ssaoBlurImage());
+	if (!waterPass_)		waterPass_ = std::make_unique<WaterPassVk>(vk_, shadowMapPass_->getImage());
+	if (!chunkPass_)		chunkPass_ = std::make_unique<ChunkPassVk>(vk_, ssaoPass_->ssaoBlurImage(), shadowMapPass_->getImage());
 
-	if (!fxaaPass_)		fxaaPass_ = std::make_unique<FXAAPassVk>(vk_);
-	if (!fogPass_)		fogPass_ = std::make_unique<FogPassVk>(vk_, *renderSettings_);
-	if (!presentPass_)	presentPass_ = std::make_unique<PresentPassVk>(vk_);
+	if (!fxaaPass_)			fxaaPass_ = std::make_unique<FXAAPassVk>(vk_);
+	if (!fogPass_)			fogPass_ = std::make_unique<FogPassVk>(vk_, *renderSettings_);
+	if (!presentPass_)		presentPass_ = std::make_unique<PresentPassVk>(vk_);
 
-	if (!crosshair_)	crosshair_ = std::make_unique<CrosshairVk>(vk_);
+	if (!crosshair_)		crosshair_ = std::make_unique<CrosshairVk>(vk_);
 
 	gbufferPass_->init();
+	shadowMapPass_->init();
 	debugPass_->init();
 	ssaoPass_->init();
 
 	waterPass_->init();
 	chunkPass_->init();
-	chunkPass_->refreshSSAOBinding();
+	chunkPass_->refreshTexBinding();
 
 	fxaaPass_->init();
 	fogPass_->init();
@@ -81,7 +84,7 @@ void RendererVk::resize(int w, int h)
 	if (ssaoPass_)		ssaoPass_->resize(width_, height_);
 
 	if (waterPass_)		waterPass_->resize(width_, height_);
-	if (chunkPass_)		chunkPass_->refreshSSAOBinding();
+	if (chunkPass_)		chunkPass_->refreshTexBinding();
 
 	if (fxaaPass_)		fxaaPass_->resize(width_, height_);
 	if (fogPass_)		fogPass_->resize(width_, height_);
@@ -102,6 +105,9 @@ void RendererVk::renderFrame(
 		resize(frame.extent.width, frame.extent.height);
 	}
 
+	// update light direction
+	in.light->updateLightDirection(in.time);
+
 	in.world->update(in.camera->getCameraPosition());
 
 	const glm::mat4 view = in.camera->getViewMatrix();
@@ -117,12 +123,27 @@ void RendererVk::renderFrame(
 	// gbuffer pass
 	if (gbufferPass_)
 	{
-		gbufferPass_->render(*chunkPass_, in, frame, view, proj);
+		gbufferPass_->render(
+			*chunkPass_, 
+			in, 
+			frame, 
+			view, 
+			proj
+		);
+	}
+
+	// shadow map pass
+	if (shadowMapPass_)
+	{
+		shadowMapPass_->renderOffscreen(
+			*chunkPass_,
+			in,
+			frame
+		);
 	}
 
 	// debug pass
-	if (renderSettings_->debugMode == DebugMode::Normals || 
-		renderSettings_->debugMode == DebugMode::Depth)
+	if (renderSettings_->debugMode != DebugMode::None)
 	{
 		vk::ImageLayout old = vk_.getSwapChainLayout(frame.imageIndex);
 
@@ -131,7 +152,7 @@ void RendererVk::renderFrame(
 			old,
 			in.camera->getNearPlane(),
 			in.camera->getFarPlane(),
-			(renderSettings_->debugMode == DebugMode::Normals) ? 1 : 2
+			static_cast<int>(renderSettings_->debugMode)
 		);
 
 		if (ui)
@@ -153,10 +174,12 @@ void RendererVk::renderFrame(
 	// water refl + refr pass
 	if (waterPass_)
 	{
+		//waterPass_->updateShadowMapImage(shadowMapPass_->getImage());
 		waterPass_->renderOffscreen(
 			frame,
 			*chunkPass_,
-			in
+			in,
+			shadowMapPass_->getLightSpaceMatrix()
 		);
 	}
 	// --------------- END PASSES --------------- //
@@ -232,10 +255,24 @@ void RendererVk::renderFrame(
 		if (chunkPass_)
 		{
 			Chunk_Constants::ChunkOpaqueUBO ubo{};
-			chunkPass_->renderOpaque(in, *renderSettings_, frame, view, proj, width_, height_, ubo);
+			chunkPass_->renderOpaque(
+				in, 
+				*renderSettings_, 
+				frame, 
+				view, 
+				proj, 
+				shadowMapPass_->getLightSpaceMatrix(),
+				width_, 
+				height_, 
+				ubo
+			);
 		}
-		if (in.light) in.light->render(&frame, view, proj);
-		if (in.skybox) in.skybox->render(&frame, view, proj);
+
+		if (in.skybox) in.skybox->render(
+			&frame, 
+			view, 
+			proj
+		);
 
 		if (waterPass_)
 		{
@@ -244,6 +281,7 @@ void RendererVk::renderFrame(
 				cmd,
 				view,
 				proj,
+				shadowMapPass_->getLightSpaceMatrix(),
 				width_,
 				height_
 			);

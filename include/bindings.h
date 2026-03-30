@@ -14,6 +14,7 @@ enum class ChunkBinding : uint32_t
     UBO = 0,
     AtlasTex = 1,
     SSAOTex = 2,
+    ShadowTex = 3,
 };
 
 enum class WaterBinding : uint32_t
@@ -24,6 +25,7 @@ enum class WaterBinding : uint32_t
     RefrDepthTex = 3,
     DudvTex = 4,
     NormalTex = 5,
+    ShadowTex = 6,
 };
 
 enum class DebugBinding : uint32_t
@@ -31,6 +33,12 @@ enum class DebugBinding : uint32_t
     UBO = 0,
     GNormalTex = 1,
     GDepthTex = 2,
+    ShadowMapTex = 3,
+};
+
+enum class ShadowMapPassBinding : uint32_t
+{
+    UBO = 0,
 };
 
 enum class FogPassBinding : uint32_t

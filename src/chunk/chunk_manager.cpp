@@ -8,6 +8,7 @@
 #include <limits>
 #include <cmath>
 #include <utility>
+#include <cfloat>
 
 //--- HELPER ---//
 struct Plane
@@ -185,7 +186,94 @@ void ChunkManager::update(const glm::vec3& cameraPos)
 
 } // end of update()
 
-void ChunkManager::buildOpaqueDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out)
+bool ChunkManager::buildVisibleChunkBounds(
+	glm::vec3& outMin,
+	glm::vec3& outMax,
+	int paddingChunks
+)
+{
+	if (chunks_.empty())
+	{
+		return false;
+	}
+
+	bool hasAny = false;
+
+	glm::vec3 minWS(FLT_MAX);
+	glm::vec3 maxWS(-FLT_MAX);
+
+	const float maxDistSq = static_cast<float>(viewRadius_ * viewRadius_);
+	const glm::vec3 camXZ = { lastCameraPos_.x, 0.0f, lastCameraPos_.z };
+
+	for (const auto& [coord, entry] : chunks_)
+	{
+		const int cx = coord.x;
+		const int cz = coord.z;
+
+		// distance culling
+		if (enableDistanceCulling_)
+		{
+			glm::vec3 chunkCenter{
+				static_cast<float>(cx * CHUNK_SIZE + CHUNK_SIZE / 2),
+				0.0f,
+				static_cast<float>(cz * CHUNK_SIZE + CHUNK_SIZE / 2)
+			};
+
+			glm::vec3 delta = chunkCenter - camXZ;
+			float distSq = delta.x * delta.x + delta.z * delta.z;
+
+			if (distSq > maxDistSq * CHUNK_SIZE * CHUNK_SIZE)
+			{
+				continue;
+			}
+		}
+
+		// AABB
+		glm::vec3 chunkMin{
+			static_cast<float>(cx * CHUNK_SIZE),
+			0.0f,
+			static_cast<float>(cz * CHUNK_SIZE)
+		};
+
+		glm::vec3 chunkMax{
+			static_cast<float>(cx * CHUNK_SIZE + CHUNK_SIZE),
+			static_cast<float>(CHUNK_SIZE_Y),
+			static_cast<float>(cz * CHUNK_SIZE + CHUNK_SIZE)
+		};
+
+		minWS = glm::min(minWS, chunkMin);
+		maxWS = glm::max(maxWS, chunkMax);
+
+		hasAny = true;
+	} // end for
+
+	if (!hasAny)
+	{
+		return false;
+	}
+
+	// padding (for shadow stability)
+	float pad = static_cast<float>(paddingChunks * CHUNK_SIZE);
+
+	minWS.x -= pad;
+	minWS.z -= pad;
+	maxWS.x += pad;
+	maxWS.z += pad;
+
+	minWS.y -= 2.0f;
+	maxWS.y += 2.0f;
+
+	outMin = minWS;
+	outMax = maxWS;
+
+	return true;
+} // end of buildVisibleChunkBounds()
+
+void ChunkManager::buildOpaqueDrawList(
+	const glm::mat4& view, 
+	const glm::mat4& proj, 
+	ChunkDrawList& out
+)
 {
 	out.clear();
 
@@ -240,7 +328,11 @@ void ChunkManager::buildOpaqueDrawList(const glm::mat4& view, const glm::mat4& p
 	} // end for
 } // end of buildOpaqueDrawList()
 
-void ChunkManager::buildWaterDrawList(const glm::mat4& view, const glm::mat4& proj, ChunkDrawList& out)
+void ChunkManager::buildWaterDrawList(
+	const glm::mat4& view, 
+	const glm::mat4& proj, 
+	ChunkDrawList& out
+)
 {
 	out.clear();
 

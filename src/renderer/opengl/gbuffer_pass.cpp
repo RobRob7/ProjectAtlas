@@ -1,5 +1,7 @@
 #include "gbuffer_pass.h"
 
+#include "constants.h"
+
 #include "chunk_pass_gl.h"
 #include "shader.h"
 #include "render_inputs.h"
@@ -7,6 +9,7 @@
 #include <glad/glad.h>
 
 #include <stdexcept>
+#include <memory>
 
 //--- PUBLIC ---//
 GBufferPass::GBufferPass() = default;
@@ -59,26 +62,18 @@ void GBufferPass::render(
 	gbufferUBO_.u_proj = proj;
 	ubo_.update(&gbufferUBO_, sizeof(gbufferUBO_));
 
-	chunk.renderOpaque(*gBufferShader_, ubo_, &gbufferUBO_, sizeof(gbufferUBO_), gbufferUBO_.u_chunkOrigin,
-		in, view, proj, width_, height_);
+	chunk.renderOpaqueOffscreen(
+		ubo_, 
+		&gbufferUBO_, 
+		sizeof(gbufferUBO_), 
+		gbufferUBO_.u_chunkOrigin,
+		in, 
+		view, 
+		proj
+	);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 } // end of render()
-
-uint32_t GBufferPass::getNormalTexture() const
-{
-	return gNormalTexture_;
-} // end of getNormalTexture()
-
-uint32_t GBufferPass::getDepthTexture() const
-{
-	return gDepthTexture_;
-} // end of getDepthTexture()
-
-uint32_t GBufferPass::getFBO() const
-{
-	return fbo_;
-} // end of getFBO()
 
 
 //--- PRIVATE ---//

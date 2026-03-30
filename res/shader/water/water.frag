@@ -4,11 +4,13 @@ layout (location = 0) in VS_OUT {
     vec3 worldPos;
     vec4 clipPos;
     vec2 waterUV;
+    vec4 FragPosLightSpace;
 } fs_in;
 
 layout (std140, set = 0, binding = 0) uniform UBO
 {
     // vert
+    mat4 u_lightSpaceMatrix;
     mat4 u_model;
     mat4 u_view;
     mat4 u_proj;
@@ -28,7 +30,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
     vec3 u_viewPos;
     int _pad0;
 
-    vec3 u_lightPos;
+    vec3 u_lightDir;
     int _pad1;
     
     vec3 u_lightColor;
@@ -42,6 +44,8 @@ layout (binding = 3) uniform sampler2D u_waterRefrDepthTex;
 layout (binding = 4) uniform sampler2D u_waterDUDVTex;
 layout (binding = 5) uniform sampler2D u_waterNormalTex;
 
+layout (binding = 6) uniform sampler2D u_shadowTex;
+
 layout (location = 0) out vec4 FragColor;
 
 float linearizeDepth(float z01)
@@ -50,6 +54,43 @@ float linearizeDepth(float z01)
     float z = z01 * 2.0 - 1.0;
     return (2.0 * u_near * u_far) / (u_far + u_near - z * (u_far - u_near));
 } // end of linearizeDepth
+
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 norm)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    
+    #ifdef VULKAN
+        projCoords.xy = projCoords.xy * 0.5 + 0.5;
+    #else
+        projCoords = projCoords * 0.5 + 0.5;
+    #endif
+
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
+        projCoords.y < 0.0 || projCoords.y > 1.0 ||
+        projCoords.z < 0.0 || projCoords.z > 1.0)
+    {
+        return 0.0;
+    }
+
+    vec3 normal = normalize(norm);
+    vec3 lightDir = normalize(-u_lightDir);
+
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005); 
+
+    float currentDepth = projCoords.z;
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / vec2(textureSize(u_shadowTex, 0));
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(u_shadowTex, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        } // end for
+    } // end for
+
+    return shadow / 9.0;
+} // end of ShadowCalculation()
 
 void main()
 {
@@ -147,16 +188,13 @@ void main()
 
     // ------- LIGHTING ------- //
     vec3 waterTint = vec3(0.0, 0.1, 0.3);
-    vec3 L = normalize(u_lightPos - fs_in.worldPos);
-
-    float distance = length(u_lightPos - fs_in.worldPos);
-    float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
+    vec3 L = normalize(-u_lightDir);
 
     // AMBIENT
     vec3 ambient = waterTint * u_ambientStrength;
 
     // DIFFUSE
-    vec3 diffuse = waterTint * u_lightColor * max(dot(N, L), 0.0) * attenuation;
+    vec3 diffuse = waterTint * u_lightColor * max(dot(N, L), 0.0);
 
     // SPECULAR
     vec3 H = normalize(L + V);
@@ -165,7 +203,14 @@ void main()
     float specStrength = 0.30;
     vec3 specular = u_lightColor * spec * specStrength;
 
+    // shadow calc
+    float shadow = ShadowCalculation(fs_in.FragPosLightSpace, N);
+    float shadowFactor = 1.0 - shadow;
+    float waterShadowTint = mix(0.75, 1.0, shadowFactor);
+
+    vec3 direct = (diffuse + specular);
+
     // output color
-    vec3 finalColor = base + (ambient + diffuse + specular);
+    vec3 finalColor = base * waterShadowTint + ambient + (shadowFactor * direct);
     FragColor = vec4(finalColor, 1.0);
 }

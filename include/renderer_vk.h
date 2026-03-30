@@ -16,6 +16,7 @@ struct RenderSettings;
 struct FrameContext;
 
 class GBufferPassVk;
+class ShadowMapPassVk;
 class DebugPassVk;
 class SSAOPassVk;
 
@@ -67,6 +68,7 @@ private:
 	std::unique_ptr<RenderSettings> renderSettings_;
 
 	std::unique_ptr<GBufferPassVk> gbufferPass_;
+	std::unique_ptr<ShadowMapPassVk> shadowMapPass_;
 	std::unique_ptr<DebugPassVk> debugPass_;
 	std::unique_ptr<SSAOPassVk> ssaoPass_;
 

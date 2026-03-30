@@ -126,7 +126,14 @@ void GBufferPassVk::render(
 		cmd.setScissor(0, 1, &scissor);
 
 		// render world
-		chunk.renderOpaqueGBuffer(in, frame, view, proj, width_, height_);
+		chunk.renderOpaqueGBuffer(
+			in, 
+			frame, 
+			view, 
+			proj, 
+			width_, 
+			height_
+		);
 	}
 	cmd.endRendering();
 	

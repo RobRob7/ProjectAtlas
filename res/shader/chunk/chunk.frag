@@ -4,10 +4,13 @@ layout (location = 0) flat in uvec2 Tile;
 layout (location = 1) in vec2 TileUV;
 layout (location = 2) in vec3 FragWorldPos;
 layout (location = 3) in vec3 Normal;
+layout (location = 4) in vec4 FragPosLightSpace;
 
 layout (std140, set = 0, binding = 0) uniform UBO
 {
     // vert
+    mat4 u_lightSpaceMatrix;
+
     vec3 u_chunkOrigin;
     float _pad0;
 
@@ -20,7 +23,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
     vec3 u_viewPos;
     float _pad1;
 
-    vec3 u_lightPos;
+    vec3 u_lightDir;
     float _pad2;
 
     vec3 u_lightColor;
@@ -33,6 +36,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
 
 layout (binding = 1) uniform sampler2D u_atlasTex;
 layout (binding = 2) uniform sampler2D u_ssaoRaw;
+layout (binding = 3) uniform sampler2D u_shadowTex;
 
 layout(location = 0) out vec4 FragColor;
 
@@ -62,6 +66,43 @@ vec2 atlasUV(uvec2 tile, vec2 local01)
 
     return innerUVPx / atlasPixelSize;
 } // end of atlasUV()
+
+float ShadowCalculation(vec4 fragPosLightSpace)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+
+    #ifdef VULKAN
+        projCoords.xy = projCoords.xy * 0.5 + 0.5;
+    #else
+        projCoords = projCoords * 0.5 + 0.5;
+    #endif
+
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
+        projCoords.y < 0.0 || projCoords.y > 1.0 ||
+        projCoords.z < 0.0 || projCoords.z > 1.0)
+    {
+        return 0.0;
+    }
+
+    vec3 normal = normalize(Normal);
+    vec3 lightDir = normalize(-u_lightDir);
+
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005); 
+
+    float currentDepth = projCoords.z;
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / vec2(textureSize(u_shadowTex, 0));
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(u_shadowTex, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        } // end for
+    } // end for
+
+    return shadow / 9.0;
+} // end of ShadowCalculation()
 
 void main()
 {
@@ -99,31 +140,28 @@ void main()
         ao = texture(u_ssaoRaw, ssUV).r;
     }
 
-    // add attenuation
-    float dist = length(u_lightPos - FragWorldPos);
-    float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
-
     // ambient
-    vec3 ambient = u_ambientStrength * texColor.rgb * ao;
+    vec3 ambient = u_lightColor * u_ambientStrength * texColor.rgb * ao;
 
     // diffuse
-    vec3 lightDir = normalize(u_lightPos - FragWorldPos);
+    vec3 lightDir = normalize(-u_lightDir);
     vec3 normal = normalize(Normal);
-    float diff = max(dot(lightDir, normal), 0.0);
-    vec3 diffuse = u_lightColor * diff * texColor.rgb;
+    float diff = max(dot(normal, lightDir), 0.0);
+    // fake face shading
+    if (normal.y > 0.9) diff *= 1.0;      // top
+    else if (normal.y < -0.9) diff *= 0.4; // bottom
+    else diff *= 0.7;                      // sides
+    vec3 diffuse = u_lightColor * diff * texColor.rgb * 0.8;
 
     // specular
-    vec3 viewDir = normalize(u_viewPos - FragWorldPos);
-    float spec = 0.0;
-    // blinn-phong
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float shininess = 32.0;
-    float specStrength = 0.08;
-    spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
-    vec3 specular = u_lightColor * spec * specStrength;
+    vec3 specular = vec3(0.0);
+
+    // shadow calc
+    float shadow = ShadowCalculation(FragPosLightSpace);
+    float shadowFactor = clamp(1.0 - shadow, 0.0, 1.0);
 
     vec3 direct = (diffuse + specular);
     // final color
-    vec3 color = ambient + (direct) * attenuation;
+    vec3 color = (ambient + shadowFactor * (direct));
     FragColor = vec4(color, 1.0);
 }

@@ -28,8 +28,12 @@ using namespace Chunk_Constants;
 using namespace World;
 
 //--- PUBLIC ---//
-WaterPassVk::WaterPassVk(VulkanMain& vk)
+WaterPassVk::WaterPassVk(
+	VulkanMain& vk,
+	ImageVk& shadowMapTex
+)
 	: vk_(vk),
+	shadowMapImage_(shadowMapTex),
 	factor_(WATER_TEX_FACTOR),
 	reflColorImage_(vk), reflDepthImage_(vk),
 	refrColorImage_(vk), refrDepthImage_(vk),
@@ -83,11 +87,12 @@ void WaterPassVk::resize(int w, int h)
 void WaterPassVk::renderOffscreen(
 	const FrameContext& frame,
 	ChunkPassVk& chunk,
-	const RenderInputs& in
+	const RenderInputs& in,
+	const glm::mat4& lightSpaceMatrix
 )
 {
 	// refl + refr passes
-	waterPass(frame, chunk, in);
+	waterPass(frame, chunk, in, lightSpaceMatrix);
 } // end of renderOffscreen()
 
 void WaterPassVk::renderWater(
@@ -95,6 +100,7 @@ void WaterPassVk::renderWater(
 	vk::CommandBuffer cmd,
 	const glm::mat4& view,
 	const glm::mat4& proj,
+	const glm::mat4& lightSpaceMatrix,
 	int width, int height
 )
 {
@@ -106,6 +112,7 @@ void WaterPassVk::renderWater(
 	vk::DescriptorSet set = descriptorSet_.getSet();
 
 	ChunkWaterUBO ubo{};
+	ubo.u_lightSpaceMatrix = lightSpaceMatrix;
 	ubo.u_time = in.time;
 	ubo.u_view = view;
 	ubo.u_proj = proj;
@@ -116,7 +123,7 @@ void WaterPassVk::renderWater(
 	ubo.u_far = in.camera->getFarPlane();
 	ubo.u_viewPos = in.camera->getCameraPosition();
 
-	ubo.u_lightPos = in.light->getPosition();
+	ubo.u_lightDir = in.light->getDirection();
 	ubo.u_lightColor = in.light->getColor();
 
 	uboBuffer_.upload(&ubo, sizeof(ubo), 0);
@@ -318,10 +325,16 @@ void WaterPassVk::createDescriptorSet()
 	normalBinding.descriptorCount = 1;
 	normalBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+	vk::DescriptorSetLayoutBinding shadowMapBinding{};
+	shadowMapBinding.binding = TO_API_FORM(WaterBinding::ShadowTex);
+	shadowMapBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	shadowMapBinding.descriptorCount = 1;
+	shadowMapBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
 	descriptorSet_.createLayout({ 
 		uboBinding,
 		reflColorBinding, refrColorBinding, refrDepthBinding,
-		dudvBinding, normalBinding});
+		dudvBinding, normalBinding, shadowMapBinding});
 
 	vk::DescriptorPoolSize uboPool{};
 	uboPool.type = vk::DescriptorType::eUniformBuffer;
@@ -347,10 +360,14 @@ void WaterPassVk::createDescriptorSet()
 	normalPool.type = vk::DescriptorType::eCombinedImageSampler;
 	normalPool.descriptorCount = 1;
 
+	vk::DescriptorPoolSize shadowMapPool{};
+	shadowMapPool.type = vk::DescriptorType::eCombinedImageSampler;
+	shadowMapPool.descriptorCount = 1;
+
 	descriptorSet_.createPool({ 
 		uboPool, 
 		reflColorPool, refrColorPool, refrDepthPool,
-		dudvPool, normalPool}, 1);
+		dudvPool, normalPool, shadowMapPool}, 1);
 	descriptorSet_.allocate();
 
 	descriptorSet_.writeUniformBuffer(
@@ -387,6 +404,12 @@ void WaterPassVk::createDescriptorSet()
 		TO_API_FORM(WaterBinding::NormalTex),
 		normalTex_.view(),
 		normalTex_.sampler()
+	);
+
+	descriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(WaterBinding::ShadowTex),
+		shadowMapImage_.view(),
+		shadowMapImage_.sampler()
 	);
 } // end of createDescriptorSet()
 
@@ -433,7 +456,8 @@ void WaterPassVk::createPipeline()
 void WaterPassVk::waterPass(
 	const FrameContext& frame,
 	ChunkPassVk& chunk, 
-	const RenderInputs& in
+	const RenderInputs& in,
+	const glm::mat4& lightSpaceMatrix
 )
 {
 	vk::CommandBuffer cmd = frame.cmd;
@@ -459,7 +483,7 @@ void WaterPassVk::waterPass(
 		1
 	);
 
-	waterReflectionPass(frame, chunk, in);
+	waterReflectionPass(frame, chunk, in, lightSpaceMatrix);
 
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -503,7 +527,7 @@ void WaterPassVk::waterPass(
 		1
 	);
 
-	waterRefractionPass(frame, chunk, in);
+	waterRefractionPass(frame, chunk, in, lightSpaceMatrix);
 
 	VkUtils::TransitionImageLayout(
 		cmd,
@@ -529,7 +553,8 @@ void WaterPassVk::waterPass(
 void WaterPassVk::waterReflectionPass(
 	const FrameContext& frame,
 	ChunkPassVk& chunk, 
-	const RenderInputs& in
+	const RenderInputs& in,
+	const glm::mat4& lightSpaceMatrix
 ) const
 {
 	vk::CommandBuffer cmd = frame.cmd;
@@ -607,10 +632,11 @@ void WaterPassVk::waterReflectionPass(
 		proj[1][1] *= -1.0f;
 
 		ChunkOpaqueUBO ubo{};
+		ubo.u_lightSpaceMatrix = lightSpaceMatrix;
 		ubo.u_clipPlane = clipPlane;
 		ubo.u_useSSAO = 0;
 		ubo.u_viewPos = camera.getCameraPosition();
-		ubo.u_lightPos = in.light->getPosition();
+		ubo.u_lightDir = in.light->getDirection();
 		ubo.u_lightColor = in.light->getColor();
 
 		// render world
@@ -624,20 +650,16 @@ void WaterPassVk::waterReflectionPass(
 			chunk.getOpaqueOffscreenDescriptorSetReflection(),
 			chunk.getOpaqueOffscreenUBOBufferReflection()
 		);
-		if (in.light) in.light->renderOffscreen(&frame, 
-			reflView, 
-			proj, 
-			in.light->getPosition(),
-			width_, 
-			height_
-		);
-		if (in.skybox) in.skybox->renderOffscreen(
-			&frame, 
-			reflView, 
-			proj, 
-			width_, 
-			height_
-		);
+		if (in.skybox) 
+		{
+			in.skybox->renderOffscreen(
+				&frame,
+				reflView,
+				proj,
+				width_,
+				height_
+			);
+		}
 	}
 	cmd.endRendering();
 } // end of waterReflectionPass()
@@ -645,7 +667,8 @@ void WaterPassVk::waterReflectionPass(
 void WaterPassVk::waterRefractionPass(
 	const FrameContext& frame,
 	ChunkPassVk& chunk, 
-	const RenderInputs& in
+	const RenderInputs& in,
+	const glm::mat4& lightSpaceMatrix
 ) const
 {
 	vk::CommandBuffer cmd = frame.cmd;
@@ -715,10 +738,11 @@ void WaterPassVk::waterRefractionPass(
 		proj[1][1] *= -1.0f;
 
 		ChunkOpaqueUBO ubo{};
+		ubo.u_lightSpaceMatrix = lightSpaceMatrix;
 		ubo.u_clipPlane = clipPlane;
 		ubo.u_useSSAO = 0;
 		ubo.u_viewPos = in.camera->getCameraPosition();
-		ubo.u_lightPos = in.light->getPosition();
+		ubo.u_lightDir = in.light->getDirection();
 		ubo.u_lightColor = in.light->getColor();
 
 		// render world

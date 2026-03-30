@@ -5,9 +5,10 @@
 
 enum class DebugMode : int
 {
-	None = 0, // '1' key
-	Normals = 1, // '2' key
-	Depth = 2, // '3' key
+	None = 0,		// '1' key
+	Normals = 1,	// '2' key
+	Depth = 2,		// '3' key
+	ShadowMap = 3	// '4' key
 };
 
 struct FogSettings
@@ -27,7 +28,7 @@ struct RenderSettings
 	bool enableVsync = true;
 
 	// graphics options
-	bool useSSAO = false;
+	bool useSSAO = true;
 	bool useFXAA = false;
 	bool useFog = false;
 

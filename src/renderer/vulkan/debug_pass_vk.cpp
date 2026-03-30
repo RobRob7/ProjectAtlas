@@ -21,10 +21,16 @@
 using namespace Debug_Constants;
 
 //--- PUBLIC ---//
-DebugPassVk::DebugPassVk(VulkanMain& vk, ImageVk& normalImage, ImageVk& depthImage)
+DebugPassVk::DebugPassVk(
+	VulkanMain& vk, 
+	ImageVk& normalImage, 
+	ImageVk& depthImage,
+	ImageVk& shadowMapImage
+)
 	: vk_(vk),
 	normalImage_(normalImage),
 	depthImage_(depthImage),
+	shadowMapImage_(shadowMapImage),
 	uboBuffer_(vk),
 	descriptorSet_(vk),
 	pipeline_(vk)
@@ -167,6 +173,12 @@ void DebugPassVk::refreshInputs()
 		depthImage_.view(),
 		depthImage_.sampler()
 	);
+
+	descriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(DebugBinding::ShadowMapTex),
+		shadowMapImage_.view(),
+		shadowMapImage_.sampler()
+	);
 } // end of refreshInputs()
 
 void DebugPassVk::createResources()
@@ -198,7 +210,13 @@ void DebugPassVk::createDescriptorSet()
 	depthBinding.descriptorCount = 1;
 	depthBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	descriptorSet_.createLayout({ uboBinding, normalBinding, depthBinding });
+	vk::DescriptorSetLayoutBinding shadowMapBinding{};
+	shadowMapBinding.binding = TO_API_FORM(DebugBinding::ShadowMapTex);
+	shadowMapBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	shadowMapBinding.descriptorCount = 1;
+	shadowMapBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	descriptorSet_.createLayout({ uboBinding, normalBinding, depthBinding, shadowMapBinding });
 
 	vk::DescriptorPoolSize uboPool{};
 	uboPool.type = vk::DescriptorType::eUniformBuffer;
@@ -212,7 +230,11 @@ void DebugPassVk::createDescriptorSet()
 	depthPool.type = vk::DescriptorType::eCombinedImageSampler;
 	depthPool.descriptorCount = 1;
 
-	descriptorSet_.createPool({ uboPool, normalPool, depthPool }, 1);
+	vk::DescriptorPoolSize shadowMapPool{};
+	shadowMapPool.type = vk::DescriptorType::eCombinedImageSampler;
+	shadowMapPool.descriptorCount = 1;
+
+	descriptorSet_.createPool({ uboPool, normalPool, depthPool, shadowMapPool }, 1);
 	descriptorSet_.allocate();
 
 	descriptorSet_.writeUniformBuffer(
@@ -231,6 +253,12 @@ void DebugPassVk::createDescriptorSet()
 		TO_API_FORM(DebugBinding::GDepthTex),
 		depthImage_.view(),
 		depthImage_.sampler()
+	);
+
+	descriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(DebugBinding::ShadowMapTex),
+		shadowMapImage_.view(),
+		shadowMapImage_.sampler()
 	);
 } // end of createDescriptorSet()
 

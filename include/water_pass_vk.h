@@ -12,6 +12,8 @@
 
 #include <glm/glm.hpp>
 
+#include <memory>
+
 class VulkanMain;
 class ShaderModuleVk;
 struct RenderInputs;
@@ -21,7 +23,10 @@ struct FrameContext;
 class WaterPassVk
 {
 public:
-	WaterPassVk(VulkanMain& vk);
+	WaterPassVk(
+		VulkanMain& vk,
+		ImageVk& shadowMapTex
+	);
 	~WaterPassVk();
 
 	void init();
@@ -30,7 +35,8 @@ public:
 	void renderOffscreen(
 		const FrameContext& frame,
 		ChunkPassVk& chunk,
-		const RenderInputs& in
+		const RenderInputs& in,
+		const glm::mat4& lightSpaceMatrix
 	);
 
 	void renderWater(
@@ -38,6 +44,7 @@ public:
 		vk::CommandBuffer cmd,
 		const glm::mat4& view,
 		const glm::mat4& proj,
+		const glm::mat4& lightSpaceMatrix,
 		int width, int height
 	);
 
@@ -55,20 +62,25 @@ private:
 	void waterPass(
 		const FrameContext& frame,
 		ChunkPassVk& chunk, 
-		const RenderInputs& in
+		const RenderInputs& in,
+		const glm::mat4& lightSpaceMatrix
 	);
 	void waterReflectionPass(
 		const FrameContext& frame,
 		ChunkPassVk& chunk, 
-		const RenderInputs& in
+		const RenderInputs& in,
+		const glm::mat4& lightSpaceMatrix
 	) const;
 	void waterRefractionPass(
 		const FrameContext& frame,
 		ChunkPassVk& chunk, 
-		const RenderInputs& in
+		const RenderInputs& in,
+		const glm::mat4& lightSpaceMatrix
 	) const;
 private:
 	VulkanMain& vk_;
+
+	ImageVk& shadowMapImage_;
 
 	int factor_{};
 

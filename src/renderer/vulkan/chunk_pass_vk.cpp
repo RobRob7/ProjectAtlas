@@ -1,5 +1,9 @@
 #include "chunk_pass_vk.h"
 
+#include "buffer_vk.h"
+#include "descriptor_set_vk.h"
+#include "graphics_pipeline_vk.h"
+
 #include "frame_context_vk.h"
 #include "vulkan_main.h"
 #include "image_vk.h"
@@ -22,9 +26,14 @@ using namespace Chunk_Constants;
 using namespace Gbuffer_Constants;
 
 //--- PUBLIC ---//
-ChunkPassVk::ChunkPassVk(VulkanMain& vk, ImageVk& ssaoBlurImage)
+ChunkPassVk::ChunkPassVk(
+	VulkanMain& vk, 
+	ImageVk& ssaoBlurImage, 
+	ImageVk& shadowMapImage
+)
 	: vk_(vk),
 	ssaoBlurImage_(ssaoBlurImage),
+	shadowMapImage_(shadowMapImage),
 	atlas_(vk),
 	opaqueUBOBuffer_(vk),
 	opaqueDescriptorSet_(vk),
@@ -69,12 +78,18 @@ void ChunkPassVk::init()
 	createOpaqueGBufferPipeline();
 } // end of init()
 
-void ChunkPassVk::refreshSSAOBinding()
+void ChunkPassVk::refreshTexBinding()
 {
 	opaqueDescriptorSet_.writeCombinedImageSampler(
 		TO_API_FORM(ChunkBinding::SSAOTex),
 		ssaoBlurImage_.view(),
 		ssaoBlurImage_.sampler()
+	);
+
+	opaqueDescriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::ShadowTex),
+		shadowMapImage_.view(),
+		shadowMapImage_.sampler()
 	);
 
 	opaqueOffscreenDescriptorSetReflection_.writeCombinedImageSampler(
@@ -83,10 +98,22 @@ void ChunkPassVk::refreshSSAOBinding()
 		ssaoBlurImage_.sampler()
 	);
 
+	opaqueOffscreenDescriptorSetReflection_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::ShadowTex),
+		shadowMapImage_.view(),
+		shadowMapImage_.sampler()
+	);
+
 	opaqueOffscreenDescriptorSetRefraction_.writeCombinedImageSampler(
 		TO_API_FORM(ChunkBinding::SSAOTex),
 		ssaoBlurImage_.view(),
 		ssaoBlurImage_.sampler()
+	);
+
+	opaqueOffscreenDescriptorSetRefraction_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::ShadowTex),
+		shadowMapImage_.view(),
+		shadowMapImage_.sampler()
 	);
 } // end of refreshSSAOBinding()
 
@@ -96,6 +123,7 @@ void ChunkPassVk::renderOpaque(
 	const FrameContext& frame,
 	const glm::mat4& view,
 	const glm::mat4& proj,
+	const glm::mat4& lightSpaceMatrix,
 	int width, int height,
 	ChunkOpaqueUBO& ubo
 )
@@ -109,6 +137,8 @@ void ChunkPassVk::renderOpaque(
 
 	vk::DescriptorSet set = opaqueDescriptorSet_.getSet();
 
+	ubo.u_lightSpaceMatrix = lightSpaceMatrix;
+
 	ubo.u_useSSAO = rs.useSSAO ? 1 : 0;
 
 	ubo.u_view = view;
@@ -118,7 +148,7 @@ void ChunkPassVk::renderOpaque(
 
 	ubo.u_viewPos = in.camera->getCameraPosition();
 
-	ubo.u_lightPos = in.light->getPosition();
+	ubo.u_lightDir = in.light->getDirection();
 	ubo.u_lightColor = in.light->getColor();
 
 	opaqueUBOBuffer_.upload(&ubo, sizeof(ubo), 0);
@@ -248,6 +278,36 @@ void ChunkPassVk::renderOpaqueGBuffer(
 	} // end for
 } // end of renderOpaqueGBuffer()
 
+void ChunkPassVk::renderOpaqueShadowMap(
+	const RenderInputs& in,
+	const FrameContext& frame,
+	const vk::PipelineLayout& layout,
+	const glm::mat4& view,
+	const glm::mat4& proj
+)
+{
+	vk::CommandBuffer cmd = frame.cmd;
+
+	ChunkDrawList list;
+	in.world->buildOpaqueDrawList(view, proj, list);
+
+	for (const auto& item : list.items)
+	{
+		ChunkPushConstants pc{};
+		pc.u_chunkOrigin = glm::vec4(item.chunkOrigin, 0.0f);
+
+		cmd.pushConstants(
+			layout,
+			vk::ShaderStageFlagBits::eVertex,
+			0,
+			sizeof(ChunkPushConstants),
+			&pc
+		);
+
+		item.gpu->drawOpaque(cmd);
+	} // end for
+} // end of renderOpaqueShadowMap()
+
 
 //--- PRIVATE ---//
 void ChunkPassVk::createOpaqueResources()
@@ -303,7 +363,13 @@ void ChunkPassVk::createOpaqueDescriptorSet()
 	ssaoBinding.descriptorCount = 1;
 	ssaoBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	opaqueDescriptorSet_.createLayout({ uboBinding, atlasBinding, ssaoBinding });
+	vk::DescriptorSetLayoutBinding shadowMapBinding{};
+	shadowMapBinding.binding = TO_API_FORM(ChunkBinding::ShadowTex);
+	shadowMapBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	shadowMapBinding.descriptorCount = 1;
+	shadowMapBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	opaqueDescriptorSet_.createLayout({ uboBinding, atlasBinding, ssaoBinding, shadowMapBinding });
 
 	vk::DescriptorPoolSize uboPool{};
 	uboPool.type = vk::DescriptorType::eUniformBuffer;
@@ -317,7 +383,11 @@ void ChunkPassVk::createOpaqueDescriptorSet()
 	ssaoPool.type = vk::DescriptorType::eCombinedImageSampler;
 	ssaoPool.descriptorCount = 1;
 
-	opaqueDescriptorSet_.createPool({ uboPool, atlasPool, ssaoPool }, 1);
+	vk::DescriptorPoolSize shadowMapPool{};
+	shadowMapPool.type = vk::DescriptorType::eCombinedImageSampler;
+	shadowMapPool.descriptorCount = 1;
+
+	opaqueDescriptorSet_.createPool({ uboPool, atlasPool, ssaoPool, shadowMapPool }, 1);
 	opaqueDescriptorSet_.allocate();
 
 	opaqueDescriptorSet_.writeUniformBuffer(
@@ -336,6 +406,12 @@ void ChunkPassVk::createOpaqueDescriptorSet()
 		TO_API_FORM(ChunkBinding::SSAOTex),
 		ssaoBlurImage_.view(),
 		ssaoBlurImage_.sampler()
+	);
+
+	opaqueDescriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::ShadowTex),
+		shadowMapImage_.view(),
+		shadowMapImage_.sampler()
 	);
 } // end of createOpaqueDescriptorSet()
 
@@ -359,8 +435,14 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 	ssaoBinding.descriptorCount = 1;
 	ssaoBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+	vk::DescriptorSetLayoutBinding shadowMapBinding{};
+	shadowMapBinding.binding = TO_API_FORM(ChunkBinding::ShadowTex);
+	shadowMapBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	shadowMapBinding.descriptorCount = 1;
+	shadowMapBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
 	// Reflection descriptor set
-	opaqueOffscreenDescriptorSetReflection_.createLayout({ uboBinding, atlasBinding, ssaoBinding });
+	opaqueOffscreenDescriptorSetReflection_.createLayout({ uboBinding, atlasBinding, ssaoBinding, shadowMapBinding });
 
 	vk::DescriptorPoolSize uboPool{};
 	uboPool.type = vk::DescriptorType::eUniformBuffer;
@@ -374,7 +456,11 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 	ssaoPool.type = vk::DescriptorType::eCombinedImageSampler;
 	ssaoPool.descriptorCount = 1;
 
-	opaqueOffscreenDescriptorSetReflection_.createPool({ uboPool, atlasPool, ssaoPool }, 1);
+	vk::DescriptorPoolSize shadowMapPool{};
+	shadowMapPool.type = vk::DescriptorType::eCombinedImageSampler;
+	shadowMapPool.descriptorCount = 1;
+
+	opaqueOffscreenDescriptorSetReflection_.createPool({ uboPool, atlasPool, ssaoPool, shadowMapPool }, 1);
 	opaqueOffscreenDescriptorSetReflection_.allocate();
 
 	opaqueOffscreenDescriptorSetReflection_.writeUniformBuffer(
@@ -395,9 +481,15 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 		ssaoBlurImage_.sampler()
 	);
 
+	opaqueOffscreenDescriptorSetReflection_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::ShadowTex),
+		shadowMapImage_.view(),
+		shadowMapImage_.sampler()
+	);
+
 	// Refraction descriptor set
-	opaqueOffscreenDescriptorSetRefraction_.createLayout({ uboBinding, atlasBinding, ssaoBinding });
-	opaqueOffscreenDescriptorSetRefraction_.createPool({ uboPool, atlasPool, ssaoPool }, 1);
+	opaqueOffscreenDescriptorSetRefraction_.createLayout({ uboBinding, atlasBinding, ssaoBinding, shadowMapBinding });
+	opaqueOffscreenDescriptorSetRefraction_.createPool({ uboPool, atlasPool, ssaoPool, shadowMapPool }, 1);
 	opaqueOffscreenDescriptorSetRefraction_.allocate();
 
 	opaqueOffscreenDescriptorSetRefraction_.writeUniformBuffer(
@@ -416,6 +508,12 @@ void ChunkPassVk::createOpaqueOffscreenDescriptorSet()
 		TO_API_FORM(ChunkBinding::SSAOTex),
 		ssaoBlurImage_.view(),
 		ssaoBlurImage_.sampler()
+	);
+
+	opaqueOffscreenDescriptorSetRefraction_.writeCombinedImageSampler(
+		TO_API_FORM(ChunkBinding::ShadowTex),
+		shadowMapImage_.view(),
+		shadowMapImage_.sampler()
 	);
 } // end of createOpaqueOffscreenDescriptorSet()
 
@@ -482,7 +580,6 @@ void ChunkPassVk::createOpaquePipeline()
 	desc.vertexAttributes = { attr };
 
 	opaquePipeline_.create(desc);
-
 
 	// offscreen pipeline
 	desc.setLayouts = { opaqueOffscreenDescriptorSetReflection_.getLayout() };

@@ -9,6 +9,7 @@
 #include "crosshair.h"
 
 #include "gbuffer_pass.h"
+#include "shadow_map_pass_gl.h"
 #include "debug_pass.h"
 #include "ssao_pass.h"
 #include "fxaa_pass.h"
@@ -37,18 +38,20 @@ void RendererGL::init()
 
     if (!renderSettings_) renderSettings_ = std::make_unique<RenderSettings>();
 
-    if (!gbuffer_)     gbuffer_ = std::make_unique<GBufferPass>();
-    if (!debugPass_)   debugPass_ = std::make_unique<DebugPass>();
-    if (!ssaoPass_)    ssaoPass_ = std::make_unique<SSAOPass>();
-    if (!fxaaPass_)    fxaaPass_ = std::make_unique<FXAAPass>();
-    if (!fogPass_)     fogPass_ = std::make_unique<FogPass>(*renderSettings_);
-    if (!presentPass_) presentPass_ = std::make_unique<PresentPass>();
-    if (!waterPass_)   waterPass_ = std::make_unique<WaterPass>();
+    if (!gbuffer_)              gbuffer_ = std::make_unique<GBufferPass>();
+    if (!shadowMapPass_)        shadowMapPass_ = std::make_unique<ShadowMapPassGL>();
+    if (!debugPass_)            debugPass_ = std::make_unique<DebugPass>();
+    if (!ssaoPass_)             ssaoPass_ = std::make_unique<SSAOPass>();
+    if (!fxaaPass_)             fxaaPass_ = std::make_unique<FXAAPass>();
+    if (!fogPass_)              fogPass_ = std::make_unique<FogPass>(*renderSettings_);
+    if (!presentPass_)          presentPass_ = std::make_unique<PresentPass>();
+    if (!waterPass_)            waterPass_ = std::make_unique<WaterPass>();
 
-    if (!chunkPass_) chunkPass_ = std::make_unique<ChunkPassGL>();
+    if (!chunkPass_)            chunkPass_ = std::make_unique<ChunkPassGL>();
     chunkPass_->init();
 
 	gbuffer_->init();
+    shadowMapPass_->init();
 	debugPass_->init();
     ssaoPass_->init();
 
@@ -71,6 +74,7 @@ void RendererGL::resize(int w, int h)
     height_ = h;
 
     gbuffer_->resize(width_, height_);
+    shadowMapPass_->resize(width_, height_);
     ssaoPass_->resize(width_, height_);
     fxaaPass_->resize(width_, height_);
     waterPass_->resize(width_, height_);
@@ -92,6 +96,9 @@ void RendererGL::renderFrame(
 
     in.world->update(in.camera->getCameraPosition());
 
+    // update light direction
+    in.light->updateLightDirection(in.time);
+
     // update opaque + water shader
     chunkPass_->updateShader(in, *renderSettings_, width_, height_);
     waterPass_->updateShader(in, *renderSettings_, width_, height_);
@@ -105,28 +112,49 @@ void RendererGL::renderFrame(
 
     // ----------------- PASSES ----------------- //
     // gbuffer pass
-    gbuffer_->render(*chunkPass_, in, view, proj);
+    gbuffer_->render(
+        *chunkPass_, 
+        in, 
+        view, 
+        proj
+    );
+
+    // shadow map pass
+    shadowMapPass_->renderOffscreen(
+        *chunkPass_, 
+        in
+    );
 
     // ssao pass
     if (renderSettings_->useSSAO)
     {
-        ssaoPass_->render(gbuffer_->getNormalTexture(), gbuffer_->getDepthTexture(), proj);
+        ssaoPass_->render(
+            gbuffer_->getNormalTexture(), 
+            gbuffer_->getDepthTexture(), 
+            proj
+        );
     }
 
     // debug pass
-    if (renderSettings_->debugMode == DebugMode::Normals || renderSettings_->debugMode == DebugMode::Depth)
+    if (renderSettings_->debugMode != DebugMode::None)
     {
         debugPass_->render(
             gbuffer_->getNormalTexture(),
             gbuffer_->getDepthTexture(),
+            shadowMapPass_->getDepthTexture(),
             in.camera->getNearPlane(),
             in.camera->getFarPlane(),
-            (renderSettings_->debugMode == DebugMode::Normals) ? 1 : 2);
+            static_cast<int>(renderSettings_->debugMode)
+        );
         return;
     }
 
     // water pass
-    waterPass_->renderOffscreen(*chunkPass_, in);
+    waterPass_->renderOffscreen(
+        shadowMapPass_.get(),
+        *chunkPass_, 
+        in
+    );
     // --------------- END PASSES --------------- //
 
 
@@ -136,10 +164,32 @@ void RendererGL::renderFrame(
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // render objects (non-UI)
-    chunkPass_->renderOpaque(ssaoPass_->aoBlurTexture(), in, view, proj, width_, height_);
-    waterPass_->renderWater(in, view, proj, width_, height_);
-    in.light->render(nullptr, view, proj);
-    in.skybox->render(nullptr, view, proj, in.time);
+    chunkPass_->renderOpaque(
+        ssaoPass_->aoBlurTexture(), 
+        shadowMapPass_->getDepthTexture(), 
+        in, 
+        view, 
+        proj, 
+        shadowMapPass_->getLightSpaceMatrix(),
+        width_, 
+        height_
+    );
+
+    waterPass_->renderWater(
+        shadowMapPass_.get(),
+        in, 
+        view, 
+        proj, 
+        width_, 
+        height_
+    );
+
+    in.skybox->render(
+        nullptr, 
+        view, 
+        proj, 
+        in.time
+    );
     // --------------- END FORWARD RENDER --------------- //
 
 

@@ -16,7 +16,12 @@ class ImageVk;
 class DebugPassVk
 {
 public:
-	DebugPassVk(VulkanMain& vk, ImageVk& normalImage, ImageVk& depthImage);
+	DebugPassVk(
+		VulkanMain& vk, 
+		ImageVk& normalImage, 
+		ImageVk& depthImage,
+		ImageVk& shadowMapImage
+	);
 	~DebugPassVk();
 
 	void init();
@@ -39,6 +44,7 @@ private:
 	VulkanMain& vk_;
 	ImageVk& normalImage_;
 	ImageVk& depthImage_;
+	ImageVk& shadowMapImage_;
 	
 	std::unique_ptr<ShaderModuleVk> shader_;
 

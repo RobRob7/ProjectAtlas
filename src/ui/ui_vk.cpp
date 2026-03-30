@@ -248,7 +248,7 @@ void UIVk::drawTopBar()
 	ImGui::SameLine(0.0f, 1.0f);
 
 	// ----- title -----
-	ImGui::TextUnformatted("Project Atlas (Vulkan)");
+	ImGui::TextUnformatted("Project Atlas - Vulkan");
 	ImGui::SameLine();
 
 	// right-aligned window buttons
@@ -372,6 +372,9 @@ void UIVk::drawInspector(IScene& scene)
 			break;
 		case DebugMode::Depth:
 			mode = "Depth";
+			break;
+		case DebugMode::ShadowMap:
+			mode = "Shadow Map";
 			break;
 		default:
 			break;
@@ -549,15 +552,15 @@ void UIVk::drawInspector(IScene& scene)
 	if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ILight& light = scene.getLight();
-		glm::vec3 pos = light.getPosition();
+		float speed = light.getSpeed();
 		glm::vec3 color = light.getColor();
 
 		bool changed = false;
 
-		changed |= ImGui::DragFloat3("Position##light", glm::value_ptr(pos), 0.1f);
-		if (ImGui::Button("Reset##pos"))
+		changed |= ImGui::DragFloat("Direction Speed##light", &speed, 0.01f);
+		if (ImGui::Button("Reset##dirSpeed"))
 		{
-			light.setPosition(glm::vec3(0.0f, 100.0f, 3.0f));
+			light.setSpeed(0.1f);
 		}
 		changed |= ImGui::ColorEdit3("Color##light", glm::value_ptr(color));
 		if (ImGui::Button("Reset##Color"))
@@ -567,7 +570,7 @@ void UIVk::drawInspector(IScene& scene)
 
 		if (changed)
 		{
-			light.setPosition(pos);
+			light.setSpeed(speed);
 			light.setColor(color);
 		}
 
@@ -587,18 +590,18 @@ void UIVk::drawInspector(IScene& scene)
 			ambientStrength = World::MAX_AMBSTR;
 			world.setAmbientStrength(ambientStrength);
 		}
-		int viewRadius = world.getViewRadius();
-		changed |= ImGui::DragInt("View Radius##world", &viewRadius, 1);
+		int renderRadius = world.getViewRadius();
+		changed |= ImGui::DragInt("Render Radius##world", &renderRadius, 1);
 		if (ImGui::Button("Reset##radius"))
 		{
-			viewRadius = World::MIN_RADIUS;
-			world.setViewRadius(viewRadius);
+			renderRadius = World::MIN_RADIUS;
+			world.setViewRadius(renderRadius);
 		}
 
 		if (changed)
 		{
 			world.setAmbientStrength(ambientStrength);
-			world.setViewRadius(viewRadius);
+			world.setViewRadius(renderRadius);
 		}
 
 		ImGui::Separator();

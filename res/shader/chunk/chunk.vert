@@ -5,6 +5,8 @@ layout (location = 0) in uint combined;
 layout (std140, set = 0, binding = 0) uniform UBO
 {
     // vert
+    mat4 u_lightSpaceMatrix;
+
     vec3 u_chunkOrigin;
     float _pad0;
 
@@ -17,7 +19,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
     vec3 u_viewPos;
     float _pad1;
 
-    vec3 u_lightPos;
+    vec3 u_lightDir;
     float _pad2;
 
     vec3 u_lightColor;
@@ -39,6 +41,7 @@ layout (location = 0) flat out uvec2 Tile;
 layout (location = 1) out vec2 TileUV;
 layout (location = 2) out vec3 FragWorldPos;
 layout (location = 3) out vec3 Normal;
+layout (location = 4) out vec4 FragPosLightSpace;
 
 const vec3[6] normalSample =
 {
@@ -106,6 +109,9 @@ void main()
     {
         TileUV = world.xy; // +/-Z
     }
+
+    // shadow - lsm
+    FragPosLightSpace = u_lightSpaceMatrix * vec4(FragWorldPos, 1.0);
 
     // clipping plane
     gl_ClipDistance[0] = dot(worldPos, u_clipPlane);

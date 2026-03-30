@@ -12,6 +12,7 @@
 #include "render_settings.h"
 #include "shader.h"
 
+#include "shadow_map_pass_gl.h"
 #include "chunk_pass_gl.h"
 #include "chunk_manager.h"
 #include "camera.h"
@@ -23,6 +24,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <cstdint>
 #include <stdexcept>
 #include <algorithm>
 #include <memory>
@@ -80,7 +82,7 @@ void WaterPass::updateShader(
     waterUBO_.u_far = in.camera->getFarPlane();
     waterUBO_.u_screenSize = glm::vec2{ w, h };
     waterUBO_.u_viewPos = in.camera->getCameraPosition();
-    waterUBO_.u_lightPos = in.light->getPosition();
+    waterUBO_.u_lightDir = in.light->getDirection();
     waterUBO_.u_lightColor = in.light->getColor();
     waterUBO_.u_ambientStrength = in.world->getAmbientStrength();
     ubo_.update(&waterUBO_, sizeof(waterUBO_));
@@ -94,12 +96,17 @@ void WaterPass::destroyGL()
     height_ = 0;
 } // end of destroyGL()
 
-void WaterPass::renderOffscreen(ChunkPassGL& chunk, const RenderInputs& in)
+void WaterPass::renderOffscreen(
+    ShadowMapPassGL* shadowMap,
+    ChunkPassGL& chunk,
+    const RenderInputs& in
+)
 {
-    waterPass(chunk, in);
-} // end of render()
+    waterPass(shadowMap, chunk, in);
+} // end of renderOffscreen()
 
 void WaterPass::renderWater(
+    ShadowMapPassGL* shadowMap,
     const RenderInputs& in,
     const glm::mat4& view,
     const glm::mat4& proj,
@@ -120,6 +127,7 @@ void WaterPass::renderWater(
     in.world->buildWaterDrawList(view, proj, list);
 
     shader_->use();
+    waterUBO_.u_lightSpaceMatrix = shadowMap->getLightSpaceMatrix();
     waterUBO_.u_view = view;
     waterUBO_.u_proj = proj;
     waterUBO_.u_screenSize = glm::vec2{ width, height };
@@ -259,22 +267,29 @@ void WaterPass::destroyTargets()
     }
 } // end of destroyTargets()
 
-void WaterPass::waterPass(ChunkPassGL& chunk, const RenderInputs& in)
+void WaterPass::waterPass(
+    ShadowMapPassGL* shadowMap,
+    ChunkPassGL& chunk, 
+    const RenderInputs& in
+)
 {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CLIP_DISTANCE0);
-    waterReflectionPass(chunk, in);
-    waterRefractionPass(chunk, in);
+    waterReflectionPass(shadowMap, chunk, in);
+    waterRefractionPass(shadowMap, chunk, in);
 
     // restore framebuffer + viewport
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, fullW_, fullH_);
 
-    glDisable(GL_DEPTH_TEST);
     glDisable(GL_CLIP_DISTANCE0);
 } // end of waterPass()
 
-void WaterPass::waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) const
+void WaterPass::waterReflectionPass(
+    ShadowMapPassGL* shadowMap,
+    ChunkPassGL& chunk, 
+    const RenderInputs& in
+) const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, reflFBO_);
     glViewport(0, 0, width_, height_);
@@ -305,11 +320,25 @@ void WaterPass::waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) 
     const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
 
     chunkOpaqueUBO.u_viewPos = camera.getCameraPosition();
+    chunkOpaqueUBO.u_lightDir = in.light->getDirection();
+    chunkOpaqueUBO.u_lightColor = in.light->getColor();
 
     // render objects (non-UI)
-    chunk.renderOpaque(0, in, reflView, proj, width_, height_);
-    in.light->render(nullptr, reflView, proj);
-    in.skybox->render(nullptr, reflView, proj);
+    chunk.renderOpaque(
+        0,
+        shadowMap->getDepthTexture(),
+        in,
+        reflView,
+        proj,
+        shadowMap->getLightSpaceMatrix(),
+        width_,
+        height_
+    );
+    in.skybox->render(
+        nullptr, 
+        reflView, 
+        proj
+    );
 
     // restore camera
     camera.getCameraPosition().y += distance;
@@ -319,7 +348,11 @@ void WaterPass::waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) 
     chunkOpaqueUBO = chunkOpaqueUBOCopy;
 } // end of waterReflectionPass()
 
-void WaterPass::waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) const
+void WaterPass::waterRefractionPass(
+    ShadowMapPassGL* shadowMap,
+    ChunkPassGL& chunk, 
+    const RenderInputs& in
+) const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, refrFBO_);
     glViewport(0, 0, width_, height_);
@@ -345,10 +378,20 @@ void WaterPass::waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) 
     const glm::mat4 proj = in.camera->getProjectionMatrix(aspect);
 
     chunkOpaqueUBO.u_viewPos = in.camera->getCameraPosition();
+    chunkOpaqueUBO.u_lightDir = in.light->getDirection();
+    chunkOpaqueUBO.u_lightColor = in.light->getColor();
 
     // render objects (non-UI)
-    chunk.renderOpaque(0, in, view, proj, width_, height_);
-    in.light->render(nullptr, view, proj);
+    chunk.renderOpaque(
+        0,
+        shadowMap->getDepthTexture(),
+        in,
+        view,
+        proj,
+        shadowMap->getLightSpaceMatrix(),
+        width_,
+        height_
+    );
 
     // restore opaque UBO
     chunkOpaqueUBO = chunkOpaqueUBOCopy;

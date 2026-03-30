@@ -15,6 +15,7 @@ class Texture;
 struct RenderInputs;
 struct RenderSettings;
 class Shader;
+class ShadowMapPassGL;
 
 class WaterPass
 {
@@ -33,8 +34,14 @@ public:
 
 	void destroyGL();
 
-	void renderOffscreen(ChunkPassGL& chunk, const RenderInputs& in);
+	void renderOffscreen(
+		ShadowMapPassGL* shadowMap,
+		ChunkPassGL& chunk,
+		const RenderInputs& in
+	);
+
 	void renderWater(
+		ShadowMapPassGL* shadowMap,
 		const RenderInputs& in,
 		const glm::mat4& view,
 		const glm::mat4& proj,
@@ -51,9 +58,22 @@ public:
 private:
 	void createTargets();
 	void destroyTargets();
-	void waterPass(ChunkPassGL& chunk, const RenderInputs& in);
-	void waterReflectionPass(ChunkPassGL& chunk, const RenderInputs& in) const;
-	void waterRefractionPass(ChunkPassGL& chunk, const RenderInputs& in) const;
+
+	void waterPass(
+		ShadowMapPassGL* shadowMap,
+		ChunkPassGL& chunk, 
+		const RenderInputs& in
+	);
+	void waterReflectionPass(
+		ShadowMapPassGL* shadowMap,
+		ChunkPassGL& chunk, 
+		const RenderInputs& in
+	) const;
+	void waterRefractionPass(
+		ShadowMapPassGL* shadowMap,
+		ChunkPassGL& chunk, 
+		const RenderInputs& in
+	) const;
 private:
 	int factor_{};
 	int width_{ 0 };

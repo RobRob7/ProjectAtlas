@@ -5,6 +5,7 @@ layout (location = 0) in vec3 aPos;
 layout (std140, set = 0, binding = 0) uniform UBO
 {
     // vert
+    mat4 u_lightSpaceMatrix;
     mat4 u_model;
     mat4 u_view;
     mat4 u_proj;
@@ -24,7 +25,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
     vec3 u_viewPos;
     int _pad0;
 
-    vec3 u_lightPos;
+    vec3 u_lightDir;
     int _pad1;
     
     vec3 u_lightColor;
@@ -42,6 +43,7 @@ layout (location = 0) out VS_OUT {
     vec3 worldPos;
     vec4 clipPos;
     vec2 waterUV;
+    vec4 FragPosLightSpace;
 } vs_out;
 
 void main() 
@@ -57,6 +59,9 @@ void main()
     vec4 clip = u_proj * u_view * world;
     vs_out.clipPos = clip;
     vs_out.waterUV = vs_out.worldPos.xz * u_tileScale_pad.x;
+
+    // shadow - lsm
+    vs_out.FragPosLightSpace = u_lightSpaceMatrix * vec4(vs_out.worldPos, 1.0);
 
     gl_Position = clip;
 }
