@@ -201,14 +201,30 @@ void ShadowMapPassVk::buildLightSpaceBounds(
 		maxLS = glm::max(maxLS, p);
 	} // end for
 
+	// stable shadow mapping
 	// padding
 	const float xyPad = 8.0f;
 	const float zPad = 16.0f;
 
-	minLS.x -= xyPad;
-	minLS.y -= xyPad;
-	maxLS.x += xyPad;
-	maxLS.y += xyPad;
+	float widthLS = maxLS.x - minLS.x;
+	float heightLS = maxLS.y - minLS.y;
+
+	float extent = std::max(widthLS, heightLS);
+	extent += xyPad * 2.0f;
+	extent = std::ceil(extent / CHUNK_SIZE) * CHUNK_SIZE;
+
+	glm::vec3 centerLS = 0.5f * (minLS + maxLS);
+
+	float texelSize = extent / static_cast<float>(std::max(1, width_));
+
+	centerLS.x = std::round(centerLS.x / texelSize) * texelSize;
+	centerLS.y = std::round(centerLS.y / texelSize) * texelSize;
+
+	// rebuild snapped X/Y bounds
+	minLS.x = centerLS.x - extent * 0.5f;
+	maxLS.x = centerLS.x + extent * 0.5f;
+	minLS.y = centerLS.y - extent * 0.5f;
+	maxLS.y = centerLS.y + extent * 0.5f;
 
 	float nearPlane = -maxLS.z - zPad;
 	float farPlane = -minLS.z + zPad;
@@ -325,7 +341,7 @@ void ShadowMapPassVk::createPipeline()
 	desc.depthWriteEnable = true;
 	desc.depthCompareOp = vk::CompareOp::eLess;
 
-	desc.cullMode = vk::CullModeFlagBits::eBack;
+	desc.cullMode = vk::CullModeFlagBits::eFront;
 	desc.frontFace = vk::FrontFace::eClockwise;
 
 	pipeline_.create(desc);

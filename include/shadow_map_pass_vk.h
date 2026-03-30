@@ -52,8 +52,8 @@ private:
 	void createPipeline();
 private:
 	VulkanMain& vk_;
-	int width_{1024};
-	int height_{1024};
+	int width_{ SHADOW_RESOLUTION };
+	int height_{ SHADOW_RESOLUTION };
 
 	glm::mat4 lightSpaceMatrix_{};
 	glm::mat4 lightView_{};

@@ -32,18 +32,9 @@ void ShadowMapPassGL::init()
 	);
 
 	uboGL_.init<sizeof(ShadowMapPassUBO)>();
-} // end of init()
 
-void ShadowMapPassGL::resize(int w, int h)
-{
-	if (w <= 0 || h <= 0) return;
-	if (w == width_ && h == height_) return;
-
-	destroyTargets();
-	width_ = w;
-	height_ = h;
 	createTargets();
-} // end of resize()
+} // end of init()
 
 void ShadowMapPassGL::renderOffscreen(
 	ChunkPassGL& chunk,
@@ -136,14 +127,30 @@ void ShadowMapPassGL::buildLightSpaceBounds(
 		maxLS = glm::max(maxLS, p);
 	} // end for
 
+	// stable shadow mapping
 	// padding
 	const float xyPad = 8.0f;
 	const float zPad = 16.0f;
 
-	minLS.x -= xyPad;
-	minLS.y -= xyPad;
-	maxLS.x += xyPad;
-	maxLS.y += xyPad;
+	float widthLS = maxLS.x - minLS.x;
+	float heightLS = maxLS.y - minLS.y;
+
+	float extent = std::max(widthLS, heightLS);
+	extent += xyPad * 2.0f;
+	extent = std::ceil(extent / CHUNK_SIZE) * CHUNK_SIZE;
+
+	glm::vec3 centerLS = 0.5f * (minLS + maxLS);
+
+	float texelSize = extent / static_cast<float>(std::max(1, width_));
+
+	centerLS.x = std::round(centerLS.x / texelSize) * texelSize;
+	centerLS.y = std::round(centerLS.y / texelSize) * texelSize;
+
+	// rebuild snapped X/Y bounds
+	minLS.x = centerLS.x - extent * 0.5f;
+	maxLS.x = centerLS.x + extent * 0.5f;
+	minLS.y = centerLS.y - extent * 0.5f;
+	maxLS.y = centerLS.y + extent * 0.5f;
 
 	float nearPlane = -maxLS.z - zPad;
 	float farPlane = -minLS.z + zPad;
@@ -153,11 +160,12 @@ void ShadowMapPassGL::buildLightSpaceBounds(
 	farPlane = std::max(nearPlane + 1.0f, farPlane);
 
 	// build fitted ortho projection
-	lightProj_ = glm::ortho(
+	lightProj_ = glm::orthoRH_ZO(
 		minLS.x, maxLS.x,
 		minLS.y, maxLS.y,
 		nearPlane, farPlane
 	);
+	lightProj_[1][1] *= -1.0f;
 
 	lightSpaceMatrix_ = lightProj_ * lightView_;
 } // end of buildLightSpaceBounds()
@@ -205,7 +213,4 @@ void ShadowMapPassGL::destroyTargets()
 void ShadowMapPassGL::destroyGL()
 {
 	destroyTargets();
-
-	width_ = 0;
-	height_ = 0;
 } // end of destroyGL()

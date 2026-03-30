@@ -28,6 +28,7 @@ struct RenderSettings
 	bool enableVsync = true;
 
 	// graphics options
+	bool useShadowMap = true;
 	bool useSSAO = true;
 	bool useFXAA = false;
 	bool useFog = false;

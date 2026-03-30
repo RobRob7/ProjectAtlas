@@ -24,7 +24,6 @@ public:
 	~ShadowMapPassGL();
 
 	void init();
-	void resize(int w, int h);
 
 	void renderOffscreen(
 		ChunkPassGL& chunk,
@@ -37,8 +36,8 @@ public:
 	const glm::mat4& getLightSpaceMatrix() const { return lightSpaceMatrix_; }
 
 private:
-	int width_{};
-	int height_{};
+	int width_{ SHADOW_RESOLUTION };
+	int height_{ SHADOW_RESOLUTION };
 
 	glm::mat4 lightSpaceMatrix_{};
 	glm::mat4 lightView_{};

@@ -35,12 +35,14 @@ public:
 	void destroyGL();
 
 	void renderOffscreen(
+		const RenderSettings& rs,
 		ShadowMapPassGL* shadowMap,
 		ChunkPassGL& chunk,
 		const RenderInputs& in
 	);
 
 	void renderWater(
+		const RenderSettings& rs,
 		ShadowMapPassGL* shadowMap,
 		const RenderInputs& in,
 		const glm::mat4& view,
@@ -60,16 +62,19 @@ private:
 	void destroyTargets();
 
 	void waterPass(
+		const RenderSettings& rs,
 		ShadowMapPassGL* shadowMap,
 		ChunkPassGL& chunk, 
 		const RenderInputs& in
 	);
 	void waterReflectionPass(
+		const RenderSettings& rs,
 		ShadowMapPassGL* shadowMap,
 		ChunkPassGL& chunk, 
 		const RenderInputs& in
 	) const;
 	void waterRefractionPass(
+		const RenderSettings& rs,
 		ShadowMapPassGL* shadowMap,
 		ChunkPassGL& chunk, 
 		const RenderInputs& in

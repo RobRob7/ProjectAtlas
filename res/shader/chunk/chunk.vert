@@ -27,7 +27,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
 
     vec2 u_screenSize;
     int u_useSSAO;
-    int _pad3;
+    int u_useShadowMap;
 };
 
 #ifdef VULKAN

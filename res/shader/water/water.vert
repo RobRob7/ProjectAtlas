@@ -16,7 +16,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
     float u_time;
     float u_distortStrength;
     float u_waveSpeed;
-    float _pad_waves;
+    int u_useShadowMap;
 
     float u_near;
     float u_far;

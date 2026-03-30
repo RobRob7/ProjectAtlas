@@ -21,7 +21,7 @@ layout (std140, set = 0, binding = 0) uniform UBO
     float u_time;
     float u_distortStrength;
     float u_waveSpeed;
-    float _pad_waves;
+    int u_useShadowMap;
 
     float u_near;
     float u_far;
@@ -204,9 +204,14 @@ void main()
     vec3 specular = u_lightColor * spec * specStrength;
 
     // shadow calc
-    float shadow = ShadowCalculation(fs_in.FragPosLightSpace, N);
-    float shadowFactor = 1.0 - shadow;
-    float waterShadowTint = mix(0.75, 1.0, shadowFactor);
+    float shadowFactor = 1.0;
+    float waterShadowTint = 1.0;
+    if (u_useShadowMap != 0)
+    {
+        float shadow = ShadowCalculation(fs_in.FragPosLightSpace, N);
+        shadowFactor = 1.0 - shadow;
+        waterShadowTint = mix(0.75, 1.0, shadowFactor);
+    }
 
     vec3 direct = (diffuse + specular);
 

@@ -233,7 +233,7 @@ namespace Chunk_Constants
 
 		glm::vec2 u_screenSize;
 		int32_t u_useSSAO = 0;
-		int32_t _pad3;
+		int32_t u_useShadowMap = 0;
 	};
 
 	struct ChunkPushConstants
@@ -256,7 +256,7 @@ namespace Chunk_Constants
 		float u_time;
 		float u_distortStrength = 8.0f;
 		float u_waveSpeed = 0.04f;
-		float _pad_waves;
+		int32_t u_useShadowMap = 0;
 
 		float u_near;
 		float u_far;
@@ -303,6 +303,8 @@ namespace Debug_Constants
 
 namespace Shadow_Map_Constants
 {
+	const int SHADOW_RESOLUTION = 4096;
+
 	struct ShadowMapPassUBO
 	{
 		glm::mat4 u_lightSpaceMatrix;

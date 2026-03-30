@@ -140,6 +140,7 @@ void ChunkPassVk::renderOpaque(
 	ubo.u_lightSpaceMatrix = lightSpaceMatrix;
 
 	ubo.u_useSSAO = rs.useSSAO ? 1 : 0;
+	ubo.u_useShadowMap = rs.useShadowMap ? 1 : 0;
 
 	ubo.u_view = view;
 	ubo.u_proj = proj;

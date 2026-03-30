@@ -5,7 +5,8 @@ C++17 voxel-based rendering engine for Windows featuring a modular, interchangea
 Features:
 </h3>
 
-- Physically-inspired Water Rendering
+- Directional shadow mapping with percentage-closer filtering (PCF)
+- Physically-Inspired Surface Water Rendering
 - Post-Processing Fog
 - Screen-Space Ambient Occlusion (SSAO)
 - Fast Approximate Anti-Aliasing (FXAA)
@@ -37,6 +38,8 @@ Features:
 Preview
 </h2>
 
+![Shadow Mapping](./milestones/demo/shadow_maps.gif)
+
 ![Project Demo](./milestones/demo/demo3.gif)
 
 <!--  -->
@@ -65,7 +68,7 @@ This project focuses on implementing real-time rendering techniques that are com
 <!--  -->
 ---
 <h4>
-Physically-inspired Water Rendering
+Physically-Inspired Surface Water Rendering
 </h4>
 
 - Water is rendered using a dedicated pass that captures the scene above and below the water plane into reflection and refraction textures.
@@ -73,7 +76,7 @@ Physically-inspired Water Rendering
 - DuDv mapping for wave distortion effects coupled with time-based animation.
 - Refraction depth texture used to make shallow water appear lighter in color.
 
-**Why it matters:**  
+**Importance:**  
 Previous versions of this engine showcased flat and boring water blocks. Water is now more visually appealing and takes into account other objects in the scene.
 
 <!--  -->
@@ -86,7 +89,7 @@ Post-Processing Fog
 - Configurable fog color and start/end distances.
 - Integrates seamlessly with SSAO, FXAA, and lighting passes.
 
-**Why it matters:**  
+**Importance:**  
 Demonstrates the ability to implement additional post-processing effects that integrate cleanly into an existing post-processing pipeline.
 
 <!--  -->
@@ -100,7 +103,7 @@ Screen-Space Ambient Occlusion (SSAO)
 - Calculates occlusion by comparing sampled depth values against the current fragment depth.
 - A blur pass is applied to reduce high frequency noise while preserving edge detail.
 
-**Why it matters:**  
+**Importance:**  
 SSAO adds depth perception and contact shadows without the cost of full global illumination, significantly improving visual realism in dense voxel environments.
 
 <!--  -->
@@ -114,7 +117,7 @@ Fast Approximate Anti-Aliasing (FXAA)
 - A post-processing pass that operates on the final scene color buffer.
 - Identifies and smooths jagged edges.
 
-**Why it matters:**  
+**Importance:**  
 FXAA is a cost-efficient method for anti-aliasing with minimal performance cost that is ideal for voxel engines.
 
 <!--  -->
@@ -130,7 +133,7 @@ View Frustum Culling
 - Integrated directly into the chunk manager (CPU side) to avoid extra GPU load through draw calls.
 - Noticeable performance increase from 679 FPS to 1057 FPS (~56% improvement) measured on an RTX 5090 at the same camera position.
 
-**Why it matters:**  
+**Importance:**  
 Frustum culling drastically reduces GPU workload by efficiently rendering only the chunks visible in camera view, reducing overhead and increasing performance as the world grows in size.
 
 <!--  -->
@@ -149,7 +152,7 @@ Greedy Meshing
 | Nvidia RTX 4060m       | 103.0           | 210.1          | +107.1       | +104.0%   |
 | Nvidia RTX 5090       | 342.2           | 662.0          | +319.8        | +93.5%   |
 
-**Why it matters:**  
+**Importance:**  
 Greedy meshing reduces the number of draw calls and triangles sent to the GPU, improving overall rendering performance.
 
 <!--  -->
@@ -168,7 +171,7 @@ Memory-Efficient Vertex Storage
 
 > **Note:** VRAM reduction is smaller than RAM reduction due to textures and framebuffers dominating total GPU memory usage.
 
-**Why it matters:**  
+**Importance:**  
 Smaller vertices reduce CPU memory pressure, improve cache efficiency, and allow significantly larger worlds and higher chunk counts without exhausting system memory.
 
 <!--  -->
@@ -180,7 +183,7 @@ Procedural Terrain Generation
 - Utilizes the LibNoise library to generate a terrain heightmap.
 - This allows for varied terrain features such as hills, oceans, and trees.
 
-**Why it matters:**  
+**Importance:**  
 Procedural generation allows for large, varied worlds without having to worry about doing so by hand, while maintaining a deterministic state.
 
 <!--  -->
@@ -193,8 +196,21 @@ World State Persistence System
 - Supports both manual and automatic saving.
 - As the player modifies (place/destroy blocks) the world, these changes persist through application shutdown and restart.
 
-**Why it matters:**  
+**Importance:**  
 Persistent world state demonstrates data-oriented design beyond real-time rendering.
+
+---
+<!--  -->
+<h4>
+Directional Shadow Mapping
+</h4>
+
+- Implemented real-time directional shadow mapping using a light-space depth pass.
+- Every frame the shadow map is re-calculated based on the camera's visible region.
+- Applied Percentage-Closer Filtering (PCF) to produce softer shadows by sampling the surrounding texels of the depth map and averaging the results.
+
+**Importance:**  
+Adds depth cues and spatial realism while demonstrating understanding of multi-pass rendering, and real-time lighting techniques.
 
 ---
 <!--  -->
@@ -262,6 +278,10 @@ Milestones
 |----------------------------|--------------------------------|
 | *Scene rendered in OpenGL.* | *Scene rendered in Vulkan.* |
 | ![](milestones/11a_opengl.png) | ![](milestones/11b_vulkan.png) |
+
+| Shadow Mapping (Off) | Shadow Mapping (On) |
+|----------------------------|--------------------------------|
+| ![](milestones/12a_Shadows_OFF.gif) | ![](milestones/12b_Shadows_ON.gif) |
 
 <h2>
 Requirements
@@ -362,6 +382,7 @@ Project layout:
             - gbuffer_pass.cpp → G-buffer pass
             - present_pass.cpp → final image pass
             - renderer_gl.cpp → render pipeline
+            - shadow_map_pass_gl.cpp → shadow map pass
             - ssao_pass.cpp → SSAO pass
             - water_pass.cpp → water pass
         - **vulkan/**
@@ -372,6 +393,7 @@ Project layout:
             - gbuffer_pass_vk.cpp → G-buffer pass
             - present_pass_vk.cpp → final image pass
             - renderer_vk.cpp → render pipeline
+            - shadow_map_pass_vk.cpp → shadow map pass
             - ssao_pass_vk.cpp → SSAO pass
             - water_pass_vk.cpp → water pass
     - **save/**
