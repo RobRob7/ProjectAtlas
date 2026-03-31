@@ -5,7 +5,7 @@ C++17 voxel-based rendering engine built for Windows featuring a modular, interc
 Features:
 </h3>
 
-- Directional shadow mapping with Percentage-Closer Filtering (PCF)
+- Directional Shadow Mapping with Percentage-Closer Filtering (PCF)
 - Physically-Inspired Surface Water Rendering
 - Post-Processing Fog
 - Screen-Space Ambient Occlusion (SSAO)
@@ -13,11 +13,11 @@ Features:
 - Camera View Frustum Culling
 - Greedy Meshing for Chunks
 - Memory-Efficient Vertex Storage
-- Procedural terrain generation using LibNoise
-- Block placement and destruction
-- World data persistence:
-    - Auto-saving world state
-    - Manual save system
+- Procedural Terrain Generation using LibNoise
+- Block Placement and Destruction
+- World Data Persistence:
+    - Auto-Saving World State
+    - Manual Save System
 
 ## Controls
 - WASD – Move
@@ -412,8 +412,7 @@ Project layout:
     - **system/**
         - camera.cpp → camera system
     - **ui/**
-        - ui.cpp → UI system opengl
-        - ui_vk.cpp → UI system vulkan
+        - ui.cpp → UI system
     - **utility/**
         - **opengl/**
             - cubemap_gl.cpp → setup + render cubemap
