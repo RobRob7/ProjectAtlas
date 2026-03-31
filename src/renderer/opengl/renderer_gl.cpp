@@ -189,6 +189,7 @@ void RendererGL::renderFrame(
         nullptr, 
         view, 
         proj, 
+        in.light->getDirection(),
         in.time
     );
     // --------------- END FORWARD RENDER --------------- //

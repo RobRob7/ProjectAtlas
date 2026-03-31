@@ -58,7 +58,8 @@ enum class GbufferBinding : uint32_t
 enum class CubemapBinding : uint32_t
 {
     UBO = 0,
-    SkyboxTex = 1,
+    NightSkyboxTex = 1,
+    DaySkyboxTex = 2,
 };
 
 enum class FXAAPassBinding : uint32_t

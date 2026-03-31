@@ -344,7 +344,9 @@ void WaterPass::waterReflectionPass(
     in.skybox->render(
         nullptr, 
         reflView, 
-        proj
+        proj,
+        in.light->getDirection(),
+        in.time
     );
 
     // restore camera

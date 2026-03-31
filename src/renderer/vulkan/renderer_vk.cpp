@@ -270,8 +270,10 @@ void RendererVk::renderFrame(
 
 		if (in.skybox) in.skybox->render(
 			&frame, 
-			view, 
-			proj
+			view,
+			proj,
+			in.light->getDirection(),
+			in.time
 		);
 
 		if (waterPass_)

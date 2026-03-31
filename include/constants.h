@@ -141,19 +141,24 @@ namespace Cubemap_Constants
 {
 	struct CubemapUBO
 	{
-		glm::mat4 view;
-		glm::mat4 proj;
+		glm::mat4 u_view;
+		glm::mat4 u_proj;
+
+		glm::vec3 _pad0;
+		float u_dayNightMix = 1.0f;
 	};
 
 	const std::array<float, 108> SKYBOX_VERTICES =
 	{
-		-1.0f,  1.0f, -1.0f,
-		-1.0f, -1.0f, -1.0f,
-		 1.0f, -1.0f, -1.0f,
-		 1.0f, -1.0f, -1.0f,
-		 1.0f,  1.0f, -1.0f,
-		-1.0f,  1.0f, -1.0f,
+		// right (+x)
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
 
+		// left (-x)
 		-1.0f, -1.0f,  1.0f,
 		-1.0f, -1.0f, -1.0f,
 		-1.0f,  1.0f, -1.0f,
@@ -161,33 +166,37 @@ namespace Cubemap_Constants
 		-1.0f,  1.0f,  1.0f,
 		-1.0f, -1.0f,  1.0f,
 
-		 1.0f, -1.0f, -1.0f,
-		 1.0f, -1.0f,  1.0f,
-		 1.0f,  1.0f,  1.0f,
-		 1.0f,  1.0f,  1.0f,
-		 1.0f,  1.0f, -1.0f,
-		 1.0f, -1.0f, -1.0f,
-
-		-1.0f, -1.0f,  1.0f,
-		-1.0f,  1.0f,  1.0f,
-		 1.0f,  1.0f,  1.0f,
-		 1.0f,  1.0f,  1.0f,
-		 1.0f, -1.0f,  1.0f,
-		-1.0f, -1.0f,  1.0f,
-
+		// top (+y)
 		-1.0f,  1.0f, -1.0f,
-		 1.0f,  1.0f, -1.0f,
-		 1.0f,  1.0f,  1.0f,
-		 1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f, -1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
 		-1.0f,  1.0f,  1.0f,
 		-1.0f,  1.0f, -1.0f,
 
+		// bottom (-y)
 		-1.0f, -1.0f, -1.0f,
 		-1.0f, -1.0f,  1.0f,
-		 1.0f, -1.0f, -1.0f,
-		 1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
 		-1.0f, -1.0f,  1.0f,
-		 1.0f, -1.0f,  1.0f
+		1.0f, -1.0f,  1.0f,
+
+		// front (+z)
+		-1.0f, -1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		// back (-z)
+		-1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
 	};
 
 	// cubemap default
@@ -198,6 +207,16 @@ namespace Cubemap_Constants
 		"texture/cubemap/space_alt/bottom.png",
 		"texture/cubemap/space_alt/front.png",
 		"texture/cubemap/space_alt/back.png"
+	} };
+
+	// cubemap day
+	const std::array<std::string_view, 6> DAY_FACES = { {
+		"texture/cubemap/clear_sky/px.png",
+		"texture/cubemap/clear_sky/nx.png",
+		"texture/cubemap/clear_sky/py.png",
+		"texture/cubemap/clear_sky/ny.png",
+		"texture/cubemap/clear_sky/pz.png",
+		"texture/cubemap/clear_sky/nz.png"
 	} };
 
 	struct VertexCubemap

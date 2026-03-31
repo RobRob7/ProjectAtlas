@@ -664,7 +664,9 @@ void WaterPassVk::waterReflectionPass(
 				reflView,
 				proj,
 				width_,
-				height_
+				height_,
+				in.light->getDirection(),
+				in.time
 			);
 		}
 	}
