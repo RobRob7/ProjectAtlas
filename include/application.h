@@ -9,19 +9,20 @@
 
 #include <memory>
 
-struct GLFWwindow;
-
 class OpenGLMain;
 class VulkanMain;
-
 class UI;
-class UIVk;
 struct InputState;
+struct GLFWwindow;
 
 class Application
 {
 public:
-	Application(int width, int height, Backend backend);
+	Application(
+		int width, 
+		int height, 
+		Backend backend
+	);
 	~Application();
 
 	void run();
@@ -60,6 +61,5 @@ private:
 	std::unique_ptr<IRenderer> renderer_;
 
 	std::unique_ptr<UI> ui_;
-	std::unique_ptr<UIVk> uivk_;
 };
 #endif

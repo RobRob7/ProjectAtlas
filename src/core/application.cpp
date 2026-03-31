@@ -5,12 +5,11 @@
 #include "opengl_main.h"
 #include "vulkan_main.h"
 
+#include "ui.h"
 #include "scene.h"
 #include "scene_vk.h"
 #include "renderer_gl.h"
 #include "renderer_vk.h"
-#include "ui.h"
-#include "ui_vk.h"
 
 #include <GLFW/glfw3.h>
 
@@ -85,7 +84,11 @@ static void WarmupOpenGLContext()
 
 
 //--- PUBLIC ---//
-Application::Application(int width, int height, Backend backend)
+Application::Application(
+	int width, 
+	int height,
+	Backend backend
+)
 	: width_(width), 
 	height_(height), 
 	backend_(backend), 
@@ -143,55 +146,25 @@ void Application::run()
 		// process UI display
 		if (input.enableImguiPressed)
 		{
-			if (ui_)
-			{
-				ui_->setUIDisplayEnabled(true);
-			}
-			if (uivk_)
-			{
-				uivk_->setUIDisplayEnabled(true);
-			}
+			ui_->setUIDisplayEnabled(true);
 		}
 		if (input.disableImguiPressed)
 		{
-			if (ui_)
-			{
-				ui_->setUIDisplayEnabled(false);
-			}
-			if (uivk_)
-			{
-				uivk_->setUIDisplayEnabled(false);
-			}
+			ui_->setUIDisplayEnabled(false);
 		}
 
 		// process camera active/inactive mouse cursor
 		if (input.enableCameraPressed)
 		{
 			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-			if (ui_)
-			{
-				ui_->setCameraModeUIEnabled(true);
-				ui_->setUIInputEnabled(false);
-			}
-			if (uivk_)
-			{
-				uivk_->setCameraModeUIEnabled(true);
-				uivk_->setUIInputEnabled(false);
-			}
+			ui_->setCameraModeUIEnabled(true);
+			ui_->setUIInputEnabled(false);
 		}
 		if (input.disableCameraPressed)
 		{
 			glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-			if (ui_)
-			{
-				ui_->setCameraModeUIEnabled(false);
-				ui_->setUIInputEnabled(true);
-			}
-			if (uivk_)
-			{
-				uivk_->setCameraModeUIEnabled(false);
-				uivk_->setUIInputEnabled(true);
-			}
+			ui_->setCameraModeUIEnabled(false);
+			ui_->setUIInputEnabled(true);
 		}
 		///////////////////////////////////
 
@@ -205,7 +178,8 @@ void Application::run()
 
 			scene_->render(*renderer_, in_, {}, nullptr);
 
-			ui_->drawFullUI(deltaTime_, *scene_);
+			ui_->buildUI(deltaTime_, *scene_);
+			ui_->renderGL();
 
 			Backend requestedBackend{};
 			if (ui_ && ui_->applyBackendRequest(requestedBackend))
@@ -225,16 +199,16 @@ void Application::run()
 				{
 					if (scene_)		scene_->onResize(width_, height_);
 					if (renderer_)	renderer_->resize(width_, height_);
-					if (uivk_)		uivk_->onSwapchainRecreated();
+					if (ui_)		ui_->onSwapchainRecreated();
 				}
 				continue;
 			}
 
-			uivk_->beginFrame();
+			ui_->beginFrame();
 
-			uivk_->buildUI(deltaTime_, *scene_);
+			ui_->buildUI(deltaTime_, *scene_);
 
-			scene_->render(*renderer_, in_, &frame, uivk_.get());
+			scene_->render(*renderer_, in_, &frame, ui_.get());
 
 			if (!vulkanMain_->endFrame(frame))
 			{
@@ -242,13 +216,13 @@ void Application::run()
 				{
 					if (scene_)		scene_->onResize(width_, height_);
 					if (renderer_)	renderer_->resize(width_, height_);
-					if (uivk_)		uivk_->onSwapchainRecreated();
+					if (ui_)		ui_->onSwapchainRecreated();
 				}
 				continue;
 			}
 
 			Backend requestedBackend{};
-			if (uivk_ && uivk_->applyBackendRequest(requestedBackend))
+			if (ui_ && ui_->applyBackendRequest(requestedBackend))
 			{
 				switchBackend(requestedBackend);
 				continue;
@@ -293,7 +267,6 @@ void Application::shutdownBackend()
 	}
 
 	ui_.reset();
-	uivk_.reset();
 	renderer_.reset();
 	scene_.reset();
 	openglMain_.reset();
@@ -326,7 +299,12 @@ void Application::initVk()
 	setCallbacks();
 
 	// setup UI
-	uivk_ = std::make_unique<UIVk>(*vulkanMain_, window_, renderer_->settings(), backend_);
+	ui_ = std::make_unique<UI>(
+		vulkanMain_.get(),
+		window_, 
+		renderer_->settings(), 
+		backend_
+	);
 } // end of initVk()
 
 void Application::initOpenGL()
@@ -345,7 +323,12 @@ void Application::initOpenGL()
 	setCallbacks();
 
 	// setup UI
-	ui_ = std::make_unique<UI>(window_, renderer_->settings(), backend_);
+	ui_ = std::make_unique<UI>(
+		nullptr,
+		window_,
+		renderer_->settings(),
+		backend_
+	);
 } // end of initOpenGL()
 
 void Application::setCallbacks()
@@ -417,7 +400,7 @@ void Application::initWindowGL()
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	// WINDOW CREATION + CHECK
-	window_ = glfwCreateWindow(width_, height_, "", nullptr, nullptr);
+	window_ = glfwCreateWindow(width_, height_, "Atlas", nullptr, nullptr);
 	if (!window_)
 	{
 		glfwTerminate();

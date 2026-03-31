@@ -86,7 +86,7 @@ void RendererGL::resize(int w, int h)
 void RendererGL::renderFrame(
     const RenderInputs& in,
     const FrameContext* frame,
-    UIVk* ui
+    UI* ui
 )
 {
     if (!in.world || !in.camera || !in.light || !in.skybox || !in.crosshair) return;
@@ -230,7 +230,7 @@ void RendererGL::renderFrame(
     // ----------------- UI ELEMENTS ----------------- //
     if (in.crosshair)
     {
-        in.crosshair->render();
+        in.crosshair->render(nullptr);
     }
     // --------------- END UI ELEMENTS --------------- //
 } // end of renderFrame()

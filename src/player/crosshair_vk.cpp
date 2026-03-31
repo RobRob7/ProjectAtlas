@@ -36,22 +36,22 @@ void CrosshairVk::init()
 	createPipeline();
 } // end of init()
 
-void CrosshairVk::render(FrameContext& frame)
+void CrosshairVk::render(const FrameContext* frame)
 {
-	if (!frame.cmd || !vBuffer_.valid())
+	if (!frame->cmd || !vBuffer_.valid())
 		return;
 
-	vk::CommandBuffer cmd = frame.cmd;
+	vk::CommandBuffer cmd = frame->cmd;
 
 	vk::RenderingAttachmentInfo colorAttach{};
-	colorAttach.imageView = frame.colorImageView;
+	colorAttach.imageView = frame->colorImageView;
 	colorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	colorAttach.loadOp = vk::AttachmentLoadOp::eLoad;
 	colorAttach.storeOp = vk::AttachmentStoreOp::eStore;
 
 	vk::RenderingInfo renderingInfo{};
 	renderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
-	renderingInfo.renderArea.extent = frame.extent;
+	renderingInfo.renderArea.extent = frame->extent;
 	renderingInfo.layerCount = 1;
 	renderingInfo.colorAttachmentCount = 1;
 	renderingInfo.pColorAttachments = &colorAttach;
@@ -62,15 +62,15 @@ void CrosshairVk::render(FrameContext& frame)
 		vk::Viewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(frame.extent.width);
-		viewport.height = static_cast<float>(frame.extent.height);
+		viewport.width = static_cast<float>(frame->extent.width);
+		viewport.height = static_cast<float>(frame->extent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		cmd.setViewport(0, 1, &viewport);
 
 		vk::Rect2D scissor{};
 		scissor.offset = vk::Offset2D{ 0, 0 };
-		scissor.extent = frame.extent;
+		scissor.extent = frame->extent;
 		cmd.setScissor(0, 1, &scissor);
 
 		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_.getPipeline());

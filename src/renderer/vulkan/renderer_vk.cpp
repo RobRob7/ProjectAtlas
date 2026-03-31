@@ -11,9 +11,9 @@
 #include "camera.h"
 #include "i_light.h"
 #include "i_cubemap.h"
+#include "i_crosshair.h"
 #include "chunk_manager.h"
-#include "ui_vk.h"
-#include "crosshair_vk.h"
+#include "ui.h"
 
 #include "gbuffer_pass_vk.h"
 #include "shadow_map_pass_vk.h"
@@ -53,8 +53,6 @@ void RendererVk::init()
 	if (!fogPass_)			fogPass_ = std::make_unique<FogPassVk>(vk_, *renderSettings_);
 	if (!presentPass_)		presentPass_ = std::make_unique<PresentPassVk>(vk_);
 
-	if (!crosshair_)		crosshair_ = std::make_unique<CrosshairVk>(vk_);
-
 	gbufferPass_->init();
 	shadowMapPass_->init();
 	debugPass_->init();
@@ -67,8 +65,6 @@ void RendererVk::init()
 	fxaaPass_->init();
 	fogPass_->init();
 	presentPass_->init();
-
-	crosshair_->init();
 } // end of init()
 
 void RendererVk::resize(int w, int h)
@@ -95,7 +91,7 @@ void RendererVk::resize(int w, int h)
 void RendererVk::renderFrame(
 	const RenderInputs& in,
 	const FrameContext* pFrame,
-	UIVk* ui
+	UI* ui
 )
 {
 	FrameContext& frame = *const_cast<FrameContext*>(pFrame);
@@ -157,7 +153,7 @@ void RendererVk::renderFrame(
 
 		if (ui)
 		{
-			ui->render(frame);
+			ui->renderVk(frame);
 		}
 
 		// present
@@ -364,15 +360,15 @@ void RendererVk::renderFrame(
 
 	// ----------------- UI ELEMENTS ----------------- //
 	// CROSSHAIR RENDER
-	if (crosshair_)
+	if (in.crosshair)
 	{
-		crosshair_->render(frame);
+		in.crosshair->render(&frame);
 	}
 
 	// UI RENDER
 	if (ui)
 	{
-		ui->render(frame);
+		ui->renderVk(frame);
 	}
 	// --------------- END UI ELEMENTS --------------- //
 

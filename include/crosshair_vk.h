@@ -1,6 +1,8 @@
 #ifndef CROSSHAIR_VK_H
 #define CROSSHAIR_VK_H
 
+#include "i_crosshair.h"
+
 #include "buffer_vk.h"
 #include "graphics_pipeline_vk.h"
 
@@ -10,14 +12,14 @@ class VulkanMain;
 class ShaderModuleVk;
 struct FrameContext;
 
-class CrosshairVk
+class CrosshairVk : public ICrosshair
 {
 public:
 	CrosshairVk(VulkanMain& vk);
 	~CrosshairVk();
 
-	void init();
-	void render(FrameContext& frame);
+	void init() override;
+	void render(const FrameContext* frame) override;
 
 private:
 	void createResources();

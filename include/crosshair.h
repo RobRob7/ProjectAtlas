@@ -1,19 +1,22 @@
 #ifndef CROSSHAIR_H
 #define CROSSHAIR_H
 
+#include "i_crosshair.h"
+
 #include <cstdint>
 #include <memory>
 
 class Shader;
+struct FrameContext;
 
-class Crosshair
+class Crosshair : public ICrosshair
 {
 public:
 	Crosshair();
 	~Crosshair();
 
-	void init();
-	void render();
+	void init() override;
+	void render(const FrameContext* frame) override;
 
 private:
 	void destroyGL();

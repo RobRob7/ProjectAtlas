@@ -5,7 +5,7 @@ class Camera;
 class ChunkManager;
 class ILight;
 class ICubemap;
-class Crosshair;
+class ICrosshair;
 
 struct RenderInputs
 {
@@ -13,7 +13,7 @@ struct RenderInputs
 	ChunkManager* world = nullptr;
 	ILight* light = nullptr;
 	ICubemap* skybox = nullptr;
-	Crosshair* crosshair = nullptr;
+	ICrosshair* crosshair = nullptr;
 
 	float time = 0.0f;
 };

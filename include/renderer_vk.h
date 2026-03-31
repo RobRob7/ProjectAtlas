@@ -27,8 +27,7 @@ class FXAAPassVk;
 class FogPassVk;
 class PresentPassVk;
 
-class UIVk;
-class CrosshairVk;
+class UI;
 
 class RendererVk final : public IRenderer
 {
@@ -42,7 +41,7 @@ public:
 	void renderFrame(
 		const RenderInputs& in,
 		const FrameContext* pFrame,
-		UIVk* ui
+		UI* ui
 	) override;
 
 	RenderSettings& settings() override { return *renderSettings_; }
@@ -79,8 +78,6 @@ private:
 	std::unique_ptr<FogPassVk> fogPass_;
 
 	std::unique_ptr<PresentPassVk> presentPass_;
-
-	std::unique_ptr<CrosshairVk> crosshair_;
 };
 
 #endif

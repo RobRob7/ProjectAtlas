@@ -8,11 +8,11 @@
 class VulkanMain;
 class Camera;
 class ICubemap;
-class Crosshair;
+class CrosshairVk;
 class ChunkManager;
 class ILight;
 
-class UIVk;
+class UI;
 class IRenderer;
 struct RenderInputs;
 
@@ -29,7 +29,7 @@ public:
 		IRenderer& renderer,
 		RenderInputs& in,
 		const FrameContext* frame,
-		UIVk* ui
+		UI* ui
 	) override;
 
 	// handle user inputs
@@ -61,7 +61,7 @@ private:
 	// objects
 	std::unique_ptr<Camera> camera_;
 	std::unique_ptr<ICubemap> skybox_;
-	std::unique_ptr<Crosshair> crosshair_;
+	std::unique_ptr<CrosshairVk> crosshair_;
 	std::unique_ptr<ChunkManager> world_;
 	std::unique_ptr<ILight> light_;
 };

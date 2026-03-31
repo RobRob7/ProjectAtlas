@@ -1,22 +1,30 @@
 #include "ui.h"
 
+#include "vulkan_main.h"
+#include "render_settings.h"
+#include "frame_context_vk.h"
+
 #include "i_scene.h"
+#include "i_light.h"
+
+#include "texture_2d_vk.h"
 #include "texture.h"
-#include "scene.h"
-#include "renderer_gl.h"
 
 #include "chunk_manager.h"
 #include "camera.h"
-#include "light_gl.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
-#include <imgui_impl_opengl3.h>
 #include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_vulkan.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <vulkan/vulkan.hpp>
+
+#include <memory>
 #define NOMINMAX
 #include <windows.h>
 #include <psapi.h>
@@ -30,20 +38,24 @@ static size_t GetProcessMemoryMB()
 		(PROCESS_MEMORY_COUNTERS*)&pmc,
 		sizeof(pmc)
 	);
-
+	 
 	// Working Set = physical RAM currently used
 	return pmc.WorkingSetSize / (1024 * 1024);
 } // end of GetProcessMemoryMB()
 
 //--- PUBLIC ---//
-UI::UI(GLFWwindow* window, RenderSettings& rs, Backend activeBackend)
-	: window_(window), renderSettings_(rs),
-	enabled_(true), cameraModeOn_(true),
+UI::UI(
+	VulkanMain* vk, 
+	GLFWwindow* window, 
+	RenderSettings& rs, 
+	Backend activeBackend
+)
+	: vk_(vk), 
+	window_(window), 
+	renderSettings_(rs),
 	activeBackend_(activeBackend),
 	selectedBackend_(activeBackend)
 {
-	// window top nav bar logo
-	logoTex_ = std::make_unique<Texture>("blocks.png");
 
 	// ------ imgui init ------ //
 	IMGUI_CHECKVERSION();
@@ -51,32 +63,107 @@ UI::UI(GLFWwindow* window, RenderSettings& rs, Backend activeBackend)
 
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 	ImGui::StyleColorsDark();
 
-	ImGui_ImplGlfw_InitForOpenGL(window_, true);
-	ImGui_ImplOpenGL3_Init("#version 460 core");
+	// vulkan
+	if (vk_)
+	{
+		renderSettings_.enableVsync = vk_->getVSync();
+
+		// window top nav bar logo
+		logoTexVk_ = std::make_unique<Texture2DVk>(*vk_);
+		logoTexVk_->loadFromFile("blocks.png", false);
+
+		ImGui_ImplGlfw_InitForVulkan(window_, true);
+
+		ImGui_ImplVulkan_InitInfo initInfo{};
+		initInfo.Instance = static_cast<VkInstance>(vk_->getInstance());
+		initInfo.PhysicalDevice = static_cast<VkPhysicalDevice>(vk_->getPhysicalDevice());
+		initInfo.Device = static_cast<VkDevice>(vk_->getDevice());
+		initInfo.QueueFamily = vk_->getGraphicsQueueFamilyIndex();
+		initInfo.Queue = static_cast<VkQueue>(vk_->getGraphicsQueue());
+		initInfo.PipelineCache = VK_NULL_HANDLE;
+		initInfo.DescriptorPool = static_cast<VkDescriptorPool>(vk_->getImGuiDescriptorPool());
+		initInfo.DescriptorPoolSize = 0;
+		initInfo.MinImageCount = vk_->getMinImageCount();
+		initInfo.ImageCount = vk_->getSwapchainImageCount();
+		initInfo.Allocator = nullptr;
+		initInfo.CheckVkResultFn = nullptr;
+
+		initInfo.UseDynamicRendering = true;
+		initInfo.PipelineInfoMain.Subpass = 0;
+		initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+		VkFormat colorFormat = static_cast<VkFormat>(vk_->getSwapChainImageFormat());
+
+		VkPipelineRenderingCreateInfoKHR pipelineRenderingInfo{};
+		pipelineRenderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+		pipelineRenderingInfo.colorAttachmentCount = 1;
+		pipelineRenderingInfo.pColorAttachmentFormats = &colorFormat;
+		pipelineRenderingInfo.depthAttachmentFormat = static_cast<VkFormat>(vk_->getDepthFormat());
+		pipelineRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+
+		initInfo.PipelineInfoMain.PipelineRenderingCreateInfo = pipelineRenderingInfo;
+
+		ImGui_ImplVulkan_Init(&initInfo);
+
+		// logo
+		logoIdVk_ = reinterpret_cast<ImTextureID>(
+			ImGui_ImplVulkan_AddTexture(
+				logoTexVk_->sampler(),
+				logoTexVk_->view(),
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+			)
+		);
+	}
+	// opengl
+	else
+	{
+		// window top nav bar logo
+		logoTexGL_ = std::make_unique<Texture>("blocks.png");
+
+		ImGui_ImplGlfw_InitForOpenGL(window_, true);
+		ImGui_ImplOpenGL3_Init("#version 460 core");
+	}
 } // end of constructor
 
 UI::~UI()
 {
 	// imgui shutdown
-	ImGui_ImplOpenGL3_Shutdown();
+	if (vk_)
+	{
+		ImGui_ImplVulkan_Shutdown();
+	}
+	else
+	{
+		ImGui_ImplOpenGL3_Shutdown();
+	}
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 } // end of destructor
 
 void UI::beginFrame()
 {
-	ImGui_ImplOpenGL3_NewFrame();
+	if (vk_)
+	{
+		ImGui_ImplVulkan_NewFrame();
+	}
+	else
+	{
+		ImGui_ImplOpenGL3_NewFrame();
+	}
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 } // end of beginFrame()
 
-void UI::drawFullUI(float dt, IScene& scene)
+void UI::buildUI(float dt, IScene& scene)
 {
-	glDisable(GL_FRAMEBUFFER_SRGB);
+	if (!vk_)
+	{
+		glDisable(GL_FRAMEBUFFER_SRGB);
+	}
+
 	drawTopBar();
 
 	if (enabled_)
@@ -86,16 +173,54 @@ void UI::drawFullUI(float dt, IScene& scene)
 	}
 
 	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		GLFWwindow* backup = glfwGetCurrentContext();
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
-		glfwMakeContextCurrent(backup);
-	}
 } // end of drawFullUI()
+
+void UI::renderGL()
+{
+	if (!vk_)
+	{
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			GLFWwindow* backup = glfwGetCurrentContext();
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+			glfwMakeContextCurrent(backup);
+		}
+	}
+} // end of renderGL()
+
+void UI::renderVk(FrameContext& frame)
+{
+	// vulkan
+	if (vk_)
+	{
+		vk::CommandBuffer cmd = frame.cmd;
+
+		vk::RenderingAttachmentInfo uiColorAttach{};
+		uiColorAttach.imageView = frame.colorImageView;
+		uiColorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		uiColorAttach.loadOp = vk::AttachmentLoadOp::eLoad;
+		uiColorAttach.storeOp = vk::AttachmentStoreOp::eStore;
+
+		vk::RenderingInfo uiRenderingInfo{};
+		uiRenderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
+		uiRenderingInfo.renderArea.extent = frame.extent;
+		uiRenderingInfo.layerCount = 1;
+		uiRenderingInfo.colorAttachmentCount = 1;
+		uiRenderingInfo.pColorAttachments = &uiColorAttach;
+		uiRenderingInfo.pDepthAttachment = nullptr;
+		cmd.beginRendering(uiRenderingInfo);
+		{
+			ImGui_ImplVulkan_RenderDrawData(
+				ImGui::GetDrawData(),
+				cmd
+			);
+		}
+		cmd.endRendering();
+	}
+} // end of renderVk()
 
 void UI::setUIInputEnabled(bool enabled)
 {
@@ -149,6 +274,14 @@ bool UI::applyBackendRequest(Backend& outBackend)
 	return true;
 } // end of applyBackendRequest()
 
+void UI::onSwapchainRecreated()
+{
+	if (vk_)
+	{
+		ImGui_ImplVulkan_SetMinImageCount(vk_->getMinImageCount());
+	}
+} // end of onSwapchainRecreated()
+
 
 //--- PRIVATE ---//
 void UI::drawTopBar()
@@ -176,12 +309,27 @@ void UI::drawTopBar()
 
 	// ----- logo -----
 	float h = barHeight;
-	float aspect = static_cast<float>(logoTex_->getWidth()) / static_cast<float>(logoTex_->getHeight());
-	ImGui::Image((void*)(intptr_t)logoTex_->ID(), ImVec2(h * aspect, h));
+	float logoWidth = vk_ ? 
+		static_cast<float>(logoTexVk_->width()) : static_cast<float>(logoTexGL_->getWidth());
+	float logoHeight = vk_ ? 
+		static_cast<float>(logoTexVk_->height()) : static_cast<float>(logoTexGL_->getHeight());
+	float aspect = logoWidth / logoHeight;
+
+	// vulkan
+	if (vk_)
+	{
+		ImGui::Image(logoIdVk_, ImVec2(h * aspect, h));
+	}
+	// opengl
+	else
+	{
+		ImGui::Image((void*)(intptr_t)logoTexGL_->ID(), ImVec2(h * aspect, h));
+	}
 	ImGui::SameLine(0.0f, 1.0f);
 
 	// ----- title -----
-	ImGui::TextUnformatted("Project Atlas - OpenGL");
+	std::string title = "Project Atlas - " + std::string(backendToString(activeBackend_));
+	ImGui::TextUnformatted(title.data());
 	ImGui::SameLine();
 
 	// right-aligned window buttons
@@ -262,7 +410,18 @@ void UI::drawStatsFPS(float dt)
 		ImGui::Text("RAM (Working Set): %zu MB", GetProcessMemoryMB());
 
 		ImGui::Separator();
-		ImGui::Text("Device: %s", glGetString(GL_RENDERER));
+		
+		// vulkan
+		if (vk_)
+		{
+			vk::PhysicalDeviceProperties props = vk_->getPhysicalDeviceProperties();
+			ImGui::Text("Device: %s", props.deviceName);
+		}
+		// opengl
+		else
+		{
+			ImGui::Text("Device: %s", glGetString(GL_RENDERER));
+		}
 	}
 	ImGui::End();
 } // end of drawStatsFPS()
@@ -316,45 +475,47 @@ void UI::drawInspector(IScene& scene)
 		ImGui::Separator();
 #endif
 
-		// backend mode
-		ImGui::Text("Backend: %s", backendToString(activeBackend_).data());
-
-		int backendIndex = 0;
-		switch (selectedBackend_)
 		{
-		case Backend::OpenGL: backendIndex = 0; break;
-		case Backend::Vulkan: backendIndex = 1; break;
-		case Backend::DX12:   backendIndex = 2; break;
-		}
+			// backend mode
+			ImGui::Text("Backend: %s", backendToString(activeBackend_).data());
 
-		const char* backendItems[] = { "OpenGL", "Vulkan" };
-
-		if (ImGui::Combo("Graphics API##render", &backendIndex, backendItems, 2))
-		{
-			switch (backendIndex)
+			int backendIndex = 0;
+			switch (selectedBackend_)
 			{
-			case 0: selectedBackend_ = Backend::OpenGL; break;
-			case 1: selectedBackend_ = Backend::Vulkan; break;
-			}
-		}
-
-		if (selectedBackend_ != activeBackend_)
-		{
-			ImGui::Text("Backend change pending.");
-
-			if (ImGui::Button("Apply Backend"))
-			{
-				// save world
-				scene.getWorld().saveWorld();
-
-				backendApplyRequested_ = true;
+			case Backend::OpenGL: backendIndex = 0; break;
+			case Backend::Vulkan: backendIndex = 1; break;
+			case Backend::DX12:   backendIndex = 2; break;
 			}
 
-			ImGui::SameLine();
+			const char* backendItems[] = { "OpenGL", "Vulkan" };
 
-			if (ImGui::Button("Cancel Backend Change"))
+			if (ImGui::Combo("Graphics API##render", &backendIndex, backendItems, 2))
 			{
-				selectedBackend_ = activeBackend_;
+				switch (backendIndex)
+				{
+				case 0: selectedBackend_ = Backend::OpenGL; break;
+				case 1: selectedBackend_ = Backend::Vulkan; break;
+				}
+			}
+
+			if (selectedBackend_ != activeBackend_)
+			{
+				ImGui::Text("Backend change pending.");
+
+				if (ImGui::Button("Apply Backend"))
+				{
+					// save world
+					scene.getWorld().saveWorld();
+
+					backendApplyRequested_ = true;
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Cancel Backend Change"))
+				{
+					selectedBackend_ = activeBackend_;
+				}
 			}
 		}
 
@@ -384,9 +545,22 @@ void UI::drawInspector(IScene& scene)
 		// DISPLAY OPTIONS
 		ImGui::Text("Display Options:");
 		// VSync toggle
-		if (ImGui::Checkbox("VSync##render", &renderSettings_.enableVsync))
+		// vulkan
+		if (vk_)
 		{
-			glfwSwapInterval(renderSettings_.enableVsync);
+			std::string vsyncMode = "VSync [" + vk::to_string(vk_->getVsyncMode()) + "]##render";
+			if (ImGui::Checkbox(vsyncMode.data(), &renderSettings_.enableVsync))
+			{
+				vk_->setVSync(renderSettings_.enableVsync);
+			}
+		}
+		// opengl
+		else
+		{
+			if (ImGui::Checkbox("VSync##render", &renderSettings_.enableVsync))
+			{
+				glfwSwapInterval(renderSettings_.enableVsync);
+			}
 		}
 
 		// GRAPHICS OPTIONS

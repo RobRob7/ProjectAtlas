@@ -11,6 +11,7 @@ class Crosshair;
 class ChunkManager;
 class ILight;
 
+class UI;
 class IRenderer;
 struct RenderInputs;
 
@@ -27,7 +28,7 @@ public:
 		IRenderer& renderer,
 		RenderInputs& in,
 		const FrameContext* frame,
-		UIVk* ui
+		UI* ui
 	) override;
 
 	// handle user inputs
