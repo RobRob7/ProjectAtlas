@@ -3,11 +3,16 @@
 
 #include "constants.h"
 
+#include <imgui.h>
+
 #include <memory>
 #include <string_view>
 
-class Texture;
 class IScene;
+class Texture;
+class Texture2DVk;
+class VulkanMain;
+struct FrameContext;
 struct GLFWwindow;
 struct RenderSettings;
 
@@ -17,11 +22,20 @@ constexpr float INSPECTOR_WIDTH = 400.0f;
 class UI
 {
 public:
-	UI(GLFWwindow* window, RenderSettings& rs, Backend activeBackend);
+	UI(
+		VulkanMain* vk,
+		GLFWwindow* window, 
+		RenderSettings& rs, 
+		Backend activeBackend
+	);
 	~UI();
 
 	void beginFrame();
-	void drawFullUI(float dt, IScene& scene);
+	void buildUI(float dt, IScene& scene);
+
+	void renderGL();
+	void renderVk(FrameContext& frame);
+
 	void setUIInputEnabled(bool enabled);
 	void setUIDisplayEnabled(bool enabled);
 	void setCameraModeUIEnabled(bool enabled);
@@ -30,22 +44,29 @@ public:
 	void setActiveBackend(Backend backend);
 	bool applyBackendRequest(Backend& outBackend);
 
+	void onSwapchainRecreated();
+
 private:
 	void drawTopBar();
 	void drawStatsFPS(float dt);
 	void drawInspector(IScene& scene);
 private:
-	Backend activeBackend_ = Backend::OpenGL;
-	Backend selectedBackend_ = Backend::OpenGL;
+	Backend activeBackend_;
+	Backend selectedBackend_;
 	bool backendApplyRequested_{ false };
+
+	VulkanMain* vk_{ nullptr };
 
 	GLFWwindow* window_;
 	RenderSettings& renderSettings_;
 
-	std::unique_ptr<Texture> logoTex_;
+	std::unique_ptr<Texture> logoTexGL_;
 
-	bool enabled_;
-	bool cameraModeOn_;
+	std::unique_ptr<Texture2DVk> logoTexVk_;
+	ImTextureID logoIdVk_;
+
+	bool enabled_{ true };
+	bool cameraModeOn_{ true };
 };
 
 #endif

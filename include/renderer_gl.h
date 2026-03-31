@@ -26,7 +26,7 @@ class FogPass;
 
 struct RenderInputs;
 struct FrameContext;
-class UIVk;
+class UI;
 
 class RendererGL : public IRenderer
 {
@@ -39,7 +39,7 @@ public:
 	void renderFrame(
 		const RenderInputs& in,
 		const FrameContext* frame,
-		UIVk* ui
+		UI* ui
 	) override;
 
 	RenderSettings& settings() override;

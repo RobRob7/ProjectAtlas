@@ -9,7 +9,7 @@ class ICubemap;
 class ChunkManager;
 class ILight;
 struct FrameContext;
-class UIVk;
+class UI;
 
 struct InputState
 {
@@ -42,7 +42,7 @@ public:
 		IRenderer& renderer, 
 		RenderInputs& in, 
 		const FrameContext* frame, 
-		UIVk* ui
+		UI* ui
 	) = 0;
 
 	// handle user inputs

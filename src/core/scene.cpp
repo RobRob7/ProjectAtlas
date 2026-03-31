@@ -44,7 +44,7 @@ void Scene::render(
 	IRenderer& renderer,
 	RenderInputs& in,
 	const FrameContext* frame,
-	UIVk* ui
+	UI* ui
 )
 {
 	if (!camera_ || !world_ || !light_ || !skybox_ || !crosshair_) return;
