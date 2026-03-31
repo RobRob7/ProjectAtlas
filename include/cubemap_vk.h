@@ -23,7 +23,10 @@ class VulkanMain;
 class CubemapVk final : public ICubemap
 {
 public:
-    CubemapVk(VulkanMain& vk, const std::array<std::string_view, 6>& textures = Cubemap_Constants::DEFAULT_FACES);
+    CubemapVk(
+		VulkanMain& vk, 
+		const std::array<std::string_view, 6>& textures = Cubemap_Constants::DEFAULT_FACES
+	);
     ~CubemapVk() override;
 
     void init() override;
@@ -32,7 +35,8 @@ public:
 		const FrameContext* frame,
 		const glm::mat4& view,
 		const glm::mat4& projection,
-		const float time = -1.0
+		const glm::vec3& sunDir,
+		const float time
 	) override;
 	void renderOffscreen(
 		const FrameContext* frame,
@@ -40,7 +44,8 @@ public:
 		const glm::mat4& projection,
 		uint32_t width,
 		uint32_t height,
-		const float time = -1.0
+		const glm::vec3& sunDir,
+		const float time
 	);
 
 private:
@@ -55,7 +60,8 @@ private:
 
 	std::unique_ptr<ShaderModuleVk> shader_;
 
-	TextureCubemapVk cubemapTexture_;
+	TextureCubemapVk cubemapTextureNight_;
+	TextureCubemapVk cubemapTextureDay_;
 
 	BufferVk vertexBuffer_;
 	BufferVk uboBuffer_;

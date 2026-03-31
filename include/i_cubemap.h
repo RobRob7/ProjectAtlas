@@ -26,6 +26,7 @@ public:
 		const FrameContext* frame,
 		const glm::mat4& view, 
 		const glm::mat4& projection, 
+		const glm::vec3& sunDir = glm::vec3(0.0f, -1.0f, 0.0f),
 		const float time = -1.0
 	) = 0;
 	virtual void renderOffscreen(
@@ -34,6 +35,7 @@ public:
 		const glm::mat4& projection,
 		uint32_t width,
 		uint32_t height,
+		const glm::vec3& sunDir = glm::vec3(0.0f, -1.0f, 0.0f),
 		const float time = -1.0
 	) 
 	{

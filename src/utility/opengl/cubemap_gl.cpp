@@ -10,7 +10,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
-#include <cassert>
 
 using namespace Cubemap_Constants;
 
@@ -31,7 +30,9 @@ void CubemapGL::init()
 	destroyGL();
 
 	shader_ = std::make_unique<Shader>("cubemap/cubemap.vert", "cubemap/cubemap.frag");
-	texture_ = std::make_unique<Texture>(faces_);
+
+	cubemapTextureNight_ = std::make_unique<Texture>(faces_);
+	cubemapTextureDay_ = std::make_unique<Texture>(DAY_FACES);
 
 	// VAO + VBO
 	glCreateVertexArrays(1, &vao_);
@@ -57,17 +58,19 @@ void CubemapGL::render(
 	const FrameContext* frame,
 	const glm::mat4& view,
 	const glm::mat4& projection,
+	const glm::vec3& sunDir,
 	const float time
 )
 {
-	if (!shader_ || !texture_ || vao_ == 0)
+	if (!shader_ || !cubemapTextureNight_ || !cubemapTextureDay_ || vao_ == 0)
 		return;
 
 	// bind ubo
 	ubo_.bind();
 
 	// bind textures
-	glBindTextureUnit(TO_API_FORM(CubemapBinding::SkyboxTex), texture_->ID());
+	glBindTextureUnit(TO_API_FORM(CubemapBinding::NightSkyboxTex), cubemapTextureNight_->ID());
+	glBindTextureUnit(TO_API_FORM(CubemapBinding::DaySkyboxTex), cubemapTextureDay_->ID());
 
 	// remove translation from camera view
 	glm::mat4 viewStrippedTranslation = glm::mat4(glm::mat3(view));
@@ -91,8 +94,9 @@ void CubemapGL::render(
 
 	shader_->use();
 	CubemapUBO cubemapUBO{};
-	cubemapUBO.view = viewStrippedTranslation;
-	cubemapUBO.proj = projection;
+	cubemapUBO.u_dayNightMix = glm::clamp((sunDir.y + 0.15f) / 0.30f, 0.0f, 1.0f);
+	cubemapUBO.u_view = viewStrippedTranslation;
+	cubemapUBO.u_proj = projection;
 	ubo_.update(&cubemapUBO, sizeof(CubemapUBO));
 
 	glBindVertexArray(vao_);

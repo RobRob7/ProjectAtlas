@@ -20,7 +20,10 @@
 using namespace Cubemap_Constants;
 
 //--- PUBLIC ---//
-CubemapVk::CubemapVk(VulkanMain& vk, const std::array<std::string_view, 6>& textures)
+CubemapVk::CubemapVk(
+	VulkanMain& vk, 
+	const std::array<std::string_view, 6>& textures
+)
 	: vk_(vk),
 	vertexBuffer_(vk),
 	uboBuffer_(vk),
@@ -30,19 +33,26 @@ CubemapVk::CubemapVk(VulkanMain& vk, const std::array<std::string_view, 6>& text
 	pipeline_(vk),
 	pipelineOffscreen_(vk),
 	faces_(textures),
-	cubemapTexture_(vk)
+	cubemapTextureNight_(vk),
+	cubemapTextureDay_(vk)
 {
 } // end of constructor
 CubemapVk::~CubemapVk() = default;
 
 void CubemapVk::init()
 {
-	shader_ = std::make_unique<ShaderModuleVk>(vk_.getDevice(), "cubemap/cubemap.vert.spv", "cubemap/cubemap.frag.spv");
+	shader_ = std::make_unique<ShaderModuleVk>(
+		vk_.getDevice(), 
+		"cubemap/cubemap.vert.spv", 
+		"cubemap/cubemap.frag.spv"
+	);
 
 	createVertexBuffer();
 	createUBO();
 
-	cubemapTexture_.loadFromFiles(faces_, true);
+	cubemapTextureNight_.loadFromFiles(faces_);
+	cubemapTextureDay_.loadFromFiles(DAY_FACES);
+
 	createDescriptorSet();
 
 	createPipeline();
@@ -52,6 +62,7 @@ void CubemapVk::render(
 	const FrameContext* frame,
 	const glm::mat4& view,
 	const glm::mat4& projection,
+	const glm::vec3& sunDir,
 	const float time
 )
 {
@@ -80,8 +91,9 @@ void CubemapVk::render(
 	}
 
 	CubemapUBO ubo{};
-	ubo.view = viewStrippedTranslation;
-	ubo.proj = projection;
+	ubo.u_dayNightMix = glm::clamp((sunDir.y + 0.15f) / 0.30f, 0.0f, 1.0f);
+	ubo.u_view = viewStrippedTranslation;
+	ubo.u_proj = projection;
 
 	uboBuffer_.upload(&ubo, sizeof(CubemapUBO));
 
@@ -103,6 +115,7 @@ void CubemapVk::renderOffscreen(
 	const glm::mat4& projection,
 	uint32_t width,
 	uint32_t height,
+	const glm::vec3& sunDir,
 	const float time
 )
 {
@@ -146,8 +159,9 @@ void CubemapVk::renderOffscreen(
 	}
 
 	CubemapUBO ubo{};
-	ubo.view = viewStrippedTranslation;
-	ubo.proj = projection;
+	ubo.u_dayNightMix = glm::clamp((sunDir.y + 0.15f) / 0.30f, 0.0f, 1.0f);
+	ubo.u_view = viewStrippedTranslation;
+	ubo.u_proj = projection;
 
 	uboBufferOffscreen_.upload(&ubo, sizeof(CubemapUBO));
 
@@ -203,23 +217,33 @@ void CubemapVk::createDescriptorSet()
 	uboBinding.descriptorCount = 1;
 	uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
-	vk::DescriptorSetLayoutBinding samplerBinding{};
-	samplerBinding.binding = TO_API_FORM(CubemapBinding::SkyboxTex);
-	samplerBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	samplerBinding.descriptorCount = 1;
-	samplerBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	vk::DescriptorSetLayoutBinding nightTexBinding{};
+	nightTexBinding.binding = TO_API_FORM(CubemapBinding::NightSkyboxTex);
+	nightTexBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	nightTexBinding.descriptorCount = 1;
+	nightTexBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	descriptorSet_.createLayout({ uboBinding, samplerBinding });
+	vk::DescriptorSetLayoutBinding dayTexBinding{};
+	dayTexBinding.binding = TO_API_FORM(CubemapBinding::DaySkyboxTex);
+	dayTexBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	dayTexBinding.descriptorCount = 1;
+	dayTexBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	descriptorSet_.createLayout({ uboBinding, nightTexBinding, dayTexBinding });
 
 	vk::DescriptorPoolSize uboPool{};
 	uboPool.type = vk::DescriptorType::eUniformBuffer;
 	uboPool.descriptorCount = 1;
 
-	vk::DescriptorPoolSize samplerPool{};
-	samplerPool.type = vk::DescriptorType::eCombinedImageSampler;
-	samplerPool.descriptorCount = 1;
+	vk::DescriptorPoolSize nightTexPool{};
+	nightTexPool.type = vk::DescriptorType::eCombinedImageSampler;
+	nightTexPool.descriptorCount = 1;
 
-	descriptorSet_.createPool({ uboPool, samplerPool }, 1);
+	vk::DescriptorPoolSize dayTexPool{};
+	dayTexPool.type = vk::DescriptorType::eCombinedImageSampler;
+	dayTexPool.descriptorCount = 1;
+
+	descriptorSet_.createPool({ uboPool, nightTexPool, dayTexPool }, 1);
 	descriptorSet_.allocate();
 
 	descriptorSet_.writeUniformBuffer(
@@ -229,15 +253,21 @@ void CubemapVk::createDescriptorSet()
 	);
 
 	descriptorSet_.writeCombinedImageSampler(
-		TO_API_FORM(CubemapBinding::SkyboxTex),
-		cubemapTexture_.view(),
-		cubemapTexture_.sampler()
+		TO_API_FORM(CubemapBinding::NightSkyboxTex),
+		cubemapTextureNight_.view(),
+		cubemapTextureNight_.sampler()
+	);
+
+	descriptorSet_.writeCombinedImageSampler(
+		TO_API_FORM(CubemapBinding::DaySkyboxTex),
+		cubemapTextureDay_.view(),
+		cubemapTextureDay_.sampler()
 	);
 
 	// offscreen descriptor set
-	descriptorSetOffscreen_.createLayout({ uboBinding, samplerBinding });
+	descriptorSetOffscreen_.createLayout({ uboBinding, nightTexBinding, dayTexBinding, });
 
-	descriptorSetOffscreen_.createPool({ uboPool, samplerPool }, 1);
+	descriptorSetOffscreen_.createPool({ uboPool, nightTexPool, dayTexPool }, 1);
 	descriptorSetOffscreen_.allocate();
 
 	descriptorSetOffscreen_.writeUniformBuffer(
@@ -247,9 +277,15 @@ void CubemapVk::createDescriptorSet()
 	);
 
 	descriptorSetOffscreen_.writeCombinedImageSampler(
-		TO_API_FORM(CubemapBinding::SkyboxTex),
-		cubemapTexture_.view(),
-		cubemapTexture_.sampler()
+		TO_API_FORM(CubemapBinding::NightSkyboxTex),
+		cubemapTextureNight_.view(),
+		cubemapTextureNight_.sampler()
+	);
+
+	descriptorSetOffscreen_.writeCombinedImageSampler(
+		TO_API_FORM(CubemapBinding::DaySkyboxTex),
+		cubemapTextureDay_.view(),
+		cubemapTextureDay_.sampler()
 	);
 } // end of createDescriptorSet()
 

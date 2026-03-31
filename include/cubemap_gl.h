@@ -29,14 +29,17 @@ public:
         const FrameContext* frame,
         const glm::mat4& view,
         const glm::mat4& projection,
-        const float time = -1.0
+        const glm::vec3& sunDir,
+        const float time
     ) override;
 
 private:
     void destroyGL();
 private:
     std::unique_ptr<Shader> shader_;
-    std::unique_ptr<Texture> texture_;
+
+    std::unique_ptr<Texture> cubemapTextureNight_;
+    std::unique_ptr<Texture> cubemapTextureDay_;
 
     uint32_t vao_{};
     uint32_t vbo_{};
