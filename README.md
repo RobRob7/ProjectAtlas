@@ -1,11 +1,11 @@
 # Project Atlas
-C++17 voxel-based rendering engine for Windows featuring a modular, interchangeable backend architecture supporting Vulkan 1.4 (Dynamic Rendering) and OpenGL 4.6 Core.
+C++17 voxel-based rendering engine built for Windows featuring a modular, interchangeable backend architecture supporting Vulkan 1.4 (Dynamic Rendering) and OpenGL 4.6 Core. 
 
 <h3>
 Features:
 </h3>
 
-- Directional shadow mapping with percentage-closer filtering (PCF)
+- Directional shadow mapping with Percentage-Closer Filtering (PCF)
 - Physically-Inspired Surface Water Rendering
 - Post-Processing Fog
 - Screen-Space Ambient Occlusion (SSAO)
@@ -44,6 +44,15 @@ Preview
 
 <!--  -->
 <h2>
+Debugging & Validation
+</h2>
+
+- Used RenderDoc to capture and analyze GPU frames across both Vulkan and OpenGL backends.
+- Utilized Vulkan shader debugging tools to inspect shader execution and validate intermediate outputs.
+- Verified correctness of multi-pass rendering by analyzing the RenderDoc frame stack and inspecting intermediate render targets.
+- Developed a custom in-engine debug system to visualize pass outputs (G-buffer, shadow maps, SSAO), enabling real-time validation outside of frame captures.
+
+<h2>
 Rendering & Engine Techniques
 </h2>
 
@@ -58,12 +67,14 @@ This project focuses on implementing real-time rendering techniques that are com
 > Vulkan backend utilizes dynamic rendering (no render passes/framebuffers) for flexible multi-pass composition.
 
 1. G-buffer pass (normals + depth)
-2. SSAO pass + blur
-3. Water reflection & refraction passes
-4. Forward render (scene objects)
-5. Post-Processing Fog
-6. FXAA
-7. UI Elements
+2. Shadow Map pass (shadow map depth)
+3. Debug pass (visualize - gNormal, gDepth, shadow map depth)
+4. SSAO pass + blur
+5. Water reflection & refraction passes
+6. Forward render
+7. Post-Processing Fog
+8. FXAA
+9. UI Elements
 
 <!--  -->
 ---
