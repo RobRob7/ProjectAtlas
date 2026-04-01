@@ -78,13 +78,13 @@ UI::UI(
 		ImGui_ImplGlfw_InitForVulkan(window_, true);
 
 		ImGui_ImplVulkan_InitInfo initInfo{};
-		initInfo.Instance = static_cast<VkInstance>(vk_->getInstance());
-		initInfo.PhysicalDevice = static_cast<VkPhysicalDevice>(vk_->getPhysicalDevice());
-		initInfo.Device = static_cast<VkDevice>(vk_->getDevice());
+		initInfo.Instance = vk_->getInstance();
+		initInfo.PhysicalDevice = vk_->getPhysicalDevice();
+		initInfo.Device = vk_->getDevice();
 		initInfo.QueueFamily = vk_->getGraphicsQueueFamilyIndex();
-		initInfo.Queue = static_cast<VkQueue>(vk_->getGraphicsQueue());
+		initInfo.Queue = vk_->getGraphicsQueue();
 		initInfo.PipelineCache = VK_NULL_HANDLE;
-		initInfo.DescriptorPool = static_cast<VkDescriptorPool>(vk_->getImGuiDescriptorPool());
+		initInfo.DescriptorPool = vk_->getImGuiDescriptorPool();
 		initInfo.DescriptorPoolSize = 0;
 		initInfo.MinImageCount = vk_->getMinImageCount();
 		initInfo.ImageCount = vk_->getSwapchainImageCount();
@@ -95,14 +95,13 @@ UI::UI(
 		initInfo.PipelineInfoMain.Subpass = 0;
 		initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-		VkFormat colorFormat = static_cast<VkFormat>(vk_->getSwapChainImageFormat());
+		vk::Format colorFormat = vk_->getSwapChainImageFormat();
 
-		VkPipelineRenderingCreateInfoKHR pipelineRenderingInfo{};
-		pipelineRenderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+		vk::PipelineRenderingCreateInfoKHR pipelineRenderingInfo{};
 		pipelineRenderingInfo.colorAttachmentCount = 1;
 		pipelineRenderingInfo.pColorAttachmentFormats = &colorFormat;
-		pipelineRenderingInfo.depthAttachmentFormat = static_cast<VkFormat>(vk_->getDepthFormat());
-		pipelineRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+		pipelineRenderingInfo.depthAttachmentFormat = vk_->getDepthFormat();
+		pipelineRenderingInfo.stencilAttachmentFormat = vk::Format::eUndefined;
 
 		initInfo.PipelineInfoMain.PipelineRenderingCreateInfo = pipelineRenderingInfo;
 
@@ -470,7 +469,12 @@ void UI::drawInspector(IScene& scene)
 		default:
 			break;
 		}
-		ImGui::Text("Render Mode:\n %s", mode.data());
+		ImGui::Text("Render Mode:\n %s\n", mode.data());
+
+		if (vk_)
+		{
+			ImGui::Text("Swapchain Image Format:\n %s", vk::to_string(vk_->getSwapChainImageFormat()).data());
+		}
 
 		ImGui::Separator();
 #endif
