@@ -69,7 +69,7 @@ namespace Light_Constants
 	const float MIN_COLOR = 0.0f;
 	const float MAX_COLOR = 1.0f;
 
-	const float MIN_SPEED = 0.01f;
+	const float MIN_SPEED = 0.0f;
 	const float MAX_SPEED = 0.5f;
 
 
@@ -386,8 +386,8 @@ namespace FXAA_Constants
 namespace Fog_Constants
 {
 	const glm::vec3 FOG_COLOR{ 1.0f, 1.0f, 1.0f };
-	const float FOG_START{ 50.0f };
-	const float FOG_END{ 500.0f };
+	const float FOG_START{ 25.0f };
+	const float FOG_END{ 125.0f };
 
 	struct FogPassUBO
 	{
