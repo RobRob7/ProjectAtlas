@@ -150,7 +150,12 @@ void LightVk::renderOffscreen(
 } // end of renderOffscreen()
 
 void LightVk::updateLightDirection(float time)
-{
+{	
+	if (speed_ <= 0.0f)
+	{
+		return;
+	}
+
 	float t = time * speed_;
 	float cycle = t * glm::two_pi<float>();
 
