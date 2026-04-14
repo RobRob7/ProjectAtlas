@@ -604,7 +604,19 @@ void VulkanMain::createLogicalDevice()
 	vk::PhysicalDeviceDynamicRenderingFeatures dynamicRendering{};
 	dynamicRendering.dynamicRendering = VK_TRUE;
 
+	vk::PhysicalDeviceBufferDeviceAddressFeatures bda{};
+	bda.bufferDeviceAddress = VK_TRUE;
+
+	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accel{};
+	accel.accelerationStructure = VK_TRUE;
+
+	vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rt{};
+	rt.rayTracingPipeline = VK_TRUE;
+
 	deviceFeatures2.pNext = &dynamicRendering;
+	dynamicRendering.pNext = &bda;
+	bda.pNext = &accel;
+	accel.pNext = &rt;
 
 	vk::DeviceCreateInfo createInfo{};
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -1040,9 +1052,16 @@ bool VulkanMain::isDeviceSuitable(vk::PhysicalDevice device)
 		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 	}
 
-	vk::PhysicalDeviceDynamicRenderingFeatures dyn{};
 	vk::PhysicalDeviceFeatures2 feats2{};
+	vk::PhysicalDeviceDynamicRenderingFeatures dyn{};
+	vk::PhysicalDeviceBufferDeviceAddressFeatures bda{};
+	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accel{};
+	vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rt{};
+
 	feats2.pNext = &dyn;
+	dyn.pNext = &bda;
+	bda.pNext = &accel;
+	accel.pNext = &rt;
 
 	device.getFeatures2(&feats2);
 
@@ -1052,7 +1071,10 @@ bool VulkanMain::isDeviceSuitable(vk::PhysicalDevice device)
 		&& feats2.features.samplerAnisotropy 
 		&& feats2.features.sampleRateShading 
 		&& feats2.features.shaderClipDistance
-		&& dyn.dynamicRendering;
+		&& dyn.dynamicRendering
+		&& bda.bufferDeviceAddress
+		&& accel.accelerationStructure
+		&& rt.rayTracingPipeline;
 } // end of isDeviceSuitable()
 
 QueueFamilyIndices VulkanMain::findQueueFamilies(vk::PhysicalDevice device) 
