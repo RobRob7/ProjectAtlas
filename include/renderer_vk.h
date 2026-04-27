@@ -21,7 +21,7 @@ struct FrameContext;
 struct ChunkDrawList;
 
 class ChunkMeshGPUVk;
-class RayTracingChunkPassVk;
+class RayTracingWorldPassVk;
 
 class GBufferPassVk;
 class ShadowMapPassVk;
@@ -30,6 +30,8 @@ class SSAOPassVk;
 
 class ChunkPassVk;
 class WaterPassVk;
+
+class CompositePassVk;
 
 class FXAAPassVk;
 class FogPassVk;
@@ -55,6 +57,11 @@ public:
 	RenderSettings& settings() override { return *renderSettings_; }
 
 private:
+	void renderRT(
+		const RenderInputs& in,
+		FrameContext& frame,
+		UI* ui
+	);
 	void createSceneAttachments();
 private:
 	int width_{};
@@ -80,7 +87,9 @@ private:
 
 	std::unique_ptr<WaterPassVk> waterPass_;
 	std::unique_ptr<ChunkPassVk> chunkPass_;
-	//std::unique_ptr<RayTracingChunkPassVk> rtChunkPass_;
+	std::unique_ptr<RayTracingWorldPassVk> rtWorldPass_;
+
+	std::unique_ptr<CompositePassVk> compositePass_;
 
 	std::unique_ptr<FXAAPassVk> fxaaPass_;
 	std::unique_ptr<FogPassVk> fogPass_;

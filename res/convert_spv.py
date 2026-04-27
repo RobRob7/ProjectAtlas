@@ -6,6 +6,7 @@ GLSLC = "glslc"
 GLSLANG = "glslangValidator"
 
 VALID_EXTENSIONS = {
+    # ".glsl",
     ".vert",
     ".frag",
     ".comp",
@@ -30,12 +31,12 @@ RAY_TRACING_EXTENSIONS = {
 }
 
 GLSLC_STAGE_MAP = {
-    ".vert": "vert",
-    ".frag": "frag",
-    ".comp": "comp",
-    ".geom": "geom",
-    ".tesc": "tesc",
-    ".tese": "tese",
+    ".vert": "vertex",
+    ".frag": "fragment",
+    ".comp": "compute",
+    ".geom": "geometry",
+    ".tesc": "tesscontrol",
+    ".tese": "tesseval",
 }
 
 
@@ -58,37 +59,42 @@ def build_command(filepath: str) -> list[str]:
             "-o", output_path,
         ]
 
-    cmd = [GLSLC, filepath, "-g", "-o", output_path]
+    cmd = [GLSLC, "-g"]
 
     if ext in GLSLC_STAGE_MAP:
-        cmd.insert(1, f"-fshader-stage={GLSLC_STAGE_MAP[ext]}")
+        cmd.append(f"-fshader-stage={GLSLC_STAGE_MAP[ext]}")
 
+    cmd += [filepath, "-o", output_path]
     return cmd
 
 
 def compile_shader(filepath: str, is_debug: bool) -> bool:
-    output_path = filepath + ".spv"
-    cmd = build_command(filepath)
+    shader_dir = os.path.dirname(filepath)
+    shader_file = os.path.basename(filepath)
+
+    cmd = build_command(shader_file)
 
     if is_debug:
         print(f"Compiling: {filepath}")
+        print("CWD:", shader_dir)
         print("Command:", " ".join(cmd))
 
     result = subprocess.run(
         cmd,
+        cwd=shader_dir,
         capture_output=True,
         text=True
     )
 
     if result.returncode != 0:
         print(f"\nFAILED TO COMPILE: {filepath}")
-        if result.stdout:
-            print(result.stdout)
-        if result.stderr:
-            print(result.stderr)
+        print(result.stdout)
+        print(result.stderr)
         return False
+
     if is_debug:
-        print(f"Generated {output_path}")
+        print(f"Generated {filepath}.spv")
+
     return True
 
 

@@ -44,7 +44,7 @@ RayTracingShaderModuleVk::RayTracingShaderModuleVk(
 	vk::Device device,
 	std::string_view rayGenPathFile,
 	std::string_view missPathFile,
-	std::string_view closestHitPathFile
+	std::vector<std::string_view> closestHitPathFiles
 )
 	: device_(device)
 {
@@ -55,11 +55,20 @@ RayTracingShaderModuleVk::RayTracingShaderModuleVk(
 
 	const auto rayGenFullPath = std::filesystem::path(RESOURCES_PATH) / "shader" / rayGenPathFile;
 	const auto missFullPath = std::filesystem::path(RESOURCES_PATH) / "shader" / missPathFile;
-	const auto closestHitFullPath = std::filesystem::path(RESOURCES_PATH) / "shader" / closestHitPathFile;
 
 	rayGenShaderModule_ = createShaderModule(ReadFile(rayGenFullPath));
 	missShaderModule_ = createShaderModule(ReadFile(missFullPath));
-	closestHitShaderModule_ = createShaderModule(ReadFile(closestHitFullPath));
+
+	closestHitShaderModules_.reserve(closestHitPathFiles.size());
+	for (std::string_view path : closestHitPathFiles)
+	{
+		const auto fullPath =
+			std::filesystem::path(RESOURCES_PATH) / "shader" / path;
+
+		closestHitShaderModules_.push_back(
+			createShaderModule(ReadFile(fullPath))
+		);
+	} // end for
 } // end of constructor
 
 RayTracingShaderModuleVk::~RayTracingShaderModuleVk() noexcept = default;

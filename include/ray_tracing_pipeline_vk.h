@@ -20,7 +20,7 @@ struct RayTracingPipelineDescVk
 	// shaders
 	vk::ShaderModule rayGenShader{};
 	vk::ShaderModule missShader{};
-	vk::ShaderModule closestHitShader{};
+	std::vector<vk::ShaderModule> closestHitShaders{};
 
 	// push contant
 	std::vector<vk::PushConstantRange> pushConstantRanges;
@@ -29,7 +29,7 @@ struct RayTracingPipelineDescVk
 	std::vector<NamedSetLayoutVk> setLayouts;
 
 	// max bounces
-	uint32_t maxRecursionDepth{ 1 };
+	uint32_t maxRecursionDepth{ 0 };
 };
  
 class RayTracingPipelineVk

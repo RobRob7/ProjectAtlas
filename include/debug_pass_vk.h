@@ -20,7 +20,8 @@ public:
 		VulkanMain& vk,
 		const ImageVk& normalImage,
 		const ImageVk& depthImage,
-		const ImageVk& shadowMapImage
+		const ImageVk& shadowMapImage,
+		const ImageVk& rtDepthImage
 	);
 	~DebugPassVk();
 
@@ -45,6 +46,7 @@ private:
 	const ImageVk& normalImage_;
 	const ImageVk& depthImage_;
 	const ImageVk& shadowMapImage_;
+	const ImageVk& rtDepthImage_;
 	
 	std::unique_ptr<ShaderModuleVk> shader_;
 

@@ -18,6 +18,9 @@ ChunkMeshGPUVk::ChunkMeshGPUVk(VulkanMain& vk)
 	opaqueRTIB_(vk),
 	opaqueVB_(vk),
 	opaqueIB_(vk),
+	waterBLAS_(vk),
+	waterRTVB_(vk),
+	waterRTIB_(vk),
 	waterVB_(vk),
 	waterIB_(vk)
 {
@@ -39,21 +42,29 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 	BufferVk newOpaqueRTIB(*vk_);
 	BufferVk newOpaqueVB(*vk_);
 	BufferVk newOpaqueIB(*vk_);
+
+	BufferVk newWaterRTVB(*vk_);
+	BufferVk newWaterRTIB(*vk_);
 	BufferVk newWaterVB(*vk_);
 	BufferVk newWaterIB(*vk_);
 
 	uint32_t newOpaqueRTVertexCount = 0;
 	uint32_t newOpaqueRTIndexCount = 0;
 	uint32_t newOpaqueIndexCount = 0;
+
+	uint32_t newWaterRTVertexCount = 0;
+	uint32_t newWaterRTIndexCount = 0;
 	uint32_t newWaterIndexCount = 0;
 
 	vk::CommandBuffer cmd = vk_->beginSingleTimeCommands();
 	std::vector<BufferVk> stagingBuffers;
-	stagingBuffers.reserve(6);
+	stagingBuffers.reserve(8);
 
 	// copy data to CPU side holders
 	opaqueRTVerticesCPU_ = data.opaqueRTVertices;
 	opaqueRTIndicesCPU_ = data.opaqueIndices;
+	waterRTVerticesCPU_ = data.waterRTVertices;
+	waterRTIndicesCPU_ = data.waterIndices;
 
 	// -------- RT OPAQUE --------
 	if (!data.opaqueRTVertices.empty() && !data.opaqueIndices.empty())
@@ -174,6 +185,71 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 		newOpaqueIndexCount = static_cast<uint32_t>(data.opaqueIndices.size());
 	}
 
+
+	// -------- RT WATER --------
+	if (!data.waterRTVertices.empty() && !data.waterIndices.empty())
+	{
+		vk::DeviceSize vbSize = sizeof(RTVertex) * data.waterRTVertices.size();
+		vk::DeviceSize ibSize = sizeof(uint32_t) * data.waterIndices.size();
+
+		// RT VB staging
+		BufferVk stagingVB(*vk_);
+		stagingVB.create(
+			vbSize,
+			vk::BufferUsageFlagBits::eTransferSrc,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+		stagingVB.upload(data.waterRTVertices.data(), vbSize);
+
+		// RT VB device local
+		newWaterRTVB.create(
+			vbSize,
+			vk::BufferUsageFlagBits::eTransferDst |
+			vk::BufferUsageFlagBits::eShaderDeviceAddress |
+			vk::BufferUsageFlagBits::eStorageBuffer |
+			vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			true
+		);
+		stagingBuffers.push_back(std::move(stagingVB));
+		vk_->recordCopyBuffer(
+			cmd,
+			stagingBuffers.back().getBuffer(),
+			newWaterRTVB.getBuffer(),
+			vbSize
+		);
+
+		// RT IB staging
+		BufferVk stagingIB(*vk_);
+		stagingIB.create(
+			ibSize,
+			vk::BufferUsageFlagBits::eTransferSrc,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+		stagingIB.upload(data.waterIndices.data(), ibSize);
+
+		// RT IB device local
+		newWaterRTIB.create(
+			ibSize,
+			vk::BufferUsageFlagBits::eTransferDst |
+			vk::BufferUsageFlagBits::eShaderDeviceAddress |
+			vk::BufferUsageFlagBits::eStorageBuffer |
+			vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
+			vk::MemoryPropertyFlagBits::eDeviceLocal,
+			true
+		);
+		stagingBuffers.push_back(std::move(stagingIB));
+		vk_->recordCopyBuffer(
+			cmd,
+			stagingBuffers.back().getBuffer(),
+			newWaterRTIB.getBuffer(),
+			ibSize
+		);
+
+		newWaterRTIndexCount = static_cast<uint32_t>(data.waterIndices.size());
+		newWaterRTVertexCount = static_cast<uint32_t>(data.waterRTVertices.size());
+	}
+
 	// -------- WATER --------
 	if (!data.waterVertices.empty() && !data.waterIndices.empty())
 	{
@@ -237,37 +313,58 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 	opaqueRTIB_ = std::move(newOpaqueRTIB);
 	opaqueVB_ = std::move(newOpaqueVB);
 	opaqueIB_ = std::move(newOpaqueIB);
+
+	waterRTVB_ = std::move(newWaterRTVB);
+	waterRTIB_ = std::move(newWaterRTIB);
 	waterVB_ = std::move(newWaterVB);
 	waterIB_ = std::move(newWaterIB);
 
 	opaqueRTVertexCount_ = newOpaqueRTVertexCount;
 	opaqueRTIndexCount_ = newOpaqueRTIndexCount;
 	opaqueIndexCount_ = newOpaqueIndexCount;
+
+	waterRTVertexCount_ = newWaterRTVertexCount;
+	waterRTIndexCount_ = newWaterRTIndexCount;
 	waterIndexCount_ = newWaterIndexCount;
 
-	vk::BufferMemoryBarrier barriers[2]{};
+	std::vector<vk::BufferMemoryBarrier> barriers;
 
-	barriers[0].srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-	barriers[0].dstAccessMask = vk::AccessFlagBits::eAccelerationStructureReadKHR;
-	barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barriers[0].buffer = opaqueRTVB_.getBuffer();
-	barriers[0].offset = 0;
-	barriers[0].size = VK_WHOLE_SIZE;
+	auto addBarrier = [&](const BufferVk& buffer)
+		{
+			if (!buffer.valid())
+				return;
 
-	barriers[1] = barriers[0];
-	barriers[1].buffer = opaqueRTIB_.getBuffer();
+			vk::BufferMemoryBarrier b{};
+			b.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+			b.dstAccessMask = vk::AccessFlagBits::eAccelerationStructureReadKHR;
+			b.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			b.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			b.buffer = buffer.getBuffer();
+			b.offset = 0;
+			b.size = VK_WHOLE_SIZE;
 
-	cmd.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTransfer,
-		vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
-		{},
-		0, nullptr,
-		2, barriers,
-		0, nullptr
-	);
+			barriers.push_back(b);
+		};
 
-	// build BLAS
+	addBarrier(opaqueRTVB_);
+	addBarrier(opaqueRTIB_);
+	addBarrier(waterRTVB_);
+	addBarrier(waterRTIB_);
+
+	if (!barriers.empty())
+	{
+		cmd.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer,
+			vk::PipelineStageFlagBits::eAccelerationStructureBuildKHR,
+			{},
+			0, nullptr,
+			static_cast<uint32_t>(barriers.size()),
+			barriers.data(),
+			0, nullptr
+		);
+	}
+
+	// build opaque BLAS
 	if (opaqueRTVB_.valid() && opaqueRTIB_.valid() &&
 		opaqueRTVertexCount_ > 0 && opaqueRTIndexCount_ > 0)
 	{
@@ -280,6 +377,22 @@ void ChunkMeshGPUVk::upload(const ChunkMeshData& data)
 			opaqueRTIB_.getBuffer(),
 			opaqueRTIB_.getDeviceAddress(),
 			opaqueRTIndexCount_,
+			vk::IndexType::eUint32
+		);
+	}
+	// build water BLAS
+	if (waterRTVB_.valid() && waterRTIB_.valid() &&
+		waterRTVertexCount_ > 0 && waterRTIndexCount_ > 0)
+	{
+		waterBLAS_.buildBLASOnCmd(
+			cmd,
+			waterRTVB_.getBuffer(),
+			waterRTVB_.getDeviceAddress(),
+			waterRTVertexCount_,
+			sizeof(RTVertex),
+			waterRTIB_.getBuffer(),
+			waterRTIB_.getDeviceAddress(),
+			waterRTIndexCount_,
 			vk::IndexType::eUint32
 		);
 	}
@@ -327,6 +440,7 @@ void ChunkMeshGPUVk::retireCurrentBuffers(uint32_t frameIndex)
 {
 	if (!opaqueRTVB_.valid() && !opaqueRTIB_.valid() &&
 		!opaqueVB_.valid() && !opaqueIB_.valid() &&
+		!waterRTVB_.valid() && !waterRTIB_.valid() &&
 		!waterVB_.valid() && !waterIB_.valid())
 	{
 		return;
@@ -336,6 +450,9 @@ void ChunkMeshGPUVk::retireCurrentBuffers(uint32_t frameIndex)
 	vk_->retireBuffer(frameIndex, std::move(opaqueRTIB_));
 	vk_->retireBuffer(frameIndex, std::move(opaqueVB_));
 	vk_->retireBuffer(frameIndex, std::move(opaqueIB_));
+
+	vk_->retireBuffer(frameIndex, std::move(waterRTVB_));
+	vk_->retireBuffer(frameIndex, std::move(waterRTIB_));
 	vk_->retireBuffer(frameIndex, std::move(waterVB_));
 	vk_->retireBuffer(frameIndex, std::move(waterIB_));
 } // end of retireCurrentBuffers()
@@ -346,5 +463,10 @@ void ChunkMeshGPUVk::retireCurrentBLAS(uint32_t frameIndex)
 	{
 		vk_->retireAccelerationStructure(frameIndex, std::move(opaqueBLAS_));
 		opaqueBLAS_ = AccelerationStructureVk(*vk_);
+	}
+	if (waterBLAS_.valid())
+	{
+		vk_->retireAccelerationStructure(frameIndex, std::move(waterBLAS_));
+		waterBLAS_ = AccelerationStructureVk(*vk_);
 	}
 } // end of retireCurrentBLAS()

@@ -42,9 +42,7 @@ void PresentPassVk::resize()
     refreshInput();
 } // end of resize()
 
-void PresentPassVk::render(
-    FrameContext& frame
-)
+void PresentPassVk::render(FrameContext& frame)
 {
     if (!inputImage_ || !descriptorSets_[frame.frameIndex].valid() || !pipeline_.valid())
     {

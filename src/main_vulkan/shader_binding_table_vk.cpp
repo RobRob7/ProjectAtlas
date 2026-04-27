@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <vector>
 #include <cstring>
-#include <algorithm>
 
 //--- PUBLIC ---//
 ShaderBindingTableVk::ShaderBindingTableVk(VulkanMain& vk)
@@ -22,7 +21,7 @@ void ShaderBindingTableVk::create(
 	uint32_t groupCount,
 	uint32_t rayGenGroupIndex,
 	uint32_t missGroupIndex,
-	uint32_t hitGroupIndex
+	const std::vector<uint32_t>& hitGroupIndices
 )
 {
 	if (!rtPipeline)
@@ -35,12 +34,24 @@ void ShaderBindingTableVk::create(
 		throw std::runtime_error("ShaderBindingTableVk::create - groupCount must be greater than 0!");
 	}
 
+	if (hitGroupIndices.empty())
+	{
+		throw std::runtime_error("ShaderBindingTableVk::create - must provide at least one hit group!");
+	}
+
 	if (rayGenGroupIndex >= groupCount ||
-		missGroupIndex >= groupCount ||
-		hitGroupIndex >= groupCount)
+		missGroupIndex >= groupCount)
 	{
 		throw std::runtime_error("ShaderBindingTableVk::create - group index out of range!");
 	}
+
+	for (uint32_t hitGroupIndex : hitGroupIndices)
+	{
+		if (hitGroupIndex >= groupCount)
+		{
+			throw std::runtime_error("ShaderBindingTableVk::create - hit group index out of range!");
+		}
+	} // end for
 
 	// RT pipeline properties
 	vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rtProps{};
@@ -63,65 +74,85 @@ void ShaderBindingTableVk::create(
 		};
 
 	const vk::DeviceSize handleSizeAligned = alignUp(handleSize, handleAlignment);
+	const vk::DeviceSize regionStride = alignUp(handleSizeAligned, baseAlignment);
 
 	// get shader group handles from pipeline
-	std::vector<uint8_t> handles(static_cast<size_t>(groupCount) * handleSize);
+    std::vector<uint8_t> handles(static_cast<size_t>(groupCount) * handleSize);
 
-	vk::Result res = vk_.getDevice().getRayTracingShaderGroupHandlesKHR(
-		rtPipeline,
-		0,
-		groupCount,
-		handles.size(),
-		handles.data()
-	);
+    vk::Result res = vk_.getDevice().getRayTracingShaderGroupHandlesKHR(
+        rtPipeline,
+        0,
+        groupCount,
+        handles.size(),
+        handles.data()
+    );
 
-	if (res != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("ShaderBindingTableVk::create - getRayTracingShaderGroupHandlesKHR failed: " +
-			vk::to_string(res));
-	}
+    if (res != vk::Result::eSuccess)
+    {
+        throw std::runtime_error(
+            "ShaderBindingTableVk::create - getRayTracingShaderGroupHandlesKHR failed: " +
+            vk::to_string(res)
+        );
+    }
 
-	const vk::DeviceSize regionStride = alignUp(handleSizeAligned, baseAlignment);
-	const vk::DeviceSize sbtSize = regionStride * 3;
+    const uint32_t rayGenRecordCount = 1;
+    const uint32_t missRecordCount = 1;
+    const uint32_t hitRecordCount = static_cast<uint32_t>(hitGroupIndices.size());
 
-	std::vector<uint8_t> sbtData(static_cast<size_t>(sbtSize), 0);
+    const uint32_t rayGenRecordBase = 0;
+    const uint32_t missRecordBase = rayGenRecordBase + rayGenRecordCount;
+    const uint32_t hitRecordBase = missRecordBase + missRecordCount;
 
-	auto copyHandleToRecord = [&](uint32_t srcGroupIndex, uint32_t dstRecordIndex)
-		{
-			const uint8_t* src = handles.data() + static_cast<size_t>(srcGroupIndex) * handleSize;
-			uint8_t* dst = sbtData.data() + static_cast<size_t>(dstRecordIndex * regionStride);
-			std::memcpy(dst, src, handleSize);
-		};
+    const vk::DeviceSize sbtRecordCount =
+        rayGenRecordCount + missRecordCount + hitRecordCount;
 
-	copyHandleToRecord(rayGenGroupIndex, 0);
-	copyHandleToRecord(missGroupIndex, 1);
-	copyHandleToRecord(hitGroupIndex, 2);
+    const vk::DeviceSize sbtSize = regionStride * sbtRecordCount;
 
-	// create SBT buffer
-	buffer_.create(
-		sbtSize,
-		vk::BufferUsageFlagBits::eShaderBindingTableKHR |
-		vk::BufferUsageFlagBits::eShaderDeviceAddress,
-		vk::MemoryPropertyFlagBits::eHostVisible |
-		vk::MemoryPropertyFlagBits::eHostCoherent,
-		true
-	);
-	buffer_.upload(sbtData.data(), sbtSize);
+    std::vector<uint8_t> sbtData(static_cast<size_t>(sbtSize), 0);
 
-	const vk::DeviceAddress baseAddress = buffer_.getDeviceAddress();
+    auto copyHandleToRecord = [&](uint32_t srcGroupIndex, uint32_t dstRecordIndex)
+        {
+            const uint8_t* src =
+                handles.data() + static_cast<size_t>(srcGroupIndex) * handleSize;
 
-	// build regions for vkCmdTraceRaysKHR
-	rayGenRegion_.deviceAddress = baseAddress + regionStride * 0;
-	rayGenRegion_.stride = regionStride;
-	rayGenRegion_.size = regionStride;
+            uint8_t* dst =
+                sbtData.data() + static_cast<size_t>(dstRecordIndex) * regionStride;
 
-	missRegion_.deviceAddress = baseAddress + regionStride * 1;
-	missRegion_.stride = regionStride;
-	missRegion_.size = regionStride;
+            std::memcpy(dst, src, handleSize);
+        };
 
-	hitRegion_.deviceAddress = baseAddress + regionStride * 2;
-	hitRegion_.stride = regionStride;
-	hitRegion_.size = regionStride;
+    copyHandleToRecord(rayGenGroupIndex, rayGenRecordBase);
+    copyHandleToRecord(missGroupIndex, missRecordBase);
 
-	callableRegion_ = vk::StridedDeviceAddressRegionKHR{};
+    for (uint32_t i = 0; i < hitRecordCount; ++i)
+    {
+        copyHandleToRecord(hitGroupIndices[i], hitRecordBase + i);
+    } // end for
+
+    buffer_.create(
+        sbtSize,
+        vk::BufferUsageFlagBits::eShaderBindingTableKHR |
+        vk::BufferUsageFlagBits::eShaderDeviceAddress,
+        vk::MemoryPropertyFlagBits::eHostVisible |
+        vk::MemoryPropertyFlagBits::eHostCoherent,
+        true
+    );
+
+    buffer_.upload(sbtData.data(), sbtSize);
+
+    const vk::DeviceAddress baseAddress = buffer_.getDeviceAddress();
+
+    rayGenRegion_.deviceAddress = baseAddress + regionStride * rayGenRecordBase;
+    rayGenRegion_.stride = regionStride;
+    rayGenRegion_.size = regionStride * rayGenRecordCount;
+
+    missRegion_.deviceAddress = baseAddress + regionStride * missRecordBase;
+    missRegion_.stride = regionStride;
+    missRegion_.size = regionStride * missRecordCount;
+
+    hitRegion_.deviceAddress = baseAddress + regionStride * hitRecordBase;
+    hitRegion_.stride = regionStride;
+    hitRegion_.size = regionStride * hitRecordCount;
+
+    callableRegion_ = vk::StridedDeviceAddressRegionKHR{};
 } // end of create()

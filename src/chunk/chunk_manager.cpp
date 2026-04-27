@@ -104,7 +104,7 @@ void ChunkManager::init(VulkanMain* vk)
 {
 	vk_ = vk;
 
-	streamRecenterThreshold_ = std::max(1, viewRadius_ - 7);
+	streamRecenterThreshold_ = std::max(1, viewRadius_ - 10);
 } // end of init()
 
 void ChunkManager::updateDynamic(const glm::vec3& cameraPos)
@@ -237,7 +237,7 @@ void ChunkManager::updateDynamic(const glm::vec3& cameraPos)
 	} // end for
 
 	// unload chunks per frame
-	const int maxUnloadChunksPerFrame = 2;
+	const int maxUnloadChunksPerFrame = 3;
 	int unloaded = 0;
 	for (auto it = chunks_.begin(); it != chunks_.end() &&
 		unloaded < maxUnloadChunksPerFrame;)
@@ -263,7 +263,7 @@ void ChunkManager::updateDynamic(const glm::vec3& cameraPos)
 	} // end for
 
 	// load chunks per frame
-	const int maxNewChunksPerFrame = 2;
+	const int maxNewChunksPerFrame = 3;
 	int built = 0;
 	while (!pendingChunks_.empty() && built < maxNewChunksPerFrame)
 	{
@@ -371,6 +371,68 @@ bool ChunkManager::buildVisibleChunkBounds(
 	return true;
 } // end of buildVisibleChunkBounds()
 
+void ChunkManager::buildRTDrawList(
+	const glm::mat4& view,
+	const glm::mat4& proj
+)
+{
+	rtDrawList_.clear();
+
+	int camChunkX = static_cast<int>(std::floor(lastCameraPos_.x / CHUNK_SIZE));
+	int camChunkZ = static_cast<int>(std::floor(lastCameraPos_.z / CHUNK_SIZE));
+	int maxDist2 = viewRadius_ * viewRadius_;
+
+	frameBlocksRendered_ = 0;
+	frameChunksRendered_ = 0;
+
+	// get frustum planes
+	Frustum fr = ExtractFrustumPlanes(proj * view);
+	for (auto& [coord, entry] : chunks_)
+	{
+		ChunkMesh* cpu = entry->cpu.get();
+
+		// skip empty meshes
+		if (cpu->opaqueIndexCount() <= 0 && cpu->waterIndexCount() <= 0) continue;
+
+		// chunkX, chunkZ
+		int chunkX = cpu->getChunk().m_chunkX;
+		int chunkZ = cpu->getChunk().m_chunkZ;
+
+		// distance culling
+		int dx = chunkX - camChunkX;
+		int dz = chunkZ - camChunkZ;
+		int dist2 = dx * dx + dz * dz;
+		if (enableDistanceCulling_ && dist2 > maxDist2)
+		{
+			continue;
+		}
+
+		// set AABB
+		AABB box = ChunkWorldAABB(chunkX, chunkZ);
+		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
+		{
+			continue;
+		}
+
+		// chunk/block count
+		frameChunksRendered_++;
+		frameBlocksRendered_ += cpu->getRenderedBlockCount();
+
+		ChunkDrawItem item;
+		item.chunkOrigin = glm::vec3(chunkX * CHUNK_SIZE, 0.0f, chunkZ * CHUNK_SIZE);
+		item.gpu = entry->gpu;
+		item.opaqueIndexCount = static_cast<uint32_t>(cpu->opaqueIndexCount());
+		item.waterIndexCount = static_cast<uint32_t>(cpu->waterIndexCount());
+		item.renderedBlockCount = cpu->getRenderedBlockCount();
+		item.geometryVersion = entry->geometryVersion;
+
+		rtDrawList_.items.push_back(item);
+	} // end for
+
+	rtDrawList_.frameChunksRendered = frameChunksRendered_;
+	rtDrawList_.frameBlocksRendered = frameBlocksRendered_;
+} // end of buildRTDrawList()
+
 void ChunkManager::buildOpaqueDrawList(
 	const glm::mat4& view, 
 	const glm::mat4& proj, 
@@ -423,8 +485,8 @@ void ChunkManager::buildOpaqueDrawList(
 		item.chunkOrigin = glm::vec3(chunkX * CHUNK_SIZE, 0.0f, chunkZ * CHUNK_SIZE);
 		item.gpu = entry->gpu;
 		item.opaqueIndexCount = static_cast<uint32_t>(cpu->opaqueIndexCount());
-		item.waterIndexCount = static_cast<uint32_t>(std::max(0, cpu->waterIndexCount()));
 		item.renderedBlockCount = cpu->getRenderedBlockCount();
+		item.geometryVersion = entry->geometryVersion;
 
 		out.items.push_back(item);
 	} // end for
@@ -435,7 +497,7 @@ void ChunkManager::buildOpaqueDrawList(
 	const glm::mat4& proj
 )
 {
-	chunkDrawList_.clear();
+	opaqueDrawList_.clear();
 
 	int camChunkX = static_cast<int>(std::floor(lastCameraPos_.x / CHUNK_SIZE));
 	int camChunkZ = static_cast<int>(std::floor(lastCameraPos_.z / CHUNK_SIZE));
@@ -481,15 +543,14 @@ void ChunkManager::buildOpaqueDrawList(
 		item.chunkOrigin = glm::vec3(chunkX * CHUNK_SIZE, 0.0f, chunkZ * CHUNK_SIZE);
 		item.gpu = entry->gpu;
 		item.opaqueIndexCount = static_cast<uint32_t>(cpu->opaqueIndexCount());
-		item.waterIndexCount = static_cast<uint32_t>(std::max(0, cpu->waterIndexCount()));
 		item.renderedBlockCount = cpu->getRenderedBlockCount();
 		item.geometryVersion = entry->geometryVersion;
 
-		chunkDrawList_.items.push_back(item);
+		opaqueDrawList_.items.push_back(item);
 	} // end for
 
-	chunkDrawList_.frameChunksRendered = frameChunksRendered_;
-	chunkDrawList_.frameBlocksRendered = frameBlocksRendered_;
+	opaqueDrawList_.frameChunksRendered = frameChunksRendered_;
+	opaqueDrawList_.frameBlocksRendered = frameBlocksRendered_;
 } // end of buildOpaqueDrawList()
 
 void ChunkManager::buildWaterDrawList(
@@ -537,8 +598,59 @@ void ChunkManager::buildWaterDrawList(
 		item.chunkOrigin = glm::vec3(chunkX * CHUNK_SIZE, 0.0f, chunkZ * CHUNK_SIZE);
 		item.gpu = entry->gpu;
 		item.waterIndexCount = static_cast<uint32_t>(std::max(0, cpu->waterIndexCount()));
+		item.geometryVersion = entry->geometryVersion;
 
 		out.items.push_back(item);
+	} // end for
+} // end of buildWaterDrawList()
+
+void ChunkManager::buildWaterDrawList(
+	const glm::mat4& view, 
+	const glm::mat4& proj
+)
+{
+	waterDrawList_.clear();
+
+	int camChunkX = static_cast<int>(std::floor(lastCameraPos_.x / CHUNK_SIZE));
+	int camChunkZ = static_cast<int>(std::floor(lastCameraPos_.z / CHUNK_SIZE));
+	int maxDist2 = viewRadius_ * viewRadius_;
+
+	// get frustum planes
+	Frustum fr = ExtractFrustumPlanes(proj * view);
+	for (auto& [coord, entry] : chunks_)
+	{
+		ChunkMesh* cpu = entry->cpu.get();
+
+		// skip empty meshes
+		if (cpu->waterIndexCount() <= 0) continue;
+
+		// chunkX, chunkZ
+		int chunkX = cpu->getChunk().m_chunkX;
+		int chunkZ = cpu->getChunk().m_chunkZ;
+
+		// distance culling
+		int dx = chunkX - camChunkX;
+		int dz = chunkZ - camChunkZ;
+		int dist2 = dx * dx + dz * dz;
+		if (enableDistanceCulling_ && dist2 > maxDist2)
+		{
+			continue;
+		}
+
+		// set AABB
+		AABB box = ChunkWorldAABB(chunkX, chunkZ);
+		if (enableFrustumCulling_ && !IntersectsFrustum(box, fr))
+		{
+			continue;
+		}
+
+		ChunkDrawItem item;
+		item.chunkOrigin = glm::vec3(chunkX * CHUNK_SIZE, 0.0f, chunkZ * CHUNK_SIZE);
+		item.gpu = entry->gpu;
+		item.waterIndexCount = static_cast<uint32_t>(std::max(0, cpu->waterIndexCount()));
+		item.geometryVersion = entry->geometryVersion;
+
+		waterDrawList_.items.push_back(item);
 	} // end for
 } // end of buildWaterDrawList()
 

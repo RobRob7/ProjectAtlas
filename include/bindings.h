@@ -11,20 +11,29 @@ constexpr uint32_t TO_API_FORM(E e)
 
 enum class RTChunkRayGenBinding : uint32_t
 {
-    OutputImage = 0,
-    TLAS = 1,
-    UBO = 2,
+    OutColorImage = 0,
+    OutDepthImage = 1,
+    TLAS = 2,
+    UBO = 3,
 };
 enum class RTChunkMissBinding : uint32_t
 {
     
 };
-enum class RTChunkClosestHitBinding : uint32_t
+enum class RTOpaqueClosestHitBinding : uint32_t
 {
     TLAS = 0,
     ChunkInfo = 1,
     UBO = 2,
     AtlasTex = 3,
+};
+enum class RTWaterClosestHitBinding : uint32_t
+{
+    TLAS = 0,
+    WaterInfo = 1,
+    UBO = 2,
+    DudvTex = 3,
+    NormalTex = 4,
 };
 
 enum class ChunkBinding : uint32_t
@@ -52,6 +61,7 @@ enum class DebugBinding : uint32_t
     GNormalTex = 1,
     GDepthTex = 2,
     ShadowMapTex = 3,
+    RTDepthTex = 4,
 };
 
 enum class ShadowMapPassBinding : uint32_t
@@ -110,6 +120,15 @@ enum class PresentPassBinding : uint32_t
 {
     UBO = 0,
     ForwardColorTex = 1,
+};
+
+enum class CompositePassBinding : uint32_t
+{
+    UBO = 0,
+    RastColorTex = 1,
+    RastDepthTex = 2,
+    RTColorTex = 3,
+    RTDepthTex = 4,
 };
 
 #endif

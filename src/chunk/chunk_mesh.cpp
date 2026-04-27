@@ -293,6 +293,7 @@ void ChunkMesh::buildChunkMesh()
 
 	// water
 	data_.waterVertices.clear();
+	data_.waterRTVertices.clear();
 	data_.waterIndices.clear();
 
 	auto addWaterQuad = [&](int x0, int y, int z0, int w, int h)
@@ -322,6 +323,22 @@ void ChunkMesh::buildChunkMesh()
 			data_.waterVertices.push_back(v1);
 			data_.waterVertices.push_back(v2);
 			data_.waterVertices.push_back(v3);
+
+			// RT water vertex data
+			glm::vec3 normal{ 0.0f, 1.0f, 0.0f }; // default normal (normal tex should be used)
+			auto makeRTWaterVertex = [&](const glm::vec3& p)
+				{
+					RTVertex rtv{};
+					rtv.position = glm::vec4(p, 0.0f);
+					rtv.normal = glm::vec4(normal, 0.0f);
+					rtv.tileData = glm::vec4(float(tileX), float(tileY), 0.0f, 0.0f);
+					return rtv;
+				};
+
+			data_.waterRTVertices.push_back(makeRTWaterVertex(p0));
+			data_.waterRTVertices.push_back(makeRTWaterVertex(p1));
+			data_.waterRTVertices.push_back(makeRTWaterVertex(p2));
+			data_.waterRTVertices.push_back(makeRTWaterVertex(p3));
 
 			// two triangles
 			data_.waterIndices.push_back(start + 0);

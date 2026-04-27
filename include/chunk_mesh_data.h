@@ -16,6 +16,7 @@ struct ChunkMeshData
 
     // water
     std::vector<World::VertexWater> waterVertices;
+    std::vector<World::RTVertex> waterRTVertices;
     std::vector<uint32_t> waterIndices;
     int32_t waterIndexCount = 0;
 

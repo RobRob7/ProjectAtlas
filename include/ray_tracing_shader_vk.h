@@ -14,7 +14,7 @@ public:
 		vk::Device device, 
 		std::string_view rayGenPathFile, 
 		std::string_view missPathFile,
-		std::string_view closestHitPathFile
+		std::vector<std::string_view> closestHitPathFiles
 	);
 	~RayTracingShaderModuleVk() noexcept;
 
@@ -26,7 +26,7 @@ public:
 
 	vk::ShaderModule rayGenShader() const noexcept { return rayGenShaderModule_.get(); }
 	vk::ShaderModule missShader() const noexcept { return missShaderModule_.get(); }
-	vk::ShaderModule closestHitShader() const noexcept { return closestHitShaderModule_.get(); }
+	const std::vector<vk::UniqueShaderModule>& closestHitShaders() const noexcept { return closestHitShaderModules_; }
 
 private:
 	vk::UniqueShaderModule createShaderModule(const std::vector<uint32_t>& code);
@@ -34,7 +34,7 @@ private:
 	vk::Device device_{};
 	vk::UniqueShaderModule rayGenShaderModule_{};
 	vk::UniqueShaderModule missShaderModule_{};
-	vk::UniqueShaderModule closestHitShaderModule_{};
+	std::vector<vk::UniqueShaderModule> closestHitShaderModules_{};
 };
 
 #endif

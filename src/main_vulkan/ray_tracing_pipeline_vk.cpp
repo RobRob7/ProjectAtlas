@@ -3,7 +3,6 @@
 #include "vulkan_main.h"
 
 #include <stdexcept>
-#include <array>
 
 //--- PUBLIC ---//
 RayTracingPipelineVk::RayTracingPipelineVk(VulkanMain& vk)
@@ -19,10 +18,19 @@ void RayTracingPipelineVk::create(const RayTracingPipelineDescVk& desc)
 
 	vk::Device device = vk_.getDevice();
 
-	if (!desc.rayGenShader || !desc.missShader || !desc.closestHitShader)
+	if (!desc.rayGenShader || !desc.missShader || desc.closestHitShaders.empty())
 	{
 		throw std::runtime_error("RayTracingPipelineVk::create - need at least (raygen, miss, hit) shaders!");
 	}
+
+
+	for (vk::ShaderModule hitShader : desc.closestHitShaders)
+	{
+		if (!hitShader)
+		{
+			throw std::runtime_error("RayTracingPipelineVk::create - closest hit shader is null!");
+		}
+	} // end for
 
 	if (desc.maxRecursionDepth < 1)
 	{
@@ -30,43 +38,66 @@ void RayTracingPipelineVk::create(const RayTracingPipelineDescVk& desc)
 	}
 
 	// shader stages
-	std::array<vk::PipelineShaderStageCreateInfo, 3> stages{};
+	std::vector<vk::PipelineShaderStageCreateInfo> stages;
+	stages.reserve(2 + desc.closestHitShaders.size());
 
-	stages[0].stage = vk::ShaderStageFlagBits::eRaygenKHR;
-	stages[0].module = desc.rayGenShader;
-	stages[0].pName = "main";
+	// 0 - raygen
+	vk::PipelineShaderStageCreateInfo rayGenStage{};
+	rayGenStage.stage = vk::ShaderStageFlagBits::eRaygenKHR;
+	rayGenStage.module = desc.rayGenShader;
+	rayGenStage.pName = "main";
+	stages.push_back(rayGenStage);
 
-	stages[1].stage = vk::ShaderStageFlagBits::eMissKHR;
-	stages[1].module = desc.missShader;
-	stages[1].pName = "main";
+	// 1 - miss
+	vk::PipelineShaderStageCreateInfo missStage{};
+	missStage.stage = vk::ShaderStageFlagBits::eMissKHR;
+	missStage.module = desc.missShader;
+	missStage.pName = "main";
+	stages.push_back(missStage);
 
-	stages[2].stage = vk::ShaderStageFlagBits::eClosestHitKHR;
-	stages[2].module = desc.closestHitShader;
-	stages[2].pName = "main";
+	// 2+ - closest-hit shaders
+	for (vk::ShaderModule hitShader : desc.closestHitShaders)
+	{
+		vk::PipelineShaderStageCreateInfo hitStage{};
+		hitStage.stage = vk::ShaderStageFlagBits::eClosestHitKHR;
+		hitStage.module = hitShader;
+		hitStage.pName = "main";
+		stages.push_back(hitStage);
+	} // end for
 
 	// shader groups
-	std::array<vk::RayTracingShaderGroupCreateInfoKHR, 3> groups{};
+	std::vector<vk::RayTracingShaderGroupCreateInfoKHR> groups;
+	groups.reserve(2 + desc.closestHitShaders.size());
 
-	// raygen group
-	groups[0].type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-	groups[0].generalShader = 0;
-	groups[0].closestHitShader = vk::ShaderUnusedKHR;
-	groups[0].anyHitShader = vk::ShaderUnusedKHR;
-	groups[0].intersectionShader = vk::ShaderUnusedKHR;
+	// 0 - raygen
+	vk::RayTracingShaderGroupCreateInfoKHR rayGenGroup{};
+	rayGenGroup.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+	rayGenGroup.generalShader = 0;
+	rayGenGroup.closestHitShader = vk::ShaderUnusedKHR;
+	rayGenGroup.anyHitShader = vk::ShaderUnusedKHR;
+	rayGenGroup.intersectionShader = vk::ShaderUnusedKHR;
+	groups.push_back(rayGenGroup);
 
-	// miss group
-	groups[1].type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-	groups[1].generalShader = 1;
-	groups[1].closestHitShader = vk::ShaderUnusedKHR;
-	groups[1].anyHitShader = vk::ShaderUnusedKHR;
-	groups[1].intersectionShader = vk::ShaderUnusedKHR;
+	// 1 - miss
+	vk::RayTracingShaderGroupCreateInfoKHR missGroup{};
+	missGroup.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+	missGroup.generalShader = 1;
+	missGroup.closestHitShader = vk::ShaderUnusedKHR;
+	missGroup.anyHitShader = vk::ShaderUnusedKHR;
+	missGroup.intersectionShader = vk::ShaderUnusedKHR;
+	groups.push_back(missGroup);
 
-	// triangles hit group
-	groups[2].type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
-	groups[2].generalShader = vk::ShaderUnusedKHR;
-	groups[2].closestHitShader = 2;
-	groups[2].anyHitShader = vk::ShaderUnusedKHR;
-	groups[2].intersectionShader = vk::ShaderUnusedKHR;
+	// 2+ - closest-hit
+	for (uint32_t i = 0; i < static_cast<uint32_t>(desc.closestHitShaders.size()); ++i)
+	{
+		vk::RayTracingShaderGroupCreateInfoKHR hitGroup{};
+		hitGroup.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
+		hitGroup.generalShader = vk::ShaderUnusedKHR;
+		hitGroup.closestHitShader = 2 + i;
+		hitGroup.anyHitShader = vk::ShaderUnusedKHR;
+		hitGroup.intersectionShader = vk::ShaderUnusedKHR;
+		groups.push_back(hitGroup);
+	}
 
 	// pipeline layout
 	std::vector<vk::DescriptorSetLayout> ordered;

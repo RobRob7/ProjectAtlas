@@ -21,9 +21,7 @@ public:
 	void init();
 	void resize();
 
-	void render(
-		FrameContext& frame
-	);
+	void render(FrameContext& frame);
 
 	void setInput(ImageVk& input)
 	{

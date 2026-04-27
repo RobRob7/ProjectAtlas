@@ -572,6 +572,9 @@ void UI::drawInspector(IScene& scene)
 		case DebugMode::ShadowMap:
 			mode = "Shadow Map";
 			break;
+		case DebugMode::rtDepth:
+			mode = "RT Depth";
+			break;
 		default:
 			break;
 		}
