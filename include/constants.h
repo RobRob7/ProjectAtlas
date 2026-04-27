@@ -246,6 +246,8 @@ namespace RT_Chunk_Constants
 	{
 		glm::mat4 u_invView;
 		glm::mat4 u_invProj;
+		glm::mat4 u_view;
+		glm::mat4 u_proj;
 		glm::vec4 u_cameraPos;
 	};
 
@@ -258,6 +260,7 @@ namespace RT_Chunk_Constants
 	{
 		glm::vec4 u_lightDir;
 		glm::vec4 u_lightColor;
+		float u_time;
 	};
 };
 

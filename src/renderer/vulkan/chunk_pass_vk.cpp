@@ -145,7 +145,7 @@ void ChunkPassVk::renderOpaque(
 			0, nullptr
 		);
 
-		const ChunkDrawList& list = in.world->getChunkDrawList();
+		const ChunkDrawList& list = in.world->getOpaqueDrawList();
 		for (const auto& item : list.items)
 		{
 			ChunkPushConstants pc{};
@@ -207,7 +207,7 @@ void ChunkPassVk::renderOpaque(
 			0, nullptr
 		);
 
-		const ChunkDrawList& list = in.world->getChunkDrawList();
+		const ChunkDrawList& list = in.world->getOpaqueDrawList();
 		for (const auto& item : list.items)
 		{
 			ChunkPushConstants pc{};
@@ -263,7 +263,7 @@ void ChunkPassVk::renderOpaque(
 			0, nullptr
 		);
 
-		const ChunkDrawList& list = in.world->getChunkDrawList();
+		const ChunkDrawList& list = in.world->getOpaqueDrawList();
 		for (const auto& item : list.items)
 		{
 			ChunkPushConstants pc{};
@@ -302,7 +302,7 @@ void ChunkPassVk::renderOpaque(
 			0, nullptr
 		);
 
-		const ChunkDrawList& list = in.world->getChunkDrawList();
+		const ChunkDrawList& list = in.world->getOpaqueDrawList();
 		for (const auto& item : list.items)
 		{
 			ChunkPushConstants pc{};
@@ -340,7 +340,7 @@ void ChunkPassVk::renderOpaque(
 			0, nullptr
 		);
 
-		const ChunkDrawList& list = in.world->getChunkDrawList();
+		const ChunkDrawList& list = in.world->getOpaqueDrawList();
 		for (const auto& item : list.items)
 		{
 			ChunkPushConstants pc{};

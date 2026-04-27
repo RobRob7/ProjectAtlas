@@ -6,6 +6,7 @@
 #include "buffer_vk.h"
 
 #include <cstdint>
+#include <vector>
 
 class VulkanMain;
 
@@ -20,7 +21,7 @@ public:
 		uint32_t groupCount,
 		uint32_t rayGenGroupIndex,
 		uint32_t missGroupIndex,
-		uint32_t hitGroupIndex
+		const std::vector<uint32_t>& hitGroupIndices
 	);
 
 	const vk::StridedDeviceAddressRegionKHR& rayGenRegion() const { return rayGenRegion_; }

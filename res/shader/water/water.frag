@@ -96,7 +96,6 @@ void main()
 {
     // [0, 1]
     vec2 uv = (fs_in.clipPos.xy / fs_in.clipPos.w) * 0.5 + 0.5;
-    // vec2 uv = gl_FragCoord.xy / u_screenSize;
     uv = clamp(uv, 0.001, 0.999);
 
     // view dir

@@ -459,6 +459,10 @@ InputState Application::buildInputState()
 	{
 		settings.debugMode = DebugMode::ShadowMap;
 	}
+	if (glfwGetKey(window_, GLFW_KEY_5) == GLFW_PRESS)
+	{
+		settings.debugMode = DebugMode::rtDepth;
+	}
 #endif
 
 	InputState in{};

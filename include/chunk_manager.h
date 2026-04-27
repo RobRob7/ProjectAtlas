@@ -46,6 +46,11 @@ public:
 		int paddingChunks = 1
 	);
 
+	void buildRTDrawList(
+		const glm::mat4& view,
+		const glm::mat4& proj
+	);
+
 	void buildOpaqueDrawList(
 		const glm::mat4& view, 
 		const glm::mat4& proj, 
@@ -60,6 +65,10 @@ public:
 		const glm::mat4& view, 
 		const glm::mat4& proj, 
 		ChunkDrawList& out
+	);
+	void buildWaterDrawList(
+		const glm::mat4& view, 
+		const glm::mat4& proj
 	);
 
 	BlockID getBlock(int wx, int wy, int wz) const;
@@ -85,7 +94,9 @@ public:
 	bool statusDistanceCulling() const { return enableDistanceCulling_; }
 	void enableDistanceCulling(bool enable) { enableDistanceCulling_ = enable; }
 
-	const ChunkDrawList& getChunkDrawList() const { return chunkDrawList_; }
+	const ChunkDrawList& getRTDrawList() const { return rtDrawList_; }
+	const ChunkDrawList& getOpaqueDrawList() const { return opaqueDrawList_; }
+	const ChunkDrawList& getWaterDrawList() const { return waterDrawList_; }
 
 private:
 	BlockHit raycastBlocks(const glm::vec3& origin, const glm::vec3& dir) const;
@@ -115,7 +126,9 @@ private:
 
 	VulkanMain* vk_ = nullptr;
 
-	ChunkDrawList chunkDrawList_{};
+	ChunkDrawList rtDrawList_{};
+	ChunkDrawList opaqueDrawList_{};
+	ChunkDrawList waterDrawList_{};
 
 	// raycast data
 	BlockID lastBlockUsed_;

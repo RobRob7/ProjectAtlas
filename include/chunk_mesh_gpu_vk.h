@@ -31,17 +31,30 @@ public:
 
 	vk::Buffer getOpaqueRTVertexBuffer() const { return opaqueRTVB_.getBuffer(); }
 	vk::Buffer getOpaqueRTIndexBuffer() const { return opaqueRTIB_.getBuffer(); }
-
 	vk::DeviceAddress getOpaqueRTVertexAddress() const { return opaqueRTVB_.getDeviceAddress(); }
 	vk::DeviceAddress getOpaqueRTIndexAddress() const { return opaqueRTIB_.getDeviceAddress(); }
-
 	uint32_t getOpaqueRTIndexCount() const { return opaqueRTIndexCount_; }
 	uint32_t getOpaqueRTVertexCount() const { return opaqueRTVertexCount_; }
 
-	// BLAS
+	const std::vector<World::RTVertex>& getWaterRTVerticesCPU() const { return waterRTVerticesCPU_; }
+	const std::vector<uint32_t>& getWaterRTIndicesCPU() const { return waterRTIndicesCPU_; }
+
+	vk::Buffer getWaterRTVertexBuffer() const { return waterRTVB_.getBuffer(); }
+	vk::Buffer getWaterRTIndexBuffer() const { return waterRTIB_.getBuffer(); }
+	vk::DeviceAddress getWaterRTVertexAddress() const { return waterRTVB_.getDeviceAddress(); }
+	vk::DeviceAddress getWaterRTIndexAddress() const { return waterRTIB_.getDeviceAddress(); }
+	uint32_t getWaterRTIndexCount() const { return waterRTIndexCount_; }
+	uint32_t getWaterRTVertexCount() const { return waterRTVertexCount_; }
+
+	// Opaque BLAS
 	vk::AccelerationStructureKHR getOpaqueBLAS() const { return opaqueBLAS_.handle(); }
 	vk::DeviceAddress getOpaqueBLASAddress() const { return opaqueBLAS_.deviceAddress(); }
 	bool hasOpaqueBLAS() const { return opaqueBLAS_.valid(); }
+
+	// Water BLAS
+	vk::AccelerationStructureKHR getWaterBLAS() const { return waterBLAS_.handle(); }
+	vk::DeviceAddress getWaterBLASAddress() const { return waterBLAS_.deviceAddress(); }
+	bool hasWaterBLAS() const { return waterBLAS_.valid(); }
 
 private:
 	void retireCurrentBuffers(uint32_t frameIndex);
@@ -50,6 +63,7 @@ private:
 	VulkanMain* vk_{};
 
 	AccelerationStructureVk opaqueBLAS_;
+	AccelerationStructureVk waterBLAS_;
 
 	// RT opaque
 	BufferVk opaqueRTVB_;
@@ -59,6 +73,15 @@ private:
 
 	std::vector<World::RTVertex> opaqueRTVerticesCPU_;
 	std::vector<uint32_t> opaqueRTIndicesCPU_;
+
+	// RT water
+	BufferVk waterRTVB_;
+	BufferVk waterRTIB_;
+	uint32_t waterRTIndexCount_{ 0 };
+	uint32_t waterRTVertexCount_{ 0 };
+
+	std::vector<World::RTVertex> waterRTVerticesCPU_;
+	std::vector<uint32_t> waterRTIndicesCPU_;
 
 	// opaque
 	BufferVk opaqueVB_;

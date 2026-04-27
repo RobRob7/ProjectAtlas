@@ -8,7 +8,8 @@ enum class DebugMode : int
 	None = 0,		// '1' key
 	Normals = 1,	// '2' key
 	Depth = 2,		// '3' key
-	ShadowMap = 3	// '4' key
+	ShadowMap = 3,	// '4' key
+	rtDepth = 4,	// '5' key
 };
 
 struct FogSettings
@@ -28,6 +29,8 @@ struct RenderSettings
 	bool enableVsync = true;
 
 	// graphics options
+	bool useRT = true;
+
 	bool useShadowMap = true;
 	bool useSSAO = true;
 	bool useFXAA = false;
