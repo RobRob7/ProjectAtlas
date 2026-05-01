@@ -165,7 +165,6 @@ void ShadowMapPassGL::buildLightSpaceBounds(
 		minLS.y, maxLS.y,
 		nearPlane, farPlane
 	);
-	lightProj_[1][1] *= -1.0f;
 
 	lightSpaceMatrix_ = lightProj_ * lightView_;
 } // end of buildLightSpaceBounds()
