@@ -98,18 +98,6 @@ void ShadowMapPassVk::render(
 
 			return;
 		}
-
-		// expand bounds for shadow casters
-		const float shadowPadXZ = CHUNK_SIZE * 4.0f;
-		const float shadowPadY = CHUNK_SIZE_Y * 8.0f;
-
-		minWS.x -= shadowPadXZ;
-		minWS.z -= shadowPadXZ;
-		maxWS.x += shadowPadXZ;
-		maxWS.z += shadowPadXZ;
-
-		minWS.y -= shadowPadY;
-		maxWS.y += shadowPadY;
 		buildLightSpaceBounds(in, minWS, maxWS);
 
 		chunk.renderOpaque(

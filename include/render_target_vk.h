@@ -3,8 +3,6 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include <vector>
-
 enum class RenderTargetVk
 {
 	Default,
