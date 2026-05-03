@@ -275,27 +275,9 @@ void RendererVk::renderFrame(
 
 
 	// ----------------- FORWARD RENDER ----------------- //
-	// scene color transition to attachment
-	VkUtils::TransitionImageLayout(
-		cmd,
-		sceneColor_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		sceneColorLayout_,
-		vk::ImageLayout::eColorAttachmentOptimal,
-		1,
-		1
-	);
-
-	// scene depth transition to attachment
-	VkUtils::TransitionImageLayout(
-		cmd,
-		sceneDepth_.image(),
-		vk::ImageAspectFlagBits::eDepth,
-		sceneDepthLayout_,
-		vk::ImageLayout::eDepthAttachmentOptimal,
-		1,
-		1
-	);
+	// scene color + depth transition to attachment
+	sceneColor_.transitionToColorAttachment(cmd);
+	sceneDepth_.transitionToDepthAttachment(cmd);
 
 	vk::ClearValue clear{};
 	clear.color.float32[0] = 0.0f;
@@ -305,14 +287,14 @@ void RendererVk::renderFrame(
 
 	vk::RenderingAttachmentInfo colorAttach{};
 	colorAttach.imageView = sceneColor_.view();
-	colorAttach.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorAttach.imageLayout = sceneColor_.layout();
 	colorAttach.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttach.storeOp = vk::AttachmentStoreOp::eStore;
 	colorAttach.clearValue = clear;
 
 	vk::RenderingAttachmentInfo depthAttach{};
 	depthAttach.imageView = sceneDepth_.view();
-	depthAttach.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+	depthAttach.imageLayout = sceneDepth_.layout();
 	depthAttach.loadOp = vk::AttachmentLoadOp::eClear;
 	depthAttach.storeOp = vk::AttachmentStoreOp::eStore;
 	depthAttach.clearValue.depthStencil = vk::ClearDepthStencilValue{ 1.0f, 0 };
@@ -396,49 +378,16 @@ void RendererVk::renderFrame(
 	}
 	// --------------- END FORWARD RENDER --------------- //
 
-	// scene color transition to shader read
-	VkUtils::TransitionImageLayout(
-		cmd,
-		sceneColor_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		sceneColorLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
-	// scene depth transition to shader read
-	VkUtils::TransitionImageLayout(
-		cmd,
-		sceneDepth_.image(),
-		vk::ImageAspectFlagBits::eDepth,
-		sceneDepthLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
+	// scene color + depth transition to shader read
+	sceneColor_.transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eColor);
+	sceneDepth_.transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eDepth);
 
 	if (renderSettings_->useRT)
 	{
-		// RT color transition to shader read
-		VkUtils::TransitionImageLayout(
-			cmd,
-			rtWorldPass_->getOutColorImage().image(),
-			vk::ImageAspectFlagBits::eColor,
-			rtWorldPass_->getOutColorLayout(),
-			vk::ImageLayout::eShaderReadOnlyOptimal,
-			1,
-			1
-		);
-		// RT depth transition to shader read
-		VkUtils::TransitionImageLayout(
-			cmd,
-			rtWorldPass_->getOutDepthImage().image(),
-			vk::ImageAspectFlagBits::eColor,
-			rtWorldPass_->getOutDepthLayout(),
-			vk::ImageLayout::eShaderReadOnlyOptimal,
-			1,
-			1
-		);
+		// RT color + depth transition to shader read
+		rtWorldPass_->getOutColorImage().transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eColor);
+		rtWorldPass_->getOutDepthImage().transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eColor);
+
 	}
 
 	// ----------------- COMPOSITE PASS ----------------- //
@@ -493,18 +442,8 @@ void RendererVk::renderFrame(
 	}
 	// --------------- END POST-PROCESSING --------------- //
 
-
 	// swap swapchain color image to color attachment
-	VkUtils::TransitionImageLayout(
-		cmd,
-		frame.colorImage,
-		vk::ImageAspectFlagBits::eColor,
-		frame.colorLayout,
-		vk::ImageLayout::eColorAttachmentOptimal,
-		1,
-		1
-	);
-
+	frame.transitionColorImageToAttachment(cmd);
 
 	// ----------------- PRESENT PASS ----------------- //
 	if (presentPass_)
@@ -529,17 +468,8 @@ void RendererVk::renderFrame(
 	}
 	// --------------- END UI ELEMENTS --------------- //
 
-
 	// PRESENT TO SCREEN
-	VkUtils::TransitionImageLayout(
-		cmd, 
-		frame.colorImage,
-		vk::ImageAspectFlagBits::eColor,
-		frame.colorLayout,
-		vk::ImageLayout::ePresentSrcKHR,
-		1,
-		1
-	);
+	frame.transitionColorImageToPresent(cmd);
 	vk_.setSwapChainLayout(frame.imageIndex, vk::ImageLayout::ePresentSrcKHR);
 } // end of renderFrame()
 
@@ -587,7 +517,8 @@ void RendererVk::createSceneAttachments()
 		vk::SampleCountFlagBits::e1,
 		sceneDepthFormat_,
 		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
+		vk::ImageUsageFlagBits::eDepthStencilAttachment |
+		vk::ImageUsageFlagBits::eSampled,
 		vk::MemoryPropertyFlagBits::eDeviceLocal
 	);
 
@@ -605,7 +536,4 @@ void RendererVk::createSceneAttachments()
 		vk::SamplerAddressMode::eClampToEdge,
 		vk::False
 	);
-
-	sceneColorLayout_ = vk::ImageLayout::eUndefined;
-	sceneDepthLayout_ = vk::ImageLayout::eUndefined;
 } // end of createSceneAttachments()

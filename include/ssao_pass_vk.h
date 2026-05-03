@@ -59,11 +59,8 @@ private:
 	vk::Format noiseFormat_ = vk::Format::eR16G16B16A16Sfloat;
 
 	ImageVk ssaoRawImage_;
-	vk::ImageLayout singleChannelRawLayout_ = vk::ImageLayout::eUndefined;
-
 	ImageVk ssaoBlurImage_;
 	vk::Format singleChannelFormat_ = vk::Format::eR8Unorm;
-	vk::ImageLayout singleChannelBlurLayout_ = vk::ImageLayout::eUndefined;
 
 	std::vector<BufferVk> ssaoRawUBOBuffers_;
 	SSAO_Constants::SSAORawUBO rawUBO_{};

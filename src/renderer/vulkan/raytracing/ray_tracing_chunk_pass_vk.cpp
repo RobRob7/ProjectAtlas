@@ -9,7 +9,6 @@
 #include "camera.h"
 #include "light_vk.h"
 
-#include "utils_vk.h"
 #include "vulkan_main.h"
 #include "frame_context_vk.h"
 
@@ -232,25 +231,8 @@ void RayTracingWorldPassVk::render(
 
 	vk::CommandBuffer cmd = frame.cmd;
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		outColorImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		outColorLayout_,
-		vk::ImageLayout::eGeneral,
-		1,
-		1
-	);
-
-	VkUtils::TransitionImageLayout(
-		cmd,
-		outDepthImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		outDepthLayout_,
-		vk::ImageLayout::eGeneral,
-		1,
-		1
-	);
+	outColorImage_.transitionToGeneral(cmd);
+	outDepthImage_.transitionToGeneral(cmd);
 
 	if (!rtSceneReady_)
 	{
@@ -350,9 +332,6 @@ void RayTracingWorldPassVk::render(
 		{},
 		barriers
 	);
-
-	outColorLayout_ = vk::ImageLayout::eGeneral;
-	outDepthLayout_ = vk::ImageLayout::eGeneral;
 } // end of render()
 
 void RayTracingWorldPassVk::setSkybox(
@@ -559,7 +538,6 @@ void RayTracingWorldPassVk::createOutputImages()
 		vk::SamplerAddressMode::eClampToEdge,
 		false
 	);
-	outColorLayout_ = vk::ImageLayout::eUndefined;
 
 	// output depth image
 	outDepthImage_.createImage(
@@ -591,7 +569,6 @@ void RayTracingWorldPassVk::createOutputImages()
 		vk::SamplerAddressMode::eClampToEdge,
 		false
 	);
-	outDepthLayout_ = vk::ImageLayout::eUndefined;
 } // end of createOutputImages()
 
 void RayTracingWorldPassVk::createResources()

@@ -3,7 +3,6 @@
 
 #include "descriptor_set_vk.h"
 #include "graphics_pipeline_vk.h"
-#include "buffer_vk.h"
 #include "image_vk.h"
 
 #include <memory>
@@ -43,7 +42,6 @@ public:
 
 	const ImageVk& getOutColorImage() const { return hybridColorImage_; }
 	ImageVk& getOutColorImage() { return hybridColorImage_; }
-	vk::ImageLayout& getOutColorLayout() { return hybridColorLayout_; }
 
 private:
 	void refreshInput();
@@ -61,7 +59,6 @@ private:
 
 	ImageVk hybridColorImage_;
 	vk::Format hybridColorFormat_{ vk::Format::eR16G16B16A16Sfloat };
-	vk::ImageLayout hybridColorLayout_{ vk::ImageLayout::eUndefined };
 
 	std::unique_ptr<ShaderModuleVk> shader_;
 

@@ -72,10 +72,8 @@ public:
 
 	const ImageVk& getOutColorImage() const { return outColorImage_; }
 	ImageVk& getOutColorImage() { return outColorImage_; }
-	vk::ImageLayout& getOutColorLayout() { return outColorLayout_; }
 	const ImageVk& getOutDepthImage() const { return outDepthImage_; }
 	ImageVk& getOutDepthImage() { return outDepthImage_; }
-	vk::ImageLayout& getOutDepthLayout() { return outDepthLayout_; }
 
 private:
 	void createOutputImages();
@@ -127,10 +125,8 @@ private:
 
 	ImageVk outColorImage_;
 	vk::Format outImageFormat_{ vk::Format::eR16G16B16A16Sfloat };
-	vk::ImageLayout outColorLayout_{ vk::ImageLayout::eUndefined };
 	ImageVk outDepthImage_;
 	vk::Format outDepthFormat_{ vk::Format::eR32Sfloat };
-	vk::ImageLayout outDepthLayout_{ vk::ImageLayout::eUndefined };
 
 	Texture2DVk atlas_;
 	Texture2DVk dudvTex_;

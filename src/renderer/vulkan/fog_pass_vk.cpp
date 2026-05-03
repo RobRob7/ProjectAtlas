@@ -5,7 +5,6 @@
 
 #include "bindings.h"
 #include "shader_vk.h"
-#include "utils_vk.h"
 #include "vulkan_main.h"
 #include "image_vk.h"
 
@@ -74,6 +73,8 @@ void FogPassVk::render(
 	vk::CommandBuffer cmd = frame.cmd;
 	vk::Extent2D extent = frame.extent;
 
+	outputImage_.transitionToColorAttachment(cmd);
+
 	// update UBO
 	ubo_.u_near = nearPlane;
 	ubo_.u_far = farPlane;
@@ -83,16 +84,6 @@ void FogPassVk::render(
 	ubo_.u_fogEnd = rs_.fogSettings.end;
 
 	uboBuffers_[frame.frameIndex].upload(&ubo_, sizeof(ubo_));
-
-	VkUtils::TransitionImageLayout(
-		cmd,
-		outputImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		outputLayout_,
-		vk::ImageLayout::eColorAttachmentOptimal,
-		1,
-		1
-	);
 
 	vk::ClearValue clear{};
 	clear.color.float32[0] = 0.0f;
@@ -146,15 +137,7 @@ void FogPassVk::render(
 	}
 	cmd.endRendering();
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		outputImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		outputLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
+	outputImage_.transitionToShaderRead(cmd);
 } // end of render()
 
 
@@ -210,9 +193,6 @@ void FogPassVk::createAttachment()
 		vk::SamplerAddressMode::eClampToEdge,
 		vk::False
 	);
-
-	// RESET
-	outputLayout_ = vk::ImageLayout::eUndefined;
 } // end of createAttachment()
 
 void FogPassVk::createResources()

@@ -1,11 +1,11 @@
 #ifndef UTILS_VK_H
 #define UTILS_VK_H
 
-#include "vulkan_main.h"
-
 #include <vulkan/vulkan.hpp>
 
 #include <cstdint>
+
+class VulkanMain;
 
 namespace VkUtils
 {

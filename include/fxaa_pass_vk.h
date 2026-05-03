@@ -45,7 +45,6 @@ private:
 
 	ImageVk outputImage_;
 	vk::Format outputFormat_{ vk::Format::eR16G16B16A16Sfloat };
-	vk::ImageLayout outputLayout_{ vk::ImageLayout::eUndefined };
 
 	std::unique_ptr<ShaderModuleVk> shader_;
 

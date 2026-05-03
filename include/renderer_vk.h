@@ -65,9 +65,6 @@ private:
 	ImageVk sceneColor_;
 	ImageVk sceneDepth_;
 
-	vk::ImageLayout sceneColorLayout_{ vk::ImageLayout::eUndefined };
-	vk::ImageLayout sceneDepthLayout_{ vk::ImageLayout::eUndefined };
-
 	vk::Format sceneColorFormat_{ vk::Format::eR16G16B16A16Sfloat };
 	vk::Format sceneDepthFormat_{ vk::Format::eD32Sfloat };
 

@@ -94,16 +94,10 @@ private:
 	uint32_t height_{ 0 };
 
 	ImageVk reflColorImage_;
-	vk::ImageLayout reflColorLayout_ = vk::ImageLayout::eUndefined;
-
 	ImageVk reflDepthImage_;
-	vk::ImageLayout reflDepthLayout_ = vk::ImageLayout::eUndefined;
 
 	ImageVk refrColorImage_;
 	ImageVk refrDepthImage_;
-
-	vk::ImageLayout refrColorLayout_ = vk::ImageLayout::eUndefined;
-	vk::ImageLayout refrDepthLayout_ = vk::ImageLayout::eUndefined;
 
 	vk::Format colorFormat_ = vk::Format::eR16G16B16A16Sfloat;
 	vk::Format depthFormat_ = vk::Format::eD32Sfloat;
