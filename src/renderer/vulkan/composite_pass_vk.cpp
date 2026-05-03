@@ -1,7 +1,6 @@
 #include "composite_pass_vk.h"
 
 #include "frame_context_vk.h"
-#include "utils_vk.h"
 
 #include "bindings.h"
 #include "shader_vk.h"
@@ -60,6 +59,8 @@ void CompositePassVk::render(
 
     vk::CommandBuffer cmd = frame.cmd;
 
+    hybridColorImage_.transitionToColorAttachment(cmd);
+
     vk::ClearValue clear{};
     clear.color.float32[0] = 0.0f;
     clear.color.float32[1] = 0.0f;
@@ -80,16 +81,6 @@ void CompositePassVk::render(
     renderingInfo.colorAttachmentCount = 1;
     renderingInfo.pColorAttachments = &colorAttach;
     renderingInfo.pDepthAttachment = nullptr;
-
-    VkUtils::TransitionImageLayout(
-        cmd,
-        hybridColorImage_.image(),
-        vk::ImageAspectFlagBits::eColor,
-        hybridColorLayout_,
-        vk::ImageLayout::eColorAttachmentOptimal,
-        1,
-        1
-    );
 
     cmd.beginRendering(renderingInfo);
     {
@@ -122,15 +113,7 @@ void CompositePassVk::render(
     }
     cmd.endRendering();
 
-    VkUtils::TransitionImageLayout(
-        cmd,
-        hybridColorImage_.image(),
-        vk::ImageAspectFlagBits::eColor,
-        hybridColorLayout_,
-        vk::ImageLayout::eShaderReadOnlyOptimal,
-        1,
-        1
-    );
+    hybridColorImage_.transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eColor);
 } // end of render()
 
 
@@ -197,8 +180,6 @@ void CompositePassVk::createAttachment()
         vk::SamplerAddressMode::eClampToEdge,
         false
     );
-
-    hybridColorLayout_ = vk::ImageLayout::eUndefined;
 } // end of createAttachment()
 
 void CompositePassVk::createDescriptorSet()

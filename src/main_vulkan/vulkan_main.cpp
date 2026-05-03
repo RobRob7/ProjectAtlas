@@ -201,13 +201,13 @@ bool VulkanMain::beginFrame(FrameContext& out)
 
 	out.colorImage = swapChainImages_[imageIndex];
 	out.colorImageView = swapChainImageViews_[imageIndex].get();
-	out.colorFormat = swapChainImageFormat_;
-	out.colorLayout = swapChainLayouts_[imageIndex];
+	out.colorFormat = &swapChainImageFormat_;
+	out.colorLayout = &swapChainLayouts_[imageIndex];
 
 	out.depthImage = depthImage_.get();
 	out.depthImageView = depthImageView_.get();
-	out.depthFormat = depthFormat_;
-	out.depthLayout = depthImageLayout_;
+	out.depthFormat = &depthFormat_;
+	out.depthLayout = &depthImageLayout_;
 
 	return true;
 } // end of beginFrame()

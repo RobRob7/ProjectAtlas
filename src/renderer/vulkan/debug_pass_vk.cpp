@@ -76,15 +76,7 @@ void DebugPassVk::render(
 
 	uboBuffer_.upload(&ubo, sizeof(DebugPassUBO));
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		frame.colorImage,
-		vk::ImageAspectFlagBits::eColor,
-		frame.colorLayout,
-		vk::ImageLayout::eColorAttachmentOptimal,
-		1,
-		1
-	);
+	frame.transitionColorImageToAttachment(cmd);
 
 	vk::ClearValue clear{};
 	clear.color.float32[0] = 0.0f;
@@ -137,15 +129,7 @@ void DebugPassVk::render(
 	}
 	cmd.endRendering();
 	
-	VkUtils::TransitionImageLayout(
-		cmd,
-		frame.colorImage,
-		vk::ImageAspectFlagBits::eColor,
-		frame.colorLayout,
-		vk::ImageLayout::ePresentSrcKHR,
-		1,
-		1
-	);
+	frame.transitionColorImageToPresent(cmd);
 } // end of render()
 
 

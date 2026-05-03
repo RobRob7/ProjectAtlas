@@ -14,7 +14,6 @@
 #include "cubemap_vk.h"
 #include "chunk_manager.h"
 
-#include "utils_vk.h"
 #include "vulkan_main.h"
 
 #include "vulkan/vulkan.hpp"
@@ -212,10 +211,6 @@ void WaterPassVk::createAttachments()
 		vk::SamplerAddressMode::eClampToEdge,
 		vk::False
 	);
-
-	// RESET
-	reflColorLayout_ = vk::ImageLayout::eUndefined;
-	reflDepthLayout_ = vk::ImageLayout::eUndefined;
 	/////////////////////////////////
 
 	/////////////////////////////////
@@ -270,10 +265,6 @@ void WaterPassVk::createAttachments()
 		vk::SamplerAddressMode::eClampToEdge,
 		vk::False
 	);
-
-	// RESET
-	refrColorLayout_ = vk::ImageLayout::eUndefined;
-	refrDepthLayout_ = vk::ImageLayout::eUndefined;
 	/////////////////////////////////
 } // end of createAttachments()
 
@@ -465,91 +456,23 @@ void WaterPassVk::waterPass(
 	vk::CommandBuffer cmd = frame.cmd;
 
 	// REFLECTION
-	VkUtils::TransitionImageLayout(
-		cmd,
-		reflColorImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		reflColorLayout_,
-		vk::ImageLayout::eColorAttachmentOptimal,
-		1,
-		1
-	);
-
-	VkUtils::TransitionImageLayout(
-		cmd,
-		reflDepthImage_.image(),
-		vk::ImageAspectFlagBits::eDepth,
-		reflDepthLayout_,
-		vk::ImageLayout::eDepthAttachmentOptimal,
-		1,
-		1
-	);
+	reflColorImage_.transitionToColorAttachment(cmd);
+	reflDepthImage_.transitionToDepthAttachment(cmd);
 
 	waterReflectionPass(rs, frame, chunk, in, lightSpaceMatrix);
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		reflColorImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		reflColorLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
-
-	VkUtils::TransitionImageLayout(
-		cmd,
-		reflDepthImage_.image(),
-		vk::ImageAspectFlagBits::eDepth,
-		reflDepthLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
+	reflColorImage_.transitionToShaderRead(cmd);
+	reflDepthImage_.transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eDepth);
 
 
 	// REFRACTION
-	VkUtils::TransitionImageLayout(
-		cmd,
-		refrColorImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		refrColorLayout_,
-		vk::ImageLayout::eColorAttachmentOptimal,
-		1,
-		1
-	);
-
-	VkUtils::TransitionImageLayout(
-		cmd,
-		refrDepthImage_.image(),
-		vk::ImageAspectFlagBits::eDepth,
-		refrDepthLayout_,
-		vk::ImageLayout::eDepthAttachmentOptimal,
-		1,
-		1
-	);
+	refrColorImage_.transitionToColorAttachment(cmd);
+	refrDepthImage_.transitionToDepthAttachment(cmd);
 
 	waterRefractionPass(rs, frame, chunk, in, lightSpaceMatrix);
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		refrColorImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		refrColorLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
-
-	VkUtils::TransitionImageLayout(
-		cmd,
-		refrDepthImage_.image(),
-		vk::ImageAspectFlagBits::eDepth,
-		refrDepthLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
+	refrColorImage_.transitionToShaderRead(cmd);
+	refrDepthImage_.transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eDepth);
 } // end of waterPass()
 
 void WaterPassVk::waterReflectionPass(

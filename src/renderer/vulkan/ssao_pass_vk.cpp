@@ -87,15 +87,7 @@ void SSAOPassVk::renderOffscreen(
 
 	// SSAO RAW RENDER
 	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			ssaoRawImage_.image(),
-			vk::ImageAspectFlagBits::eColor,
-			singleChannelRawLayout_,
-			vk::ImageLayout::eColorAttachmentOptimal,
-			1,
-			1
-		);
+		ssaoRawImage_.transitionToColorAttachment(cmd);
 
 		vk::ClearValue aoClear{};
 		aoClear.color.float32[0] = 1.0f;
@@ -159,28 +151,12 @@ void SSAOPassVk::renderOffscreen(
 		}
 		cmd.endRendering();
 
-		VkUtils::TransitionImageLayout(
-			cmd,
-			ssaoRawImage_.image(),
-			vk::ImageAspectFlagBits::eColor,
-			singleChannelRawLayout_,
-			vk::ImageLayout::eShaderReadOnlyOptimal,
-			1,
-			1
-		);
+		ssaoRawImage_.transitionToShaderRead(cmd);
 	}
 
 	// SSAO BLUR RENDER
 	{
-		VkUtils::TransitionImageLayout(
-			cmd,
-			ssaoBlurImage_.image(),
-			vk::ImageAspectFlagBits::eColor,
-			singleChannelBlurLayout_,
-			vk::ImageLayout::eColorAttachmentOptimal,
-			1,
-			1
-		);
+		ssaoBlurImage_.transitionToColorAttachment(cmd);
 
 		vk::ClearValue aoClear{};
 		aoClear.color.float32[0] = 1.0f;
@@ -237,15 +213,7 @@ void SSAOPassVk::renderOffscreen(
 		}
 		cmd.endRendering();
 
-		VkUtils::TransitionImageLayout(
-			cmd,
-			ssaoBlurImage_.image(),
-			vk::ImageAspectFlagBits::eColor,
-			singleChannelBlurLayout_,
-			vk::ImageLayout::eShaderReadOnlyOptimal,
-			1,
-			1
-		);
+		ssaoBlurImage_.transitionToShaderRead(cmd);
 	}
 } // end of renderOffscreen()
 
@@ -254,10 +222,6 @@ void SSAOPassVk::renderOffscreen(
 void SSAOPassVk::createAttachments()
 {
 	vk::Extent2D extent = vk_.getSwapChainExtent();
-
-	// RESET
-	singleChannelRawLayout_ = vk::ImageLayout::eUndefined;
-	singleChannelBlurLayout_ = vk::ImageLayout::eUndefined;
 
 	// RAW
 	ssaoRawImage_.createImage(
@@ -315,15 +279,7 @@ void SSAOPassVk::createAttachments()
 	// default ssaoblur texture (for when SSAO is disabled)
 	vk::CommandBuffer cmd = vk_.beginSingleTimeCommands();
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		ssaoBlurImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		singleChannelBlurLayout_,
-		vk::ImageLayout::eColorAttachmentOptimal,
-		1,
-		1
-	);
+	ssaoBlurImage_.transitionToColorAttachment(cmd);
 
 	vk::ClearValue clear{};
 	clear.color.float32[0] = 1.0f;
@@ -351,15 +307,7 @@ void SSAOPassVk::createAttachments()
 	cmd.beginRendering(renderingInfo);
 	cmd.endRendering();
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		ssaoBlurImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		singleChannelBlurLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
+	ssaoBlurImage_.transitionToShaderRead(cmd);
 
 	vk_.endSingleTimeCommands(cmd);
 } // end of createAttachments()

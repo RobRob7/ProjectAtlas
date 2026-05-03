@@ -37,11 +37,9 @@ private:
 	VulkanMain& vk_;
 
 	ImageVk gNormalImage_;
-	vk::ImageLayout normalLayout_ = vk::ImageLayout::eUndefined;
 	vk::Format normalFormat_ = vk::Format::eR16G16B16A16Sfloat;
 
 	ImageVk gDepthImage_;
-	vk::ImageLayout depthLayout_ = vk::ImageLayout::eUndefined;
 	vk::Format depthFormat_ = vk::Format::eD32Sfloat;
 };
 

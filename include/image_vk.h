@@ -1,6 +1,8 @@
 #ifndef IMAGE_VK_H
 #define IMAGE_VK_H
 
+#include "utils_vk.h"
+
 #include <vulkan/vulkan.hpp>
 
 #include <cstdint>
@@ -65,6 +67,74 @@ public:
     vk::ImageView view() const { return view_.get(); }
     vk::Sampler sampler() const { return sampler_.get(); }
 
+    void transitionToShaderRead(
+        vk::CommandBuffer cmd,
+        vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor
+    )
+    {
+        if (!image_) return;
+
+        VkUtils::TransitionImageLayout(
+            cmd,
+            image_.get(),
+            aspect,
+            layout_,
+            vk::ImageLayout::eShaderReadOnlyOptimal,
+            layers_,
+            mipLevels_
+        );
+    } // end of transitionToShaderRead()
+
+    void transitionToColorAttachment(vk::CommandBuffer cmd)
+    {
+        if (!image_) return;
+
+        VkUtils::TransitionImageLayout(
+            cmd,
+            image_.get(),
+            vk::ImageAspectFlagBits::eColor,
+            layout_,
+            vk::ImageLayout::eColorAttachmentOptimal,
+            layers_,
+            mipLevels_
+        );
+    } // end of transitionToColorAttachment()
+
+    void transitionToDepthAttachment(vk::CommandBuffer cmd)
+    {
+        if (!image_) return;
+
+        VkUtils::TransitionImageLayout(
+            cmd,
+            image_.get(),
+            vk::ImageAspectFlagBits::eDepth,
+            layout_,
+            vk::ImageLayout::eDepthAttachmentOptimal,
+            layers_,
+            mipLevels_
+        );
+    } // end of transitionToDepthAttachment()
+
+    void transitionToGeneral(
+        vk::CommandBuffer cmd,
+        vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor
+    )
+    {
+        if (!image_) return;
+
+        VkUtils::TransitionImageLayout(
+            cmd,
+            image_.get(),
+            aspect,
+            layout_,
+            vk::ImageLayout::eGeneral,
+            layers_,
+            mipLevels_
+        );
+    } // end of transitionToGeneral()
+
+    vk::ImageLayout layout() const { return layout_; }
+
     vk::Format format() const { return format_; }
     uint32_t width() const { return width_; }
     uint32_t height() const { return height_; }
@@ -79,7 +149,9 @@ private:
     vk::UniqueImageView view_{};
     vk::UniqueSampler sampler_{};
 
+    vk::ImageLayout layout_{ vk::ImageLayout::eUndefined };
     vk::Format format_{ vk::Format::eUndefined };
+
     uint32_t width_{ 0 };
     uint32_t height_{ 0 };
     uint32_t layers_{ 0 };

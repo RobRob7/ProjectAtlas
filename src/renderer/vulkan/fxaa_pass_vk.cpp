@@ -5,7 +5,6 @@
 
 #include "bindings.h"
 #include "shader_vk.h"
-#include "utils_vk.h"
 #include "vulkan_main.h"
 #include "image_vk.h"
 
@@ -68,6 +67,7 @@ void FXAAPassVk::render(FrameContext& frame)
 
 	vk::CommandBuffer cmd = frame.cmd;
 	vk::Extent2D extent = frame.extent;
+	outputImage_.transitionToColorAttachment(cmd);
 
 	// update UBO
 	uboData_ = {};
@@ -79,16 +79,6 @@ void FXAAPassVk::render(FrameContext& frame)
 	uboData_.u_edgeThresholdMin = EDGE_THRESH_MIN;
 
 	uboBuffers_[frame.frameIndex].upload(&uboData_, sizeof(uboData_));
-
-	VkUtils::TransitionImageLayout(
-		cmd,
-		outputImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		outputLayout_,
-		vk::ImageLayout::eColorAttachmentOptimal,
-		1,
-		1
-	);
 
 	vk::ClearValue clear{};
 	clear.color.float32[0] = 0.0f;
@@ -142,15 +132,7 @@ void FXAAPassVk::render(FrameContext& frame)
 	}
 	cmd.endRendering();
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		outputImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		outputLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
+	outputImage_.transitionToShaderRead(cmd);
 } // end of render()
 
 
@@ -200,9 +182,6 @@ void FXAAPassVk::createAttachment()
 		vk::SamplerAddressMode::eClampToEdge,
 		vk::False
 	);
-
-	// RESET
-	outputLayout_ = vk::ImageLayout::eUndefined;
 } // end of createAttachment()
 
 void FXAAPassVk::createResources()

@@ -88,6 +88,8 @@ void ImageVk::createImage(
 	{
 		throw std::runtime_error("ImageVk::createImage - bindImageMemory failed: " + vk::to_string(bindRes));
 	}
+
+    layout_ = vk::ImageLayout::eUndefined;
 } // end of createImage()
 
 void ImageVk::generateMipmaps(
@@ -206,6 +208,8 @@ void ImageVk::generateMipmaps(
     );
 
     vk_.endSingleTimeCommands(cmd);
+
+    layout_ = vk::ImageLayout::eShaderReadOnlyOptimal;
 } // end of generateMipmaps()
 
 void ImageVk::createImageView(
@@ -283,6 +287,7 @@ void ImageVk::destroy()
 	image_.reset();
 	memory_.reset();
 
+    layout_ = vk::ImageLayout::eUndefined;
 	format_ = vk::Format::eUndefined;
 	width_ = 0;
 	height_ = 0;

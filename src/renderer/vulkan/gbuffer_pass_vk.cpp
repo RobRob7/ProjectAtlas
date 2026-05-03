@@ -4,7 +4,6 @@
 
 #include "chunk_pass_vk.h"
 
-#include "utils_vk.h"
 #include "vulkan_main.h"
 
 #include "vulkan/vulkan.hpp"
@@ -44,25 +43,8 @@ void GBufferPassVk::render(
 
 	vk::Extent2D extent = vk_.getSwapChainExtent();
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		gNormalImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		normalLayout_,
-		vk::ImageLayout::eColorAttachmentOptimal,
-		1,
-		1
-	);
-
-	VkUtils::TransitionImageLayout(
-		cmd,
-		gDepthImage_.image(),
-		vk::ImageAspectFlagBits::eDepth,
-		depthLayout_,
-		vk::ImageLayout::eDepthAttachmentOptimal,
-		1,
-		1
-	);
+	gNormalImage_.transitionToColorAttachment(cmd);
+	gDepthImage_.transitionToDepthAttachment(cmd);
 
 	vk::ClearValue normalClear{};
 	normalClear.color.float32[0] = 0.0f;
@@ -122,25 +104,8 @@ void GBufferPassVk::render(
 	}
 	cmd.endRendering();
 	
-	VkUtils::TransitionImageLayout(
-		cmd,
-		gNormalImage_.image(),
-		vk::ImageAspectFlagBits::eColor,
-		normalLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
-
-	VkUtils::TransitionImageLayout(
-		cmd,
-		gDepthImage_.image(),
-		vk::ImageAspectFlagBits::eDepth,
-		depthLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
+	gNormalImage_.transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eColor);
+	gDepthImage_.transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eDepth);
 } // end of render()
 
 
@@ -201,8 +166,4 @@ void GBufferPassVk::createAttachments()
 		vk::SamplerAddressMode::eClampToEdge,
 		vk::False
 	);
-
-	// RESET
-	normalLayout_ = vk::ImageLayout::eUndefined;
-	depthLayout_ = vk::ImageLayout::eUndefined;
 } // end of createAttachments()

@@ -50,7 +50,6 @@ private:
 	glm::mat4 lightProj_{};
 
 	ImageVk depthImage_;
-	vk::ImageLayout depthLayout_ = vk::ImageLayout::eUndefined;
 	vk::Format depthFormat_ = vk::Format::eD32Sfloat;
 };
 

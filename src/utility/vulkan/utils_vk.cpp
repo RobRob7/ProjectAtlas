@@ -1,5 +1,7 @@
 #include "utils_vk.h"
 
+#include "vulkan_main.h"
+
 #include <vulkan/vulkan.hpp>
 
 #include <vector>

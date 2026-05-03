@@ -1,6 +1,8 @@
 #ifndef FRAME_CONTEXT_H
 #define FRAME_CONTEXT_H
 
+#include "utils_vk.h"
+
 #include <vulkan/vulkan.hpp>
 
 struct FrameContext
@@ -14,14 +16,41 @@ struct FrameContext
 
     vk::Image colorImage{};
     vk::ImageView colorImageView{};
-    vk::ImageLayout colorLayout{ vk::ImageLayout::eUndefined };
+    vk::ImageLayout* colorLayout{ nullptr };
 
     vk::Image depthImage{};
     vk::ImageView depthImageView{};
-    vk::ImageLayout depthLayout{ vk::ImageLayout::eUndefined };
+    vk::ImageLayout* depthLayout{ nullptr };
 
-    vk::Format colorFormat{ vk::Format::eUndefined };
-    vk::Format depthFormat{ vk::Format::eUndefined };
+    vk::Format* colorFormat{ nullptr };
+    vk::Format* depthFormat{ nullptr };
+
+    void transitionColorImageToAttachment(vk::CommandBuffer cmd)
+    {
+        VkUtils::TransitionImageLayout(
+            cmd,
+            colorImage,
+            vk::ImageAspectFlagBits::eColor,
+            *colorLayout,
+            vk::ImageLayout::eColorAttachmentOptimal,
+            1,
+            1
+        );
+    } // end of transitionColorImageToAttachment()
+
+    void transitionColorImageToPresent(vk::CommandBuffer cmd)
+    {
+        VkUtils::TransitionImageLayout(
+            cmd,
+            colorImage,
+            vk::ImageAspectFlagBits::eColor,
+            *colorLayout,
+            vk::ImageLayout::ePresentSrcKHR,
+            1,
+            1
+        );
+    } // end of transitionColorImageToPresent()
 };
+
 
 #endif

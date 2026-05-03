@@ -6,16 +6,13 @@
 #include "chunk_manager.h"
 
 #include "frame_context_vk.h"
-#include "utils_vk.h"
 #include "vulkan_main.h"
-#include "shader_vk.h"
 
 #include "light_vk.h"
 #include "chunk_pass_vk.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <cstddef>
 #include <algorithm>
 
 //--- PUBLIC ---//
@@ -41,15 +38,7 @@ void ShadowMapPassVk::render(
 	vk::CommandBuffer cmd = frame.cmd;
 	vk::Extent2D extent = vk::Extent2D{ width_, height_ };
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		depthImage_.image(),
-		vk::ImageAspectFlagBits::eDepth,
-		depthLayout_,
-		vk::ImageLayout::eDepthAttachmentOptimal,
-		1,
-		1
-	);
+	depthImage_.transitionToDepthAttachment(cmd);
 
 	vk::RenderingAttachmentInfo depthAttachment{};
 	depthAttachment.imageView = depthImage_.view();
@@ -86,15 +75,7 @@ void ShadowMapPassVk::render(
 		{
 			cmd.endRendering();
 
-			VkUtils::TransitionImageLayout(
-				cmd,
-				depthImage_.image(),
-				vk::ImageAspectFlagBits::eDepth,
-				depthLayout_,
-				vk::ImageLayout::eShaderReadOnlyOptimal,
-				1,
-				1
-			);
+			depthImage_.transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eDepth);
 
 			return;
 		}
@@ -111,15 +92,7 @@ void ShadowMapPassVk::render(
 	}
 	cmd.endRendering();
 
-	VkUtils::TransitionImageLayout(
-		cmd,
-		depthImage_.image(),
-		vk::ImageAspectFlagBits::eDepth,
-		depthLayout_,
-		vk::ImageLayout::eShaderReadOnlyOptimal,
-		1,
-		1
-	);
+	depthImage_.transitionToShaderRead(cmd, vk::ImageAspectFlagBits::eDepth);
 } // end of render()
 
 
@@ -240,7 +213,4 @@ void ShadowMapPassVk::createAttachments()
 		vk::SamplerAddressMode::eClampToBorder,
 		false
 	);
-
-	// RESET
-	depthLayout_ = vk::ImageLayout::eUndefined;
 } // end of createAttachments()
