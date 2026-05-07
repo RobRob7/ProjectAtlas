@@ -112,10 +112,7 @@ void RendererVk::init()
 	}
 	if (!fogPass_)
 	{
-		fogPass_ = std::make_unique<FogPassVk>(
-			vk_,
-			*renderSettings_
-		);
+		fogPass_ = std::make_unique<FogPassVk>(vk_);
 	}
 	if (!presentPass_)
 	{
@@ -225,7 +222,7 @@ void RendererVk::renderFrame(
 	}
 
 	// shadow map pass
-	if (!renderSettings_->useRT && shadowMapPass_)
+	if ((!renderSettings_->useRT && shadowMapPass_) || renderSettings_->useFog)
 	{
 		shadowMapPass_->render(
 			*chunkPass_,
@@ -423,12 +420,28 @@ void RendererVk::renderFrame(
 	// FOG
 	if (renderSettings_->useFog)
 	{
+		fogPass_->setInputShadowMap(shadowMapPass_->getDepthImage());
 		fogPass_->setInput(*postColor, *postDepth);
+		
+		Fog_Constants::FogPassUBO fogUBO{};
+		fogUBO.u_useVolFog = renderSettings_->fogSettings.volumetricFog;
+		fogUBO.u_invViewProj = glm::inverse(proj * view);
+		fogUBO.u_lightSpaceMatrix = shadowMapPass_->getLightSpaceMatrix();
+		fogUBO.u_cameraPos = in.camera->getCameraPosition();
+		fogUBO.u_fogDensity = 0.02f;
+		fogUBO.u_nearFar = { in.camera->getNearPlane(), in.camera->getFarPlane() };
+		fogUBO.u_fogStartEnd = { renderSettings_->fogSettings.start, renderSettings_->fogSettings.end };
+		fogUBO.u_fogColor = renderSettings_->fogSettings.color;
+		fogUBO.u_lightDir = in.light->getDirection();
+		fogUBO.u_maxDistance = 150.0f;
+		fogUBO.u_ambStr = in.world->getAmbientStrength();
+		fogUBO.u_scatteringStrength = 0.5f;
+		fogUBO.u_shadowBias = 0.001f;
+		fogUBO.u_sampleCount = 32;
+
 		fogPass_->render(
 			frame,
-			in.camera->getNearPlane(),
-			in.camera->getFarPlane(),
-			in.world->getAmbientStrength()
+			fogUBO
 		);
 		postColor = &fogPass_->getOutputImage();
 	}

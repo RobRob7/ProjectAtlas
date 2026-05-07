@@ -421,8 +421,15 @@ void UI::drawMenuBar(IScene& scene)
 			if (ImGui::Checkbox("FXAA##graphics", &renderSettings_.useFXAA))
 			{
 			}
-			if (ImGui::Checkbox("Fog##graphics", &renderSettings_.useFog))
+			if (ImGui::TreeNodeEx("Fog##graphics", ImGuiTreeNodeFlags_SpanAvailWidth))
 			{
+				ImGui::Checkbox("Enable Fog", &renderSettings_.useFog);
+
+				ImGui::BeginDisabled(!renderSettings_.useFog);
+				ImGui::Checkbox("Volumetric Fog", &renderSettings_.fogSettings.volumetricFog);
+				ImGui::EndDisabled();
+
+				ImGui::TreePop();
 			}
 			ImGui::EndMenu();
 		}
@@ -697,7 +704,7 @@ void UI::drawInspector(IScene& scene)
 		changed |= ImGui::ColorEdit3("Color##fog", glm::value_ptr(renderSettings_.fogSettings.color));
 		if (ImGui::Button("Reset##fog_color"))
 		{
-			renderSettings_.fogSettings.color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+			renderSettings_.fogSettings.color = glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f };
 		}
 		changed |= ImGui::DragFloat("Start Pos##fog", &renderSettings_.fogSettings.start, 0.1f, 0.0f, renderSettings_.fogSettings.end);
 		if (ImGui::Button("Reset##fog_start"))

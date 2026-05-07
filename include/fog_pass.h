@@ -15,7 +15,7 @@ struct RenderSettings;
 class FogPass
 {
 public:
-    FogPass(RenderSettings& rs);
+    FogPass();
     ~FogPass();
 
     void init();
@@ -24,9 +24,8 @@ public:
     void render(
         uint32_t sceneColorTex, 
         uint32_t sceneDepthTex,
-        float nearPlane, 
-        float farPlane, 
-        float ambStr
+        uint32_t shadowMapTex,
+        Fog_Constants::FogPassUBO& ubo
     );
 
     uint32_t getOutputTex() const { return outputTex_; }
@@ -37,16 +36,13 @@ private:
     int width_{};
     int height_{};
 
-    RenderSettings& rs_;
-
     uint32_t fsVao_{};
     uint32_t fbo_{};
     uint32_t outputTex_{};
 
     std::unique_ptr<Shader> shader_;
 
-    UBOGL ubo_{ TO_API_FORM(FogPassBinding::UBO) };
-    Fog_Constants::FogPassUBO fogPassUBO_{};
+    UBOGL uboBuffer_{ TO_API_FORM(FogPassBinding::UBO) };
 };
 
 #endif

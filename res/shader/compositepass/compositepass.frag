@@ -17,14 +17,19 @@ void main()
     vec3 rtColor = texture(u_rtColorTex, vUV).rgb;
     float rtDepth = texture(u_rtDepthTex, vUV).r;
 
-    bool rtHit = rtDepth < 1.0;
-
-    if (!rtHit || rastDepth <= rtDepth)
+    if (rtDepth >= 1.0 && rastDepth >= 1.0)
+    {
+        FragColor = vec4(rtColor, 1.0);
+        gl_FragDepth = 1.0;
+    }
+    else if (rastDepth <= rtDepth)
     {
         FragColor = vec4(rastColor, 1.0);
+        gl_FragDepth = rastDepth;
     }
     else
     {
         FragColor = vec4(rtColor, 1.0);
+        gl_FragDepth = rtDepth;
     }
 }
