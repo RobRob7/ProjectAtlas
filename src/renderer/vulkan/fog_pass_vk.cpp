@@ -1,7 +1,6 @@
 #include "fog_pass_vk.h"
 
 #include "constants.h"
-#include "render_settings.h"
 
 #include "bindings.h"
 #include "shader_vk.h"
@@ -15,9 +14,8 @@
 using namespace Fog_Constants;
 
 //--- PUBLIC ---//
-FogPassVk::FogPassVk(VulkanMain& vk, RenderSettings& rs)
+FogPassVk::FogPassVk(VulkanMain& vk)
 	: vk_(vk),
-	rs_(rs),
 	outputImage_(vk),
 	pipeline_(vk)
 {
@@ -40,10 +38,6 @@ void FogPassVk::init()
 		"fogpass/fog.frag.spv"
 	);
 
-	rs_.fogSettings.color = FOG_COLOR;
-	rs_.fogSettings.start = FOG_START;
-	rs_.fogSettings.end = FOG_END;
-
 	createAttachment();
 	createResources();
 	createDescriptorSet();
@@ -57,15 +51,13 @@ void FogPassVk::resize()
 
 void FogPassVk::render(
 	FrameContext& frame,
-	float nearPlane,
-	float farPlane,
-	float ambStr
+	Fog_Constants::FogPassUBO& fogUBO
 )
 {
 	if (!inputColorImage_ || !inputDepthImage_ ||
 		!uboBuffers_[frame.frameIndex].valid() || 
-		!descriptorSets_[frame.frameIndex].valid() 
-		|| !pipeline_.valid())
+		!descriptorSets_[frame.frameIndex].valid() ||
+		!pipeline_.valid())
 	{
 		return;
 	}
@@ -75,15 +67,7 @@ void FogPassVk::render(
 
 	outputImage_.transitionToColorAttachment(cmd);
 
-	// update UBO
-	ubo_.u_near = nearPlane;
-	ubo_.u_far = farPlane;
-	ubo_.u_ambStr = ambStr;
-	ubo_.u_fogColor = rs_.fogSettings.color;
-	ubo_.u_fogStart = rs_.fogSettings.start;
-	ubo_.u_fogEnd = rs_.fogSettings.end;
-
-	uboBuffers_[frame.frameIndex].upload(&ubo_, sizeof(ubo_));
+	uboBuffers_[frame.frameIndex].upload(&fogUBO, sizeof(fogUBO));
 
 	vk::ClearValue clear{};
 	clear.color.float32[0] = 0.0f;
@@ -160,6 +144,12 @@ void FogPassVk::refreshInput()
 			inputDepthImage_->view(),
 			inputDepthImage_->sampler()
 		);
+
+		set.writeCombinedImageSampler(
+			TO_API_FORM(FogPassBinding::ShadowMapTex),
+			inputShadowMapImage_->view(),
+			inputShadowMapImage_->sampler()
+		);
 	} // end for
 } // end of refreshInput()
 
@@ -229,7 +219,18 @@ void FogPassVk::createDescriptorSet()
 		inputDepthBinding.descriptorCount = 1;
 		inputDepthBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		descriptorSets_[i].createLayout({uboBinding, inputColorBinding, inputDepthBinding});
+		vk::DescriptorSetLayoutBinding inputShadowBinding{};
+		inputShadowBinding.binding = TO_API_FORM(FogPassBinding::ShadowMapTex);
+		inputShadowBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		inputShadowBinding.descriptorCount = 1;
+		inputShadowBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		descriptorSets_[i].createLayout({
+			uboBinding, 
+			inputColorBinding, 
+			inputDepthBinding,
+			inputShadowBinding
+			});
 
 		vk::DescriptorPoolSize uboPool;
 		uboPool.type = vk::DescriptorType::eUniformBuffer;
@@ -243,7 +244,16 @@ void FogPassVk::createDescriptorSet()
 		inputDepthPool.type = vk::DescriptorType::eCombinedImageSampler;
 		inputDepthPool.descriptorCount = 1;
 
-		descriptorSets_[i].createPool({uboPool, inputColorPool, inputDepthPool});
+		vk::DescriptorPoolSize inputShadowPool;
+		inputShadowPool.type = vk::DescriptorType::eCombinedImageSampler;
+		inputShadowPool.descriptorCount = 1;
+
+		descriptorSets_[i].createPool({
+			uboPool, 
+			inputColorPool, 
+			inputDepthPool,
+			inputShadowPool
+			});
 		descriptorSets_[i].allocate();
 
 		descriptorSets_[i].writeUniformBuffer(
@@ -266,8 +276,8 @@ void FogPassVk::createPipeline()
 
 	desc.cullMode = vk::CullModeFlagBits::eNone;
 	desc.frontFace = vk::FrontFace::eClockwise;
-	desc.depthTestEnable = vk::False;
-	desc.depthWriteEnable = vk::False;
+	desc.depthTestEnable = false;
+	desc.depthWriteEnable = false;
 
 	pipeline_.create(desc);
 } // end of createPipeline()

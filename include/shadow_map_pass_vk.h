@@ -29,7 +29,9 @@ public:
 		const FrameContext& frame
 	);
 
+	ImageVk& getDepthImage() { return depthImage_; }
 	const ImageVk& getDepthImage() const { return depthImage_; }
+
 	const glm::mat4& getLightSpaceMatrix() const { return lightSpaceMatrix_; }
 
 private:

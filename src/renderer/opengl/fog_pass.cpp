@@ -1,7 +1,6 @@
 #include "fog_pass.h"
 
 #include "constants.h"
-#include "render_settings.h"
 #include "shader.h"
 
 #include <glad/glad.h>
@@ -12,10 +11,7 @@
 using namespace Fog_Constants;
 
 //--- PUBLIC ---//
-FogPass::FogPass(RenderSettings& rs)
-	: rs_(rs)
-{
-} // end of constructor
+FogPass::FogPass() = default;
 
 FogPass::~FogPass()
 {
@@ -26,13 +22,12 @@ void FogPass::init()
 {
 	destroyGL();
 
-	rs_.fogSettings.color = FOG_COLOR;
-	rs_.fogSettings.start = FOG_START;
-	rs_.fogSettings.end = FOG_END;
+	shader_ = std::make_unique<Shader>(
+		"fogpass/fog.vert", 
+		"fogpass/fog.frag"
+	);
 
-	shader_ = std::make_unique<Shader>("fogpass/fog.vert", "fogpass/fog.frag");
-
-	ubo_.init<sizeof(FogPassUBO)>();
+	uboBuffer_.init<sizeof(FogPassUBO)>();
 
 	glCreateVertexArrays(1, &fsVao_);
 } // end of init()
@@ -77,20 +72,20 @@ void FogPass::resize(int w, int h)
 void FogPass::render(
 	uint32_t sceneColorTex,
 	uint32_t sceneDepthTex,
-	float nearPlane,
-	float farPlane,
-	float ambStr
+	uint32_t shadowMapTex,
+	FogPassUBO& ubo
 )
 {
 	if (!shader_ || !sceneColorTex || !sceneDepthTex || fsVao_ == 0)
 		return;
 
 	// bind ubo
-	ubo_.bind();
+	uboBuffer_.bind();
 
 	// bind textures
 	glBindTextureUnit(TO_API_FORM(FogPassBinding::ForwardColorTex), sceneColorTex);
 	glBindTextureUnit(TO_API_FORM(FogPassBinding::ForwardDepthTex), sceneDepthTex);
+	glBindTextureUnit(TO_API_FORM(FogPassBinding::ShadowMapTex), shadowMapTex);
 
 	const GLboolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
 
@@ -103,13 +98,7 @@ void FogPass::render(
 	glClear(GL_COLOR_BUFFER_BIT);
 	
 	shader_->use();
-	fogPassUBO_.u_near = nearPlane;
-	fogPassUBO_.u_far = farPlane;
-	fogPassUBO_.u_fogColor = rs_.fogSettings.color;
-	fogPassUBO_.u_fogStart = rs_.fogSettings.start;
-	fogPassUBO_.u_fogEnd = rs_.fogSettings.end;
-	fogPassUBO_.u_ambStr = ambStr;
-	ubo_.update(&fogPassUBO_, sizeof(fogPassUBO_));
+	uboBuffer_.update(&ubo, sizeof(ubo));
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 

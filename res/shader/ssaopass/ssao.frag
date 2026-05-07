@@ -1,5 +1,7 @@
 #version 460 core
 
+#include "../helper.glsl"
+
 layout (location = 0) in vec2 vUV;
 
 #define MAX_KERNEL_SIZE 64
@@ -26,16 +28,6 @@ layout (binding = 3) uniform sampler2D u_ssaoNoiseTex;
 
 layout (location = 0) out float FragAO;
 
-vec3 ReconstructViewPos(vec2 uv, float depth01)
-{
-    // depth01 in [0,1] -> [-1,1]
-    float z = depth01 * 2.0 - 1.0;
-    vec4 clip = vec4(uv * 2.0 - 1.0, z, 1.0);
-
-    vec4 view = u_invProj * clip;
-    return view.xyz / view.w;
-}
-
 void main()
 {
     float depth01 = texture(u_gDepth, vUV).r;
@@ -46,7 +38,7 @@ void main()
     }
 
     vec3 N = normalize(texture(u_gNormal, vUV).xyz);
-    vec3 P = ReconstructViewPos(vUV, depth01);
+    vec3 P = ReconstructViewPos(vUV, depth01, u_invProj);
 
     //
     vec3 rand = normalize(texture(u_ssaoNoiseTex, vUV * u_noiseScale).xyz * 2.0 - 1.0);
@@ -73,7 +65,7 @@ void main()
         }
 
         float sampleDepth01 = texture(u_gDepth, uv).r;
-        vec3 sampleDepthVS = ReconstructViewPos(uv, sampleDepth01);
+        vec3 sampleDepthVS = ReconstructViewPos(uv, sampleDepth01, u_invProj);
 
         float range = smoothstep(0.0, 1.0, u_radius / abs(P.z - sampleDepthVS.z));
 

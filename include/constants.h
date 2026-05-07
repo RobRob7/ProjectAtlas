@@ -424,23 +424,27 @@ namespace FXAA_Constants
 
 namespace Fog_Constants
 {
-	const glm::vec3 FOG_COLOR{ 1.0f, 1.0f, 1.0f };
-	const float FOG_START{ 50.0f };
-	const float FOG_END{ 175.0f };
-
 	struct FogPassUBO
 	{
-		float u_near;
-		float u_far;
-		glm::vec2 _pad0;
+		glm::mat4 u_invViewProj;
+		glm::mat4 u_lightSpaceMatrix;
+
+		glm::vec3 u_cameraPos;
+		float u_fogDensity;
+
+		glm::vec2 u_nearFar;
+		glm::vec2 u_fogStartEnd;
 
 		glm::vec3 u_fogColor;
-		float _pad1;
+		int u_useVolFog;
 
-		float u_fogStart;
-		float u_fogEnd;
+		glm::vec3 u_lightDir;
+		float u_maxDistance;
+
 		float u_ambStr;
-		float _pad2;
+		float u_scatteringStrength;
+		float u_shadowBias;
+		int u_sampleCount;
 	};
 };
 

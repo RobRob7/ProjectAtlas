@@ -21,7 +21,7 @@ struct RenderSettings;
 class FogPassVk
 {
 public:
-	FogPassVk(VulkanMain& vk, RenderSettings& rs);
+	FogPassVk(VulkanMain& vk);
 	~FogPassVk();
 
 	void init();
@@ -29,10 +29,15 @@ public:
 
 	void render(
 		FrameContext& frame,
-		float nearPlane,
-		float farPlane,
-		float ambStr
+		Fog_Constants::FogPassUBO& fogUBO
 	);
+
+	void setInputShadowMap(ImageVk& inputShadowMap)
+	{
+		inputShadowMapImage_ = &inputShadowMap;
+
+		refreshInput();
+	} // end of setInputShadowMap()
 
 	void setInput(ImageVk& inputColor, ImageVk& inputDepth)
 	{
@@ -53,15 +58,12 @@ private:
 private:
 	VulkanMain& vk_;
 
-	RenderSettings& rs_;
-
 	ImageVk* inputColorImage_{ nullptr };
 	ImageVk* inputDepthImage_{ nullptr };
+	ImageVk* inputShadowMapImage_{ nullptr };
 
 	ImageVk outputImage_;
 	vk::Format outputFormat_{ vk::Format::eR16G16B16A16Sfloat };
-
-	Fog_Constants::FogPassUBO ubo_;
 
 	std::unique_ptr<ShaderModuleVk> shader_;
 

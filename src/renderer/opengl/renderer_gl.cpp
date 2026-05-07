@@ -43,7 +43,7 @@ void RendererGL::init()
     if (!debugPass_)            debugPass_ = std::make_unique<DebugPass>();
     if (!ssaoPass_)             ssaoPass_ = std::make_unique<SSAOPass>();
     if (!fxaaPass_)             fxaaPass_ = std::make_unique<FXAAPass>();
-    if (!fogPass_)              fogPass_ = std::make_unique<FogPass>(*renderSettings_);
+    if (!fogPass_)              fogPass_ = std::make_unique<FogPass>();
     if (!presentPass_)          presentPass_ = std::make_unique<PresentPass>();
     if (!waterPass_)            waterPass_ = std::make_unique<WaterPass>();
 
@@ -200,12 +200,27 @@ void RendererGL::renderFrame(
     uint32_t finalColorTex = forwardColorTex_;
     if (renderSettings_->useFog)
     {
+        Fog_Constants::FogPassUBO fogUBO{};
+        fogUBO.u_useVolFog = renderSettings_->fogSettings.volumetricFog;
+        fogUBO.u_invViewProj = glm::inverse(proj * view);
+        fogUBO.u_lightSpaceMatrix = shadowMapPass_->getLightSpaceMatrix();
+        fogUBO.u_cameraPos = in.camera->getCameraPosition();
+        fogUBO.u_fogDensity = 0.02f;
+        fogUBO.u_nearFar = { in.camera->getNearPlane(), in.camera->getFarPlane() };
+        fogUBO.u_fogStartEnd = { renderSettings_->fogSettings.start, renderSettings_->fogSettings.end };
+        fogUBO.u_fogColor = renderSettings_->fogSettings.color;
+        fogUBO.u_lightDir = in.light->getDirection();
+        fogUBO.u_maxDistance = 150.0f;
+        fogUBO.u_ambStr = in.world->getAmbientStrength();
+        fogUBO.u_scatteringStrength = 0.5f;
+        fogUBO.u_shadowBias = 0.001f;
+        fogUBO.u_sampleCount = 32;
+
         fogPass_->render(
             finalColorTex,
             forwardDepthTex_,
-            in.camera->getNearPlane(),
-            in.camera->getFarPlane(),
-            in.world->getAmbientStrength()
+            shadowMapPass_->getDepthTexture(),
+            fogUBO
         );
         finalColorTex = fogPass_->getOutputTex();
     }

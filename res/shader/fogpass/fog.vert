@@ -6,7 +6,7 @@
   #define VERT_ID gl_VertexID
 #endif
 
-layout (location = 0) out vec2 vUV;
+layout(location = 0) out vec2 vUV;
 
 void main()
 {
