@@ -32,6 +32,8 @@ public:
 	void resize();
 
 	void renderOffscreen(
+		SSAO_Constants::SSAORawUBO& rawUBO,
+		SSAO_Constants::SSAOBlurUBO& blurUBO,
 		const FrameContext& frame,
 		const glm::mat4& proj
 	);
@@ -62,10 +64,10 @@ private:
 	ImageVk ssaoBlurImage_;
 	vk::Format singleChannelFormat_ = vk::Format::eR8Unorm;
 
+	SSAO_Constants::SSAORawSamplesUBO rawSamplesUBO_;
+	std::vector<BufferVk> ssaoRawSamplesUBOBuffers_;
 	std::vector<BufferVk> ssaoRawUBOBuffers_;
-	SSAO_Constants::SSAORawUBO rawUBO_{};
 	std::vector<BufferVk> ssaoBlurUBOBuffers_;
-	SSAO_Constants::SSAOBlurUBO blurUBO_{};
 
 	std::vector<DescriptorSetVk> ssaoRawDescriptorSets_;
 	std::vector<DescriptorSetVk> ssaoBlurDescriptorSets_;

@@ -1,0 +1,115 @@
+#version 460 core
+#extension GL_EXT_ray_tracing : require
+#extension GL_GOOGLE_include_directive : require
+
+#include "../common.glsl"
+#include "../../helper.glsl"
+
+layout(location = 0) rayPayloadEXT RTAOPayload payload;
+
+layout(set = 0, binding = 0, rgba16f) uniform image2D OutColorImage;
+layout(set = 0, binding = 1) uniform accelerationStructureEXT TopLevelAS;
+layout(set = 0, binding = 2) uniform UBO
+{
+	mat4 u_invView;
+    mat4 u_invViewProj;
+
+    vec3 u_cameraPos;
+	float u_frameIndex;
+
+    int u_useRTAO;
+    float u_AORadius;
+    int u_AOSamples;
+    int _pad0;
+} ubo;
+layout(set = 0, binding = 3) uniform sampler2D NormalTex;
+layout(set = 0, binding = 4) uniform sampler2D DepthTex;
+
+
+float hash12(vec2 p)
+{
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+vec3 cosineHemisphere(float u1, float u2)
+{
+    float r = sqrt(u1);
+    float theta = 6.2831853 * u2;
+
+    float x = r * cos(theta);
+    float z = r * sin(theta);
+    float y = sqrt(max(0.0, 1.0 - u1));
+
+    return vec3(x, y, z);
+}
+
+mat3 makeBasis(vec3 n)
+{
+    vec3 up = abs(n.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    vec3 t = normalize(cross(up, n));
+    vec3 b = cross(n, t);
+    return mat3(t, n, b); // local y = normal
+}
+
+void main()
+{
+
+    ivec2 pixel = ivec2(gl_LaunchIDEXT.xy);
+    ivec2 size = ivec2(gl_LaunchSizeEXT.xy);
+    vec2 uv = (vec2(pixel) + 0.5) / vec2(size);
+
+    if (ubo.u_useRTAO == 0)
+    {
+        imageStore(OutColorImage, pixel, vec4(1.0));
+        return;
+    }
+
+    float depth = texture(DepthTex, uv).r;
+
+    if (depth >= 1.0)
+    {
+        imageStore(OutColorImage, pixel, vec4(1.0));
+        return;
+    }
+
+    vec3 normalVS = normalize(texture(NormalTex, uv).xyz);
+    vec3 normal = normalize((ubo.u_invView * vec4(normalVS, 0.0)).xyz);
+    vec3 worldPos = ReconstructWorldPos(uv, depth, ubo.u_invViewProj);
+
+    float hits = 0.0;
+    mat3 basis = makeBasis(normal);
+    vec3 aoOrigin = worldPos + normal * 0.03;
+    for (uint i = 0; i < ubo.u_AOSamples; ++i)
+    {
+        vec2 seed = vec2(pixel) + vec2(float(i) * 17.13, 0.0);
+
+        float r1 = hash12(vec2(pixel) + vec2(float(i) * 17.13, 11.7));
+        float r2 = hash12(vec2(pixel) + vec2(float(i) * 31.91, 47.3));
+
+        vec3 localDir = cosineHemisphere(r1, r2);
+        vec3 aoDir = normalize(basis * localDir);
+
+        payload.occluded = false;
+        
+        traceRayEXT(
+            TopLevelAS,
+            gl_RayFlagsTerminateOnFirstHitEXT |
+            gl_RayFlagsSkipClosestHitShaderEXT,
+            0x01,
+            0, 0, 0,
+            aoOrigin,
+            0.001,
+            aoDir,
+            ubo.u_AORadius,
+            0
+        );
+
+        if (payload.occluded)
+            hits += 1.0;
+    }
+
+    float ao = 1.0 - hits / float(ubo.u_AOSamples);
+    imageStore(OutColorImage, pixel, vec4(vec3(ao), 1.0));
+}

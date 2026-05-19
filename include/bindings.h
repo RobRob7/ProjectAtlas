@@ -9,6 +9,15 @@ constexpr uint32_t TO_API_FORM(E e)
     return static_cast<uint32_t>(e);
 }
 
+enum class RTAORayGenBinding : uint32_t
+{
+    OutColorImage = 0,
+    TLAS = 1,
+    UBO = 2,
+    NormalTex = 3,
+    DepthTex = 4,
+};
+
 enum class RTChunkRayGenBinding : uint32_t
 {
     OutColorImage = 0,
@@ -28,6 +37,7 @@ enum class RTOpaqueClosestHitBinding : uint32_t
     ChunkInfo = 1,
     UBO = 2,
     AtlasTex = 3,
+    RTAOTex = 4,
 };
 enum class RTWaterClosestHitBinding : uint32_t
 {
@@ -107,9 +117,10 @@ enum class LightBinding : uint32_t
 enum class SSAORawBinding : uint32_t
 {
     UBO = 0,
-    GNormalTex = 1,
-    GDepthTex = 2,
-    NoiseTex = 3,
+    SamplesUBO = 1,
+    GNormalTex = 2,
+    GDepthTex = 3,
+    NoiseTex = 4,
 };
 
 enum class SSAOBlurBinding : uint32_t

@@ -15,4 +15,9 @@ struct RayPayload
     int shadowed;
 };
 
+struct RTAOPayload
+{
+    bool occluded;
+};
+
 #endif

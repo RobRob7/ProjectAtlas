@@ -487,14 +487,21 @@ void UI::drawMenuBar(IScene& scene)
 				}
 			}
 
-			ImGui::BeginDisabled(enabledRT);
-			if (ImGui::Checkbox("Shadows##graphics", &renderSettings_.useShadowMap))
+			if (!enabledRT)
 			{
+				if (ImGui::Checkbox("Shadows##graphics", &renderSettings_.useShadowMap))
+				{
+				}
+				if (ImGui::Checkbox("SSAO##graphics", &renderSettings_.useSSAO))
+				{
+				}
 			}
-			if (ImGui::Checkbox("SSAO##graphics", &renderSettings_.useSSAO))
+			if (enabledRT)
 			{
+				if (ImGui::Checkbox("RTAO##graphics", &renderSettings_.useRTAO))
+				{
+				}
 			}
-			ImGui::EndDisabled();
 			if (ImGui::Checkbox("FXAA##graphics", &renderSettings_.useFXAA))
 			{
 			}
@@ -510,11 +517,12 @@ void UI::drawMenuBar(IScene& scene)
 			// API selection
 			if (ImGui::BeginMenu("API"))
 			{
-				if (ImGui::Selectable("OpenGL", selectedBackend_ == Backend::OpenGL, ImGuiSelectableFlags_DontClosePopups))
-					selectedBackend_ = Backend::OpenGL;
 
 				if (ImGui::Selectable("Vulkan", selectedBackend_ == Backend::Vulkan, ImGuiSelectableFlags_DontClosePopups))
 					selectedBackend_ = Backend::Vulkan;
+
+				if (ImGui::Selectable("OpenGL", selectedBackend_ == Backend::OpenGL, ImGuiSelectableFlags_DontClosePopups))
+					selectedBackend_ = Backend::OpenGL;
 
 				if (selectedBackend_ != activeBackend_)
 				{
@@ -857,6 +865,22 @@ void UI::drawInspector(IScene& scene)
 		ImGui::Separator();
 	}
 	ImGui::EndDisabled();
+
+	// ------- AO -------
+	if (ImGui::CollapsingHeader("Ambient Occlusion", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		bool changed = false;
+		changed |= ImGui::DragInt("Samples##AO", &renderSettings_.aoSettings.samples, 1.0f, 1, 64);
+		if (ImGui::Button("Reset##AOSamples"))
+		{
+			renderSettings_.aoSettings.samples = 16;
+		}
+		changed |= ImGui::DragFloat("Radius##AO", &renderSettings_.aoSettings.radius, 1.0f, 1.0f, 10.0f);
+		if (ImGui::Button("Reset##AORadius"))
+		{
+			renderSettings_.aoSettings.radius = 2.0f;
+		}
+	}
 
 	ImGui::End();
 } // end of drawInspector()

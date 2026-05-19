@@ -20,6 +20,8 @@
 #include "chunk_manager.h"
 #include "ui.h"
 
+#include "ray_tracing_world_vk.h"
+#include "rtao_pass_vk.h"
 #include "ray_tracing_world_pass_vk.h"
 
 #include "gbuffer_pass_vk.h"
@@ -53,9 +55,32 @@ void RendererVk::init()
 		renderSettings_ = std::make_unique<RenderSettings>();
 	}
 
-	if (vk_.supportsRayTracing() && !rtWorldPass_)
+	if (vk_.supportsRayTracing())
 	{
-		rtWorldPass_ = std::make_unique<RayTracingWorldPassVk>(vk_);
+		if (!rtWorld_)
+		{
+			rtWorld_ = std::make_unique<RayTracingWorldVk>(vk_);
+		}
+
+		if (!rtaoPass_)
+		{
+			rtaoPass_ = std::make_unique<RTAOPassVk>(
+				vk_,
+				rtWorld_->getTLAS()
+			);
+		}
+
+		if (!rtWorldPass_)
+		{
+			rtWorldPass_ = std::make_unique<RayTracingWorldPassVk>(
+				vk_,
+				rtWorld_->getTLAS(),
+				rtWorld_->getPackedRTOpaqueInfoBuffer(),
+				rtWorld_->getPackedRTOpaqueInfoBufferSize(),
+				rtWorld_->getPackedRTWaterInfoBuffer(),
+				rtWorld_->getPackedRTWaterInfoBufferSize()
+			);
+		}
 	}
 
 	if (!gbufferPass_)
@@ -127,6 +152,10 @@ void RendererVk::init()
 		presentPass_ = std::make_unique<PresentPassVk>(vk_);
 	}
 
+	if (rtaoPass_)
+	{
+		rtaoPass_->init();
+	}
 	if (rtWorldPass_)
 	{
 		rtWorldPass_->init();
@@ -164,6 +193,7 @@ void RendererVk::resize(int w, int h)
 	width_ = w;
 	height_ = h;
 
+	if (rtaoPass_)		rtaoPass_->resize();
 	if (rtWorldPass_)	rtWorldPass_->resize();
 
 	if (gbufferPass_)	gbufferPass_->resize();
@@ -220,26 +250,50 @@ void RendererVk::renderFrame(
 	}
 
 	// ----------------- PASSES ----------------- //
-	// RT upload
-	if (vk_.supportsRayTracing() && renderSettings_->useRT && rtWorldPass_)
-	{
-		rtWorldPass_->upload(
-			cmd,
-			in.world->getRTDrawList(),
-			view,
-			proj,
-			frame.frameIndex
-		);
-	}
-
 	// gbuffer pass
-	if (!renderSettings_->useRT && gbufferPass_)
+	if (gbufferPass_)
 	{
 		gbufferPass_->render(
 			*chunkPass_, 
 			in, 
 			frame, 
 			view, 
+			proj
+		);
+	}
+
+	// RT upload
+	if (vk_.supportsRayTracing() && renderSettings_->useRT && rtWorld_)
+	{
+		rtWorld_->upload(
+			cmd,
+			in.world->getRTDrawList(),
+			frame.frameIndex
+		);
+
+		if (rtaoPass_)
+		{
+			rtaoPass_->setInput(
+				gbufferPass_->getNormalImage(),
+				gbufferPass_->getDepthImage()
+			);
+			rtaoPass_->updateDescriptorSet(frame.frameIndex);
+		}
+	}
+
+	// RTAO pass
+	if (rtaoPass_)
+	{
+		RTAO_Constants::RayGenUBO ubo{};
+		ubo.u_useRTAO = renderSettings_->useRTAO ? 1 : 0;
+		ubo.u_AOSamples = renderSettings_->aoSettings.samples;
+		ubo.u_AORadius = renderSettings_->aoSettings.radius;
+
+		rtaoPass_->render(
+			ubo,
+			in,
+			frame,
+			view,
 			proj
 		);
 	}
@@ -257,7 +311,16 @@ void RendererVk::renderFrame(
 	// ssao pass
 	if (!renderSettings_->useRT && renderSettings_->useSSAO)
 	{
+		SSAO_Constants::SSAORawUBO rawUBO{};
+		rawUBO.u_kernelSize = renderSettings_->aoSettings.samples;
+		rawUBO.u_radius = renderSettings_->aoSettings.radius;
+
+		SSAO_Constants::SSAOBlurUBO blurUBO{};
+		blurUBO.u_texelSize = glm::vec2(1.0f / width_, 1.0f / height_);
+
 		ssaoPass_->renderOffscreen(
+			rawUBO,
+			blurUBO,
 			frame, 
 			proj
 		);
@@ -404,6 +467,9 @@ void RendererVk::renderFrame(
 			skybox->getNightTexture(),
 			skybox->getDayTexture()
 		);
+		rtWorldPass_->setRTAOTexture(rtaoPass_->getOutColorImage());
+
+		rtWorldPass_->updateDescriptorSet(frame.frameIndex);
 		rtWorldPass_->render(
 			in,
 			frame,

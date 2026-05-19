@@ -13,8 +13,6 @@
 #include <stdexcept>
 #include <random>
 
-using namespace SSAO_Constants;
-
 //--- PUBLIC ---//
 SSAOPass::SSAOPass() = default;
 
@@ -28,8 +26,9 @@ void SSAOPass::init()
 	ssaoShader_ = std::make_unique<Shader>("ssaopass/ssao.vert", "ssaopass/ssao.frag");
 	blurShader_ = std::make_unique<Shader>("ssaopass/ssaoblur.vert", "ssaopass/ssaoblur.frag");
 
-	uboBlur_.init<sizeof(SSAOBlurUBO)>();
-	uboSSAO_.init<sizeof(SSAORawUBO)>();
+	ssaoRawSamplesUBOBuffer_.init<sizeof(SSAO_Constants::SSAORawSamplesUBO)>();
+	ssaoRawUBOBuffer_.init<sizeof(SSAO_Constants::SSAORawUBO)>();
+	ssaoBlurUBOBuffer_.init<sizeof(SSAO_Constants::SSAOBlurUBO)>();
 
 	glCreateVertexArrays(1, &fsVao_);
 
@@ -68,6 +67,8 @@ void SSAOPass::destroyGL()
 } // end of destroyGL()
 
 void SSAOPass::render(
+	SSAO_Constants::SSAORawUBO& rawUBO,
+	SSAO_Constants::SSAOBlurUBO& blurUBO,
 	uint32_t normalTex,
 	uint32_t depthTex,
 	const glm::mat4& proj
@@ -76,52 +77,52 @@ void SSAOPass::render(
 	if (!ssaoShader_ || !blurShader_) return;
 	if (!fboRaw_ || !fboBlur_) return;
 
-	// bind reg ubo
-	uboSSAO_.bind();
+	// raw SSAO
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, fboRaw_);
+		glViewport(0, 0, width_, height_);
+		glDisable(GL_DEPTH_TEST);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
 
-	// bind reg textures
-	glBindTextureUnit(TO_API_FORM(SSAORawBinding::GNormalTex), normalTex);
-	glBindTextureUnit(TO_API_FORM(SSAORawBinding::GDepthTex), depthTex);
-	glBindTextureUnit(TO_API_FORM(SSAORawBinding::NoiseTex), noiseTexture_);
+		ssaoShader_->use();
 
-	glBindFramebuffer(GL_FRAMEBUFFER, fboRaw_);
-	glViewport(0, 0, width_, height_);
-	glDisable(GL_DEPTH_TEST);
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+		glBindTextureUnit(TO_API_FORM(SSAORawBinding::GNormalTex), normalTex);
+		glBindTextureUnit(TO_API_FORM(SSAORawBinding::GDepthTex), depthTex);
+		glBindTextureUnit(TO_API_FORM(SSAORawBinding::NoiseTex), noiseTexture_);
 
-	ssaoShader_->use();
-	ssaoUBO_.u_proj = proj;
-	ssaoUBO_.u_invProj = glm::inverse(proj);
-	ssaoUBO_.u_radius = RADIUS;
-	ssaoUBO_.u_bias = BIAS;
-	ssaoUBO_.u_kernelSize = KERNEL_SIZE;
-	ssaoUBO_.u_noiseScale = glm::vec2(
-		static_cast<float>(width_) / static_cast<float>(K_NOISE_SIZE),
-		static_cast<float>(height_) / static_cast<float>(K_NOISE_SIZE));
-	uboSSAO_.update(&ssaoUBO_, sizeof(ssaoUBO_));
+		using namespace SSAO_Constants;
+		rawUBO.u_proj = proj;
+		rawUBO.u_invProj = glm::inverse(proj);
+		rawUBO.u_bias = BIAS;
+		rawUBO.u_noiseScale = glm::vec2(
+			static_cast<float>(width_) / static_cast<float>(K_NOISE_SIZE),
+			static_cast<float>(height_) / static_cast<float>(K_NOISE_SIZE));
+		ssaoRawUBOBuffer_.update(&rawUBO, sizeof(rawUBO));
+		ssaoRawUBOBuffer_.bind();
 
-	glBindVertexArray(fsVao_);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+		glBindVertexArray(fsVao_);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
 
 
-	// blur
-	glBindFramebuffer(GL_FRAMEBUFFER, fboBlur_);
-	glViewport(0, 0, width_, height_);
-	glClear(GL_COLOR_BUFFER_BIT);
+	// blur SSAO
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, fboBlur_);
+		glViewport(0, 0, width_, height_);
+		glClear(GL_COLOR_BUFFER_BIT);
 
-	// bind blur ubo
-	uboBlur_.bind();
+		blurShader_->use();
 
-	// bind blur textures
-	glBindTextureUnit(TO_API_FORM(SSAOBlurBinding::SSAORawTex), aoRaw_);
+		glBindTextureUnit(TO_API_FORM(SSAOBlurBinding::SSAORawTex), aoRaw_);
 
-	blurShader_->use();
-	ssaoBlurUBO_.u_texelSize = glm::vec2(1.0f / width_, 1.0f / height_);
-	uboBlur_.update(&ssaoBlurUBO_, sizeof(ssaoBlurUBO_));
+		blurUBO.u_texelSize = glm::vec2(1.0f / width_, 1.0f / height_);
+		ssaoBlurUBOBuffer_.update(&blurUBO, sizeof(blurUBO));
+		ssaoBlurUBOBuffer_.bind();
 
-	glBindVertexArray(fsVao_);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+		glBindVertexArray(fsVao_);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
 
 	// restore GL state
 	glBindVertexArray(0);
@@ -203,6 +204,8 @@ void SSAOPass::destroyTargets()
 
 void SSAOPass::createNoise()
 {
+	using namespace SSAO_Constants;
+
 	std::mt19937 rng{ std::random_device{}() };
 	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
@@ -227,10 +230,12 @@ void SSAOPass::createNoise()
 
 void SSAOPass::createKernel()
 {
+	using namespace SSAO_Constants;
+
 	std::mt19937 rng{ std::random_device{}() };
 	std::uniform_real_distribution<float> dist01{ 0.0f,1.0f };
 
-	for (int i = 0; i < KERNEL_SIZE; ++i)
+	for (int i = 0; i < MAX_KERNEL_SIZE; ++i)
 	{
 		// hemisphere around +z (tangent space)
 		glm::vec4 s{
@@ -250,14 +255,12 @@ void SSAOPass::createKernel()
 		samples_[i] = s;
 	} // end for
 
-	// bind ubo
-	uboSSAO_.bind();
-
 	// upload kernel
-	ssaoShader_->use();
-	for (int i = 0; i < KERNEL_SIZE; ++i)
+	for (int i = 0; i < MAX_KERNEL_SIZE; ++i)
 	{
-		ssaoUBO_.u_samples[i] = samples_[i];
+		ssaoRawSamplesUBO_.u_samples[i] = samples_[i];
 	} // end for
-	uboSSAO_.update(&ssaoUBO_, sizeof(ssaoUBO_));
+
+	ssaoRawSamplesUBOBuffer_.update(&ssaoRawSamplesUBO_, sizeof(ssaoRawSamplesUBO_));
+	ssaoRawSamplesUBOBuffer_.bind();
 } // end of createKernel()

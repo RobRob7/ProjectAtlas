@@ -16,8 +16,6 @@
 #include <memory>
 #include <cstdint>
 
-using namespace SSAO_Constants;
-
 //--- PUBLIC ---//
 SSAOPassVk::SSAOPassVk(
 	VulkanMain& vk,
@@ -33,12 +31,14 @@ SSAOPassVk::SSAOPassVk(
 	ssaoRawPipeline_(vk),
 	ssaoBlurPipeline_(vk)
 {
+	ssaoRawSamplesUBOBuffers_.reserve(vk_.getMaxFramesInFlight());
 	ssaoRawUBOBuffers_.reserve(vk.getMaxFramesInFlight());
 	ssaoRawDescriptorSets_.reserve(vk.getMaxFramesInFlight());
 	ssaoBlurUBOBuffers_.reserve(vk.getMaxFramesInFlight());
 	ssaoBlurDescriptorSets_.reserve(vk.getMaxFramesInFlight());
 	for (uint32_t i = 0; i < vk_.getMaxFramesInFlight(); ++i)
 	{
+		ssaoRawSamplesUBOBuffers_.emplace_back(vk_);
 		ssaoRawUBOBuffers_.emplace_back(vk_);
 		ssaoRawDescriptorSets_.emplace_back(vk_);
 		ssaoBlurUBOBuffers_.emplace_back(vk_);
@@ -78,6 +78,8 @@ void SSAOPassVk::resize()
 } // end of resize()
 
 void SSAOPassVk::renderOffscreen(
+	SSAO_Constants::SSAORawUBO& rawUBO,
+	SSAO_Constants::SSAOBlurUBO& blurUBO,
 	const FrameContext& frame,
 	const glm::mat4& proj
 )
@@ -91,11 +93,7 @@ void SSAOPassVk::renderOffscreen(
 
 		ssaoRawImage_.transitionToColorAttachment(cmd);
 
-		vk::ClearValue aoClear{};
-		aoClear.color.float32[0] = 1.0f;
-		aoClear.color.float32[1] = 0.0f;
-		aoClear.color.float32[2] = 0.0f;
-		aoClear.color.float32[3] = 0.0f;
+		vk::ClearValue aoClear{ {1.0f, 0.0f, 0.0f, 0.0f} };
 
 		vk::RenderingAttachmentInfo colorAttachment{};
 		colorAttachment.imageView = ssaoRawImage_.view();
@@ -127,26 +125,27 @@ void SSAOPassVk::renderOffscreen(
 			scissor.extent = extent;
 			cmd.setScissor(0, 1, &scissor);
 
-			rawUBO_.u_proj = proj;
-			rawUBO_.u_invProj = glm::inverse(proj);
-			rawUBO_.u_radius = RADIUS;
-			rawUBO_.u_bias = BIAS;
-			rawUBO_.u_kernelSize = KERNEL_SIZE;
-			rawUBO_.u_noiseScale = glm::vec2(
+			using namespace SSAO_Constants;
+			rawUBO.u_proj = proj;
+			rawUBO.u_invProj = glm::inverse(proj);
+			rawUBO.u_bias = BIAS;
+			rawUBO.u_noiseScale = glm::vec2(
 				static_cast<float>(extent.width) / static_cast<float>(K_NOISE_SIZE),
 				static_cast<float>(extent.height) / static_cast<float>(K_NOISE_SIZE));
-
-			ssaoRawUBOBuffers_[frame.frameIndex].upload(&rawUBO_, sizeof(rawUBO_));
+			ssaoRawUBOBuffers_[frame.frameIndex].upload(&rawUBO, sizeof(rawUBO));
 
 			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, ssaoRawPipeline_.getPipeline());
 
 			vk::DescriptorSet set = ssaoRawDescriptorSets_[frame.frameIndex].getSet();
+
 			cmd.bindDescriptorSets(
 				vk::PipelineBindPoint::eGraphics,
 				ssaoRawPipeline_.getLayout(),
 				0,
-				1, &set,
-				0, nullptr
+				1,
+				&set,
+				0,
+				nullptr
 			);
 
 			cmd.draw(3, 1, 0, 0);
@@ -164,11 +163,7 @@ void SSAOPassVk::renderOffscreen(
 
 		ssaoBlurImage_.transitionToColorAttachment(cmd);
 
-		vk::ClearValue aoClear{};
-		aoClear.color.float32[0] = 1.0f;
-		aoClear.color.float32[1] = 0.0f;
-		aoClear.color.float32[2] = 0.0f;
-		aoClear.color.float32[3] = 0.0f;
+		vk::ClearValue aoClear{ {1.0f, 0.0f, 0.0f, 0.0f} };
 
 		vk::RenderingAttachmentInfo colorAttachment{};
 		colorAttachment.imageView = ssaoBlurImage_.view();
@@ -200,9 +195,7 @@ void SSAOPassVk::renderOffscreen(
 			scissor.extent = extent;
 			cmd.setScissor(0, 1, &scissor);
 
-			blurUBO_.u_texelSize = glm::vec2(1.0f / extent.width, 1.0f / extent.height);
-
-			ssaoBlurUBOBuffers_[frame.frameIndex].upload(&blurUBO_, sizeof(blurUBO_));
+			ssaoBlurUBOBuffers_[frame.frameIndex].upload(&blurUBO, sizeof(blurUBO));
 
 			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, ssaoBlurPipeline_.getPipeline());
 
@@ -318,10 +311,19 @@ void SSAOPassVk::createAttachments()
 
 void SSAOPassVk::createResources()
 {
+	for (auto& buffer : ssaoRawSamplesUBOBuffers_)
+	{
+		buffer.create(
+			sizeof(SSAO_Constants::SSAORawSamplesUBO),
+			vk::BufferUsageFlagBits::eUniformBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+	} // end for
+
 	for (auto& buffer : ssaoRawUBOBuffers_)
 	{
 		buffer.create(
-			sizeof(SSAORawUBO),
+			sizeof(SSAO_Constants::SSAORawUBO),
 			vk::BufferUsageFlagBits::eUniformBuffer,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 		);
@@ -330,7 +332,7 @@ void SSAOPassVk::createResources()
 	for (auto& buffer : ssaoBlurUBOBuffers_)
 	{
 		buffer.create(
-			sizeof(SSAOBlurUBO),
+			sizeof(SSAO_Constants::SSAOBlurUBO),
 			vk::BufferUsageFlagBits::eUniformBuffer,
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
 		);
@@ -348,6 +350,12 @@ void SSAOPassVk::createDescriptorSets()
 			uboBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 			uboBinding.descriptorCount = 1;
 			uboBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+			
+			vk::DescriptorSetLayoutBinding uboSamplesBinding{};
+			uboSamplesBinding.binding = TO_API_FORM(SSAORawBinding::SamplesUBO);
+			uboSamplesBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+			uboSamplesBinding.descriptorCount = 1;
+			uboSamplesBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
 			vk::DescriptorSetLayoutBinding gNormalBinding{};
 			gNormalBinding.binding = TO_API_FORM(SSAORawBinding::GNormalTex);
@@ -368,7 +376,8 @@ void SSAOPassVk::createDescriptorSets()
 			noiseBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 			ssaoRawDescriptorSets_[i].createLayout({
-				uboBinding, 
+				uboBinding,
+				uboSamplesBinding,
 				gNormalBinding, 
 				gDepthBinding, 
 				noiseBinding
@@ -377,6 +386,10 @@ void SSAOPassVk::createDescriptorSets()
 			vk::DescriptorPoolSize uboPool{};
 			uboPool.type = vk::DescriptorType::eUniformBuffer;
 			uboPool.descriptorCount = 1;
+
+			vk::DescriptorPoolSize uboSamplesPool{};
+			uboSamplesPool.type = vk::DescriptorType::eUniformBuffer;
+			uboSamplesPool.descriptorCount = 1;
 
 			vk::DescriptorPoolSize gNormalPool{};
 			gNormalPool.type = vk::DescriptorType::eCombinedImageSampler;
@@ -391,7 +404,8 @@ void SSAOPassVk::createDescriptorSets()
 			noisePool.descriptorCount = 1;
 
 			ssaoRawDescriptorSets_[i].createPool({
-				uboPool, 
+				uboPool,
+				uboSamplesPool,
 				gNormalPool, 
 				gDepthPool, 
 				noisePool
@@ -403,9 +417,15 @@ void SSAOPassVk::createDescriptorSets()
 			);
 
 			ssaoRawDescriptorSets_[i].writeUniformBuffer(
+				TO_API_FORM(SSAORawBinding::SamplesUBO),
+				ssaoRawSamplesUBOBuffers_[i].getBuffer(),
+				sizeof(SSAO_Constants::SSAORawSamplesUBO)
+			);
+
+			ssaoRawDescriptorSets_[i].writeUniformBuffer(
 				TO_API_FORM(SSAORawBinding::UBO),
 				ssaoRawUBOBuffers_[i].getBuffer(),
-				sizeof(SSAORawUBO)
+				sizeof(SSAO_Constants::SSAORawUBO)
 			);
 
 			ssaoRawDescriptorSets_[i].writeCombinedImageSampler(
@@ -468,7 +488,7 @@ void SSAOPassVk::createDescriptorSets()
 			ssaoBlurDescriptorSets_[i].writeUniformBuffer(
 				TO_API_FORM(SSAOBlurBinding::UBO),
 				ssaoBlurUBOBuffers_[i].getBuffer(),
-				sizeof(SSAOBlurUBO)
+				sizeof(SSAO_Constants::SSAOBlurUBO)
 			);
 
 			ssaoBlurDescriptorSets_[i].writeCombinedImageSampler(
@@ -488,7 +508,9 @@ void SSAOPassVk::createPipelines()
 		desc.vertShader = ssaoRawShader_->vertShader();
 		desc.fragShader = ssaoRawShader_->fragShader();
 
-		desc.setLayouts = { ssaoRawDescriptorSets_[0].getLayout()};
+		desc.setLayouts = { 
+			ssaoRawDescriptorSets_[0].getLayout()
+		};
 
 		desc.colorFormat = singleChannelFormat_;
 		desc.depthFormat = vk::Format::eUndefined;
@@ -525,6 +547,8 @@ void SSAOPassVk::createPipelines()
 
 void SSAOPassVk::createNoiseTexture()
 {
+	using namespace SSAO_Constants;
+
 	std::mt19937 rng{ std::random_device{}() };
 	std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
@@ -609,10 +633,12 @@ void SSAOPassVk::createNoiseTexture()
 
 void SSAOPassVk::createKernel()
 {
+	using namespace SSAO_Constants;
+
 	std::mt19937 rng{ std::random_device{}() };
 	std::uniform_real_distribution<float> dist01{ 0.0f,1.0f };
 
-	for (int i = 0; i < KERNEL_SIZE; ++i)
+	for (int i = 0; i < MAX_KERNEL_SIZE; ++i)
 	{
 		// hemisphere around +z (tangent space)
 		glm::vec4 s{
@@ -633,8 +659,16 @@ void SSAOPassVk::createKernel()
 	} // end for
 
 	// upload kernel
-	for (int i = 0; i < KERNEL_SIZE; ++i)
+	for (int i = 0; i < MAX_KERNEL_SIZE; ++i)
 	{
-		rawUBO_.u_samples[i] = samples_[i];
+		rawSamplesUBO_.u_samples[i] = samples_[i];
+	} // end for
+
+	for (uint32_t i = 0; i < vk_.getMaxFramesInFlight(); ++i)
+	{
+		ssaoRawSamplesUBOBuffers_[i].upload(
+			&rawSamplesUBO_,
+			sizeof(rawSamplesUBO_)
+		);
 	} // end for
 } // end of createKernel()

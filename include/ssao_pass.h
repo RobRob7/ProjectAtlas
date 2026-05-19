@@ -25,6 +25,8 @@ public:
 	void destroyGL();
 
 	void render(
+		SSAO_Constants::SSAORawUBO& rawUBO,
+		SSAO_Constants::SSAOBlurUBO& blurUBO,
 		uint32_t normalTex, 
 		uint32_t depthTex, 
 		const glm::mat4& proj
@@ -53,10 +55,10 @@ private:
 	std::unique_ptr<Shader> ssaoShader_;
 	std::unique_ptr<Shader> blurShader_;
 
-	UBOGL uboBlur_{ TO_API_FORM(SSAOBlurBinding::UBO) };
-	SSAO_Constants::SSAOBlurUBO ssaoBlurUBO_{};
-	UBOGL uboSSAO_{ TO_API_FORM(SSAORawBinding::UBO) };
-	SSAO_Constants::SSAORawUBO ssaoUBO_{};
+	SSAO_Constants::SSAORawSamplesUBO ssaoRawSamplesUBO_{};
+	UBOGL ssaoRawSamplesUBOBuffer_{ TO_API_FORM(SSAORawBinding::SamplesUBO) };
+	UBOGL ssaoRawUBOBuffer_{ TO_API_FORM(SSAORawBinding::UBO) };
+	UBOGL ssaoBlurUBOBuffer_{ TO_API_FORM(SSAOBlurBinding::UBO) };
 
 	std::array<glm::vec4, SSAO_Constants::MAX_KERNEL_SIZE> samples_{};
 };
