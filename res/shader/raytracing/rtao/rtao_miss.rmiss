@@ -1,0 +1,12 @@
+#version 460 core
+#extension GL_EXT_ray_tracing : require
+#extension GL_GOOGLE_include_directive : require
+
+#include "../common.glsl"
+
+layout(location = 0) rayPayloadInEXT RTAOPayload payload;
+
+void main()
+{
+	payload.occluded = false;
+}

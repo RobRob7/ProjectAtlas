@@ -136,7 +136,16 @@ void RendererGL::renderFrame(
     // ssao pass
     if (renderSettings_->useSSAO)
     {
+        SSAO_Constants::SSAORawUBO rawUBO{};
+        rawUBO.u_kernelSize = renderSettings_->aoSettings.samples;
+        rawUBO.u_radius = renderSettings_->aoSettings.radius;
+
+        SSAO_Constants::SSAOBlurUBO blurUBO{};
+        blurUBO.u_texelSize = glm::vec2(1.0f / width_, 1.0f / height_);
+
         ssaoPass_->render(
+            rawUBO,
+            blurUBO,
             gbuffer_->getNormalTexture(), 
             gbuffer_->getDepthTexture(), 
             proj

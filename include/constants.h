@@ -18,7 +18,7 @@ namespace World
 {
 	const int WATER_TEX_FACTOR = 2;
 
-	const int MIN_GROUND = 100.0;
+ 	const int MIN_GROUND = 100.0;
 	const int MAX_TERRAIN = MIN_GROUND;
 	const int SEA_LEVEL = MIN_GROUND + 40;
 
@@ -197,6 +197,33 @@ namespace Cubemap_Constants
 	};
 };
 
+namespace RTAO_Constants
+{
+	struct RayGenUBO
+	{
+		glm::mat4 u_invView;
+		glm::mat4 u_invViewProj;
+		glm::vec3 u_cameraPos;
+		float u_frameIndex;
+
+		int u_useRTAO;
+		float u_AORadius;
+		int u_AOSamples;
+		int _pad0;
+	};
+};
+
+namespace RT_Water_Constants
+{
+	struct ClosestHitUBO
+	{
+		glm::vec4 u_lightDir;
+		glm::vec4 u_lightColor;
+
+		float u_time;
+	};
+};
+
 namespace RT_Chunk_Constants
 {
 	struct RayGenUBO
@@ -217,7 +244,8 @@ namespace RT_Chunk_Constants
 	{
 		glm::vec4 u_lightDir;
 		glm::vec4 u_lightColor;
-		float u_time;
+
+		float u_ambStr;
 	};
 };
 
@@ -286,7 +314,7 @@ namespace Chunk_Constants
 		glm::vec3 u_lightColor;
 		float u_ambientStrength;
 	};
-
+	
 	struct ChunkWaterPushConstants
 	{
 		glm::mat4 u_model;
@@ -334,14 +362,19 @@ namespace SSAO_Constants
 	const int MAX_KERNEL_SIZE = 64;
 
 	const int K_NOISE_SIZE = 4;
-	const float RADIUS = 5.0f;
+	const float RADIUS = 2.0f;
 	const float BIAS = 0.05f;
-	const int KERNEL_SIZE = 64;
+	const int KERNEL_SIZE = 16;
 
 	struct SSAOBlurUBO
 	{
 		glm::vec2 u_texelSize;
 		glm::vec2 _pad0;
+	};
+
+	struct SSAORawSamplesUBO
+	{
+		glm::vec4 u_samples[MAX_KERNEL_SIZE];
 	};
 
 	struct SSAORawUBO
@@ -356,8 +389,6 @@ namespace SSAO_Constants
 		int32_t u_kernelSize;
 		float _pad0;
 		glm::vec2 _pad1;
-
-		glm::vec4 u_samples[MAX_KERNEL_SIZE];
 	};
 };
 

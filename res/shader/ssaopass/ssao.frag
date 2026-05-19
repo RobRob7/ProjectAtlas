@@ -18,13 +18,16 @@ layout (std140, set = 0, binding = 0) uniform UBO
     int u_kernelSize;
     float _pad0;
 	vec2 _pad1;
+} ubo;
 
+layout (std140, set = 0, binding = 1) uniform UBO1
+{
     vec4 u_samples[MAX_KERNEL_SIZE];
-};
+} uboSamples;
 
-layout (binding = 1) uniform sampler2D u_gNormal;
-layout (binding = 2) uniform sampler2D u_gDepth;
-layout (binding = 3) uniform sampler2D u_ssaoNoiseTex;
+layout (binding = 2) uniform sampler2D u_gNormal;
+layout (binding = 3) uniform sampler2D u_gDepth;
+layout (binding = 4) uniform sampler2D u_ssaoNoiseTex;
 
 layout (location = 0) out float FragAO;
 
@@ -38,10 +41,10 @@ void main()
     }
 
     vec3 N = normalize(texture(u_gNormal, vUV).xyz);
-    vec3 P = ReconstructViewPos(vUV, depth01, u_invProj);
+    vec3 P = ReconstructViewPos(vUV, depth01, ubo.u_invProj);
 
     //
-    vec3 rand = normalize(texture(u_ssaoNoiseTex, vUV * u_noiseScale).xyz * 2.0 - 1.0);
+    vec3 rand = normalize(texture(u_ssaoNoiseTex, vUV * ubo.u_noiseScale).xyz * 2.0 - 1.0);
 
     vec3 T = normalize(rand - N * dot(rand, N));
     vec3 B = cross(N, T);
@@ -49,12 +52,12 @@ void main()
 
     float occlusion = 0.0;
 
-    for (int i = 0; i < u_kernelSize; ++i)
+    for (int i = 0; i < ubo.u_kernelSize; ++i)
     {
-        vec3 sampleVS = P + (TBN * u_samples[i].xyz) * u_radius;
+        vec3 sampleVS = P + (TBN * uboSamples.u_samples[i].xyz) * ubo.u_radius;
 
         // get screen space (depth)
-        vec4 offset = u_proj * vec4(sampleVS, 1.0);
+        vec4 offset = ubo.u_proj * vec4(sampleVS, 1.0);
         offset.xyz /= offset.w;
         vec2 uv = offset.xy * 0.5 + 0.5;
 
@@ -65,14 +68,14 @@ void main()
         }
 
         float sampleDepth01 = texture(u_gDepth, uv).r;
-        vec3 sampleDepthVS = ReconstructViewPos(uv, sampleDepth01, u_invProj);
+        vec3 sampleDepthVS = ReconstructViewPos(uv, sampleDepth01, ubo.u_invProj);
 
-        float range = smoothstep(0.0, 1.0, u_radius / abs(P.z - sampleDepthVS.z));
+        float range = smoothstep(0.0, 1.0, ubo.u_radius / abs(P.z - sampleDepthVS.z));
 
-        float isOccluded = (sampleDepthVS.z >= sampleVS.z + u_bias) ? 1.0 : 0.0;
+        float isOccluded = (sampleDepthVS.z >= sampleVS.z + ubo.u_bias) ? 1.0 : 0.0;
         occlusion += isOccluded * range;
     } // end for
 
-    float ao = 1.0 - (occlusion / float(u_kernelSize));
+    float ao = 1.0 - (occlusion / float(ubo.u_kernelSize));
     FragAO = clamp(ao, 0.0, 1.0);
 }

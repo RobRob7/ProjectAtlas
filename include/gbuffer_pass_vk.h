@@ -29,7 +29,9 @@ public:
 	);
 
 	const ImageVk& getNormalImage() const { return gNormalImage_; }
+	ImageVk& getNormalImage() { return gNormalImage_; }
 	const ImageVk& getDepthImage() const { return gDepthImage_; }
+	ImageVk& getDepthImage() { return gDepthImage_; }
 
 private:
 	void createAttachments();

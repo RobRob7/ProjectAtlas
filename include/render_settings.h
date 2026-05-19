@@ -1,6 +1,8 @@
 #ifndef RENDER_SETTINGS_H
 #define RENDER_SETTINGS_H
 
+#include "constants.h"
+
 #include <glm/glm.hpp>
 
 enum class DebugMode : int
@@ -10,6 +12,12 @@ enum class DebugMode : int
 	Depth = 2,		// '3' key
 	ShadowMap = 3,	// '4' key
 	rtDepth = 4,	// '5' key
+};
+
+struct AOSettings
+{
+	float radius{SSAO_Constants::RADIUS};
+	int samples{SSAO_Constants::KERNEL_SIZE};
 };
 
 struct FogSettings
@@ -39,11 +47,15 @@ struct RenderSettings
 
 	bool useShadowMap = true;
 	bool useSSAO = true;
+	bool useRTAO = false;
 	bool useFXAA = false;
 	bool useFog = true;
 
 	// fog controls
 	FogSettings fogSettings;
+
+	// AO controls
+	AOSettings aoSettings;
 
 	// sun controls
 	bool sunPaused{ false };

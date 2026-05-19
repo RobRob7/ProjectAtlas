@@ -46,9 +46,12 @@ layout(set = 2, binding = 2) uniform UBO
 {
     vec4 u_lightDir;
     vec4 u_lightColor;
+
+    float u_ambStr;
 } ubo;
 
 layout(set = 2, binding = 3) uniform sampler2D u_atlasTex;
+layout(set = 2, binding = 4) uniform sampler2D RTAOTex;
 
 // ------------------------------------------------------------
 // Constants
@@ -84,36 +87,6 @@ vec2 atlasUV(uvec2 tile, vec2 local01)
     return innerUVPx / atlasPixelSize;
 }
 
-float hash12(vec2 p)
-{
-    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-}
-
-vec3 cosineHemisphere(float u1, float u2)
-{
-    float r = sqrt(u1);
-    float theta = 6.2831853 * u2;
-
-    float x = r * cos(theta);
-    float z = r * sin(theta);
-    float y = sqrt(max(0.0, 1.0 - u1));
-
-    return vec3(x, y, z);
-}
-
-mat3 makeBasis(vec3 n)
-{
-    vec3 up = abs(n.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
-    vec3 t = normalize(cross(up, n));
-    vec3 b = cross(n, t);
-    return mat3(t, n, b); // local y = normal
-}
-
-// ------------------------------------------------------------
-// Main
-// ------------------------------------------------------------
 void main()
 {
     // shadow ray
@@ -211,53 +184,14 @@ void main()
 
     float shadow = (payload.shadowed != 0) ? 0.0 : 1.0;
 
-    // --------------------
-    // Ray traced AO
-    // --------------------
-    float ao = 1.0;
-
-    const int AO_SAMPLES = 4;
-    const float AO_RADIUS = 2.0;
-
-    int hits = 0;
-
-    mat3 basis = makeBasis(normal);
-    vec3 aoOrigin = worldHitPos + normal * 0.03;
-
-    for (int s = 0; s < AO_SAMPLES; ++s)
-    {
-        float r1 = hash12(worldHitPos.xz + vec2(float(s), 13.7));
-        float r2 = hash12(worldHitPos.zy + vec2(float(s), 91.3));
-
-        vec3 localDir = cosineHemisphere(r1, r2);
-        vec3 aoDir = normalize(basis * localDir);
-
-        payload.shadowed = 0;
-        payload.rayType = 1;
-
-        traceRayEXT(
-            topLevelAS,
-            gl_RayFlagsTerminateOnFirstHitEXT,
-            0x01, // opaque chunks only
-            0, 0, 0,
-            aoOrigin,
-            0.02,
-            aoDir,
-            AO_RADIUS,
-            0
-        );
-
-        if (payload.shadowed != 0)
-            hits++;
-    }
-
-    ao = 1.0 - float(hits) / float(AO_SAMPLES);
-    ao = mix(0.35, 1.0, ao);
+    vec2 screenUV = (vec2(gl_LaunchIDEXT.xy) + 0.5) / vec2(gl_LaunchSizeEXT.xy);
+    float ao = texture(RTAOTex, screenUV).r;
+    float aoDirect = mix(1.0, ao, 0.5);
 
     payload.rayType = 0;
 
-    vec3 ambient = texColor.rgb * 0.03 * ao;
-    vec3 diffuse = texColor.rgb * ubo.u_lightColor.rgb * ndotl * shadow * ao;
+    vec3 ambient = ubo.u_lightColor.rgb * ubo.u_ambStr * texColor.rgb * aoDirect;
+    vec3 diffuse = texColor.rgb * ubo.u_lightColor.rgb * ndotl * shadow;
 
     payload.color = ambient + diffuse;
 }
