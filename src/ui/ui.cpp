@@ -8,7 +8,7 @@
 #include "i_light.h"
 
 #include "texture_2d_vk.h"
-#include "texture.h"
+#include "texture_gl.h"
 
 #include "chunk_manager.h"
 #include "camera.h"
@@ -128,7 +128,7 @@ UI::UI(
 	else
 	{
 		// window top nav bar logo
-		logoTexGL_ = std::make_unique<Texture>("blocks.png");
+		logoTexGL_ = std::make_unique<TextureGL>("blocks.png");
 
 		ImGui_ImplGlfw_InitForOpenGL(window_, true);
 		ImGui_ImplOpenGL3_Init("#version 460 core");

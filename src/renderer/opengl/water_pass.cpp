@@ -18,7 +18,7 @@
 #include "camera.h"
 #include "light_gl.h"
 #include "cubemap_gl.h"
-#include "texture.h"
+#include "texture_gl.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -47,11 +47,11 @@ void WaterPass::init()
     shader_ = std::make_unique<Shader>("water/water.vert", "water/water.frag");
     ubo_.init<sizeof(ChunkWaterUBO)>();
 
-    dudvTex_ = std::make_unique<Texture>("dudv.png");
+    dudvTex_ = std::make_unique<TextureGL>("dudv.png");
     dudvTex_->setWrapRepeat();
     dudvTex_->setNoMipmapsLinear();
 
-    normalTex_ = std::make_unique<Texture>("waternormal.png");
+    normalTex_ = std::make_unique<TextureGL>("waternormal.png");
     normalTex_->setWrapRepeat();
     normalTex_->setNoMipmapsLinear();
 } // end of init()

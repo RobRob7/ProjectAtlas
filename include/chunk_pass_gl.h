@@ -6,7 +6,6 @@
 #include "ubo_gl.h"
 
 #include "shader.h"
-#include "texture.h"
 
 #include <glm/glm.hpp>
 
@@ -17,13 +16,14 @@ struct RenderInputs;
 struct RenderSettings;
 struct ChunkDrawList;
 class WaterPass;
+class TextureGL;
 
 using namespace Chunk_Constants;
 
 class ChunkPassGL
 {
 public:
-	ChunkPassGL() = default;
+	ChunkPassGL();
 	~ChunkPassGL();
 
 	void init();
@@ -65,7 +65,7 @@ public:
 private:
 	std::unique_ptr<Shader> opaqueShader_;
 
-	std::unique_ptr<Texture> atlas_;
+	std::unique_ptr<TextureGL> atlas_;
 	
 	UBOGL uboOpaque_{ TO_API_FORM(ChunkBinding::UBO) };
 	ChunkOpaqueUBO chunkOpaqueUBO_;
