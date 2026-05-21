@@ -14,7 +14,7 @@
 #include <cstdint>
 #include <memory>
 
-class Texture;
+class TextureGL;
 class Shader;
 
 class CubemapGL final : public ICubemap
@@ -38,8 +38,8 @@ private:
 private:
     std::unique_ptr<Shader> shader_;
 
-    std::unique_ptr<Texture> cubemapTextureNight_;
-    std::unique_ptr<Texture> cubemapTextureDay_;
+    std::unique_ptr<TextureGL> cubemapTextureNight_;
+    std::unique_ptr<TextureGL> cubemapTextureDay_;
 
     uint32_t vao_{};
     uint32_t vbo_{};

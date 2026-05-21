@@ -9,7 +9,7 @@
 #include <string_view>
 
 class IScene;
-class Texture;
+class TextureGL;
 class Texture2DVk;
 class VulkanMain;
 struct FrameContext;
@@ -55,7 +55,7 @@ private:
 	GLFWwindow* window_;
 	RenderSettings& renderSettings_;
 
-	std::unique_ptr<Texture> logoTexGL_;
+	std::unique_ptr<TextureGL> logoTexGL_;
 
 	std::unique_ptr<Texture2DVk> logoTexVk_;
 	ImTextureID logoIdVk_;

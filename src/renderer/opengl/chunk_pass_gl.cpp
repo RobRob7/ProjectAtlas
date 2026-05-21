@@ -8,7 +8,7 @@
 #include "i_chunk_mesh_gpu.h"
 
 #include "shader.h"
-#include "texture.h"
+#include "texture_gl.h"
 #include "camera.h"
 #include "light_gl.h"
 
@@ -22,13 +22,18 @@
 #include <cstdint>
 
 //--- PUBLIC ---//
+ChunkPassGL::ChunkPassGL() = default;
+
 ChunkPassGL::~ChunkPassGL() = default;
 
 void ChunkPassGL::init()
 {
-	opaqueShader_ = std::make_unique<Shader>("chunk/chunk.vert", "chunk/chunk.frag");
+	opaqueShader_ = std::make_unique<Shader>(
+        "chunk/chunk.vert", 
+        "chunk/chunk.frag"
+    );
 
-	atlas_ = std::make_unique<Texture>("blocks_padded.png", true);
+	atlas_ = std::make_unique<TextureGL>("blocks_padded.png", true);
 
     uboOpaque_.init<sizeof(ChunkOpaqueUBO)>();
 } // end of init()

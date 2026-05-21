@@ -23,11 +23,27 @@ set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
 # pull dependecy cmake lists
 add_subdirectory(deps/glfw-3.4)				# window opener
-add_subdirectory(deps/glad)					# opengl loader
+add_subdirectory(deps/glad)				# opengl loader
 add_subdirectory(deps/glm-1.01)				# math
-add_subdirectory(deps/stb)					# stb image
-add_subdirectory(deps/imgui-1.92.5)			# imgui
+add_subdirectory(deps/stb)				# stb image
+add_subdirectory(deps/imgui-1.92.5)			# dear imgui
 add_subdirectory(deps/libnoise)				# libnoise
+
+# assimp
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
+
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "" FORCE)
+
+add_subdirectory(deps/assimp-6.0.5)
 
 # VS set startup project main
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${CMAKE_PROJECT_NAME})
@@ -52,4 +68,13 @@ target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC
 )
 
 # link libs
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE Vulkan::Vulkan glm glfw glad stb imgui libnoise)
+target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE 
+	Vulkan::Vulkan 
+	glm 
+	glfw 
+	glad 
+	stb 
+	imgui 
+	libnoise 
+	assimp
+)

@@ -11,7 +11,7 @@
 #include <memory>
 
 class ChunkPassGL;
-class Texture;
+class TextureGL;
 struct RenderInputs;
 struct RenderSettings;
 class Shader;
@@ -99,8 +99,8 @@ private:
 	uint32_t refrColorTex_{0};
 	uint32_t refrDepthTex_{0};
 
-	std::unique_ptr<Texture> dudvTex_;
-	std::unique_ptr<Texture> normalTex_;
+	std::unique_ptr<TextureGL> dudvTex_;
+	std::unique_ptr<TextureGL> normalTex_;
 };
 
 #endif

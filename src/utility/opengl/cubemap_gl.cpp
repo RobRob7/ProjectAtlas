@@ -3,7 +3,7 @@
 #include "constants.h"
 #include "bindings.h"
 
-#include "texture.h"
+#include "texture_gl.h"
 #include "shader.h"
 
 #include <glad/glad.h>
@@ -29,10 +29,13 @@ void CubemapGL::init()
 {
 	destroyGL();
 
-	shader_ = std::make_unique<Shader>("cubemap/cubemap.vert", "cubemap/cubemap.frag");
+	shader_ = std::make_unique<Shader>(
+		"cubemap/cubemap.vert", 
+		"cubemap/cubemap.frag"
+	);
 
-	cubemapTextureNight_ = std::make_unique<Texture>(faces_);
-	cubemapTextureDay_ = std::make_unique<Texture>(DAY_FACES);
+	cubemapTextureNight_ = std::make_unique<TextureGL>(faces_);
+	cubemapTextureDay_ = std::make_unique<TextureGL>(DAY_FACES);
 
 	// VAO + VBO
 	glCreateVertexArrays(1, &vao_);
