@@ -1,5 +1,5 @@
 # Project Atlas
-C++17 voxel-based rendering engine built for Windows featuring a modular, interchangeable backend architecture supporting Vulkan 1.4 (Dynamic Rendering) and OpenGL 4.6 Core. 
+C++17 voxel rendering engine built for Windows featuring a modular, interchangeable backend architecture supporting Vulkan 1.4 (hpp + Unique, Dynamic Rendering) and OpenGL 4.6 Core. Uses custom rendering pipelines in Vulkan to support traditional rasterization, ray-tracing, and compute pipelines.
 
 <h3>
 Features:
@@ -30,7 +30,7 @@ Features:
 - **`=`** — Enable camera control mode
   - Allows free-look camera movement (mouse + keyboard).
 - **`-`** — Enable cursor mode
-  - Releases the mouse cursor for interacting with the ImGui control panel.
+  - Releases the mouse cursor for interaction with UI.
 
 <h2>
 Preview
@@ -45,24 +45,20 @@ Preview
 Debugging & Validation
 </h2>
 
-- Used RenderDoc to capture and analyze GPU frames across both Vulkan and OpenGL backends.
-- Utilized Vulkan shader debugging tools to inspect shader execution and validate intermediate outputs.
-- Verified correctness of multi-pass rendering by analyzing the RenderDoc frame stack and inspecting intermediate render targets.
-- Developed a custom in-engine debug system to visualize pass outputs (G-buffer, shadow maps, SSAO), enabling real-time validation outside of frame captures.
+- Vulkan: Implemented system to assign debug names (for command buffers, descriptor sets, pipelines) to help identify critical passes of engine inside of RenderDoc and NVIDIA Nsight Graphics, and validation layers.
+- Used RenderDoc and NVIDIA Nsight Graphics to capture and analyze GPU frames across both Vulkan and OpenGL backends, verifying correctness of multi-pass rendering.
+- Developed a custom in-engine debug system to visualize pass output textures, enabling real-time validation outside of frame captures.
 
 <h2>
 Rendering & Engine Techniques
 </h2>
 
+> Vulkan: Multi frame-in-flight architecture with per-frame resources (descriptor sets, UBOs) to avoid CPU-GPU synchronization hazards.
 
-> Multi-frame-in-flight architecture with per-frame resources (descriptor sets, UBOs) to avoid CPU-GPU synchronization hazards.
-
-This project focuses on implementing real-time rendering techniques that are commonly used in modern game engines. Each technique was implemented from scratch with explicit control over GPU resources and pipeline state.
-
-> **Note:** FPS comparisons were recorded at the same camera position. Relative gains are hardware-agnostic; absolute FPS varies by GPU.
+This project focuses on implementing real-time rendering techniques that are commonly used in modern game engines. The techniques were implemented from scratch with explicit control over GPU resources and pipeline state.
 
 ### Rendering Pipeline Overview
-> Vulkan backend utilizes dynamic rendering (no render passes/framebuffers) for flexible multi-pass composition.
+> Vulkan backend utilizes dynamic rendering, and hybrid approach to support raster + RT rendering.
 
 1. G-buffer pass (normals + depth)
 2. Shadow Map pass (shadow map depth)
