@@ -1,4 +1,4 @@
-# Project Atlas
+# Project Scorpio
 C++17 voxel rendering engine built for Windows featuring a dual backend architecture supporting Vulkan 1.4 (hpp + Unique, Dynamic Rendering) and OpenGL 4.6 Core. Uses custom rendering pipelines in Vulkan to support traditional rasterization, ray-tracing, and compute pipelines.
 
 <h3>
@@ -372,11 +372,11 @@ Build
 
 - Clone repo:
 ```
-git clone https://github.com/RobRob7/ProjectAtlas.git
+git clone https://github.com/RobRob7/ProjectScorpio.git
 ```
 - Then run commands:
 ```
-cd ProjectAtlas
+cd ProjectScorpio
 mkdir build
 cd build
 cmake ..
@@ -390,12 +390,12 @@ Run
 
 ```
 cd Release
-Atlas.exe
+Scorpio.exe
 ```
 - For Git Bash:
 ```
 cd Release
-./Atlas.exe
+./Scorpio.exe
 ```
 
 
