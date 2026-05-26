@@ -15,6 +15,7 @@ ChunkData::ChunkData(int cx, int cz)
 	blocks_.fill(BlockID::Air);
 
 	setupHeightMap(cx, cz);
+	setupCaveNoise();
 
 	std::array<int, CHUNK_SIZE* CHUNK_SIZE> columnHeights;
 
@@ -61,7 +62,7 @@ ChunkData::ChunkData(int cx, int cz)
 					}
 					else
 					{
-						setBlocks(x, y, z, BlockID::Grass);
+						setBlocks(x, y, z, BlockID::SnowGrass);
 					}
 				}
 				else if (y > height - 3)
@@ -76,7 +77,59 @@ ChunkData::ChunkData(int cx, int cz)
 		} // end for
 	} // end for
 
-	// second pass: place trees after terrain
+	// carve caves after terrain, before trees
+	for (int x = 0; x < CHUNK_SIZE; ++x)
+	{
+		for (int z = 0; z < CHUNK_SIZE; ++z)
+		{
+			int height = columnHeights[x + CHUNK_SIZE * z];
+
+			for (int y = 1; y < height - 4; ++y)
+			{
+				carveCave(x, y, z);
+
+				BlockID cur = getBlockID(x, y, z);
+
+				// only place ore in remaining stone
+				if (cur == BlockID::Stone)
+				{
+					int worldX = m_chunkX * CHUNK_SIZE + x;
+					int worldZ = m_chunkZ * CHUNK_SIZE + z;
+
+					uint32_t h = 2166136261u;
+
+					auto mix = [&](int v)
+						{
+							h ^= static_cast<uint32_t>(v);
+							h *= 16777619u;
+						};
+
+					mix(worldX);
+					mix(y);
+					mix(worldZ);
+
+					std::minstd_rand rng(h);
+
+					if (y < 30 && (rng() % 100) == 0)
+					{
+						setBlocks(x, y, z, BlockID::IronOre);
+					}
+
+					if (y < 20 && (rng() % 1000) == 0)
+					{
+						setBlocks(x, y, z, BlockID::DiamondOre);
+					}
+
+					if (y < 10 && (rng() % 50000) == 0)
+					{
+						setBlocks(x, y, z, BlockID::GoldOre);
+					}
+				}
+			} // end for
+		} // end for
+	} // end for
+
+	// place trees after terrain
 	for (int x = 0; x < CHUNK_SIZE; ++x)
 	{
 		for (int z = 0; z < CHUNK_SIZE; ++z)
@@ -88,36 +141,6 @@ ChunkData::ChunkData(int cx, int cz)
 } // end of constructor
 
 ChunkData::~ChunkData() = default;
-
-BlockID ChunkData::getBlockID(int x, int y, int z) const
-{
-	return blocks_[x + CHUNK_SIZE * (z + CHUNK_SIZE * y)];
-} // end of getBlockID()
-
-void ChunkData::setBlockID(int x, int y, int z, BlockID id)
-{
-	if (x < 0 || x >= CHUNK_SIZE ||
-		y < 0 || y >= CHUNK_SIZE_Y ||
-		z < 0 || z >= CHUNK_SIZE)
-	{
-		return;
-	}
-
-	setBlocks(x, y, z, id);
-} // end of setBlockID()
-
-const std::array<BlockID, CHUNK_SIZE* CHUNK_SIZE_Y* CHUNK_SIZE>& ChunkData::getBlocks() const
-{
-	return blocks_;
-} // end of getBlocks()
-
-void ChunkData::loadData(std::istream& in)
-{
-	in.read(
-		reinterpret_cast<char*>(blocks_.data()),
-		static_cast<std::streamsize>(blocks_.size() * sizeof(BlockID))
-		);
-} // end of loadData()
 
 
 //--- PRIVATE ---//
@@ -151,6 +174,39 @@ void ChunkData::setupHeightMap(int cx, int cz)
 	heightMapBuilder.Build();
 } // end of setupHeightMap()
 
+void ChunkData::setupCaveNoise()
+{
+	caveNoise_.SetSeed(777);
+	caveNoise_.SetFrequency(0.4);
+	caveNoise_.SetPersistence(0.5);
+	caveNoise_.SetLacunarity(2.0);
+	caveNoise_.SetOctaveCount(3);
+} // end of setupCaveNoise()
+
+void ChunkData::carveCave(int x, int y, int z)
+{
+	int worldX = m_chunkX * CHUNK_SIZE + x;
+	int worldZ = m_chunkZ * CHUNK_SIZE + z;
+
+	double scale = 0.06;
+
+	double n = caveNoise_.GetValue(
+		worldX * scale,
+		y * scale,
+		worldZ * scale
+	);
+
+	if (n > 0.65)
+	{
+		BlockID cur = getBlockID(x, y, z);
+
+		if (cur == BlockID::Stone || cur == BlockID::Dirt)
+		{
+			setBlocks(x, y, z, BlockID::Air);
+		}
+	}
+} // end of carveCave()
+
 void ChunkData::placeTree(int x, int groundY, int z)
 {
 	// should place above sea level
@@ -174,7 +230,8 @@ void ChunkData::placeTree(int x, int groundY, int z)
 	}
 
 	// tree should be placed on grass block only
-	if (getBlockID(x, groundY, z) != BlockID::Grass)
+	if ((getBlockID(x, groundY, z) != BlockID::Grass) &&
+		(getBlockID(x, groundY, z) != BlockID::SnowGrass))
 	{
 		return;
 	}
@@ -194,16 +251,15 @@ void ChunkData::placeTree(int x, int groundY, int z)
 
 	std::minstd_rand rng(h);
 
-	int percentageOfGrassHaveTree = 7;
+	int percentageOfGrassHaveTree = 35;
 	if ((rng() % 100) >= percentageOfGrassHaveTree)
 	{
 		return;
 	}
 
-	// trunk height [4,6] blocks
-	int trunkHeight = 4 + (rng() % 3);
+	int trunkHeight = 4 + (rng() % 10);
 	int baseY = groundY + 1;
-	int topY = baseY + trunkHeight - 1;
+	int topY = baseY + trunkHeight - 5;
 
 	// place trunk
 	for (int ty = baseY; ty <= topY; ++ty)
@@ -249,13 +305,13 @@ void ChunkData::placeTree(int x, int groundY, int z)
 					continue;
 				}
 
-				// skip corners on the full layers to round it off,
+				// skip corners on the full layers to round it off
 				if (radius == 2 && std::abs(dx) == 2 && std::abs(dz) == 2)
 				{
 					continue;
 				}
 
-				// add tiny randomness for holes in outer leaves.
+				// add tiny randomness for holes in outer leaves
 				if (radius == 2 && (rng() % 5) == 0)
 				{
 					continue;

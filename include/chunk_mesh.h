@@ -106,10 +106,10 @@ public:
     );
     ~ChunkMesh();
 
-    void setBlock(int x, int y, int z, BlockID id);
-    BlockID getBlock(int x, int y, int z) const;
-    ChunkData& getChunk();
-    void rebuild();
+    void setBlock(int x, int y, int z, BlockID id) { chunkData_.setBlockID(x, y, z, id); }
+    BlockID getBlock(int x, int y, int z) const { return chunkData_.getBlockID(x, y, z); }
+    ChunkData& getChunk() { return chunkData_; }
+    void rebuild() { buildChunkMesh(); }
 
     const ChunkMeshData& data() const { return data_; }
     uint32_t getRenderedBlockCount() const { return data_.renderedBlockCount; }

@@ -35,13 +35,18 @@ namespace World
 	{
 		Air,
 		Dirt,
+		SnowGrass,
 		Grass,
 		Stone,
 		Tree_Leaf,
 		Tree_Trunk,
 		Glow_Block,
 		Sand,
-		Water
+		Water,
+		Flower,
+		IronOre,
+		DiamondOre,
+		GoldOre
 	};
 
 	// world opaque vertices

@@ -802,7 +802,7 @@ void ChunkPassVk::createPipelines(
 		desc.colorFormat = defaultFormats.colorFormat;
 		desc.depthFormat = defaultFormats.depthFormat;
 
-		desc.cullMode = vk::CullModeFlagBits::eBack;
+		desc.cullMode = vk::CullModeFlagBits::eNone;
 		desc.frontFace = vk::FrontFace::eClockwise;
 		desc.depthTestEnable = true;
 		desc.depthWriteEnable = true;

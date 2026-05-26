@@ -55,26 +55,6 @@ ChunkMesh::ChunkMesh(
 
 ChunkMesh::~ChunkMesh() = default;
 
-void ChunkMesh::setBlock(int x, int y, int z, BlockID id)
-{
-	chunkData_.setBlockID(x, y, z, id);
-} // end of setBlock()
-
-BlockID ChunkMesh::getBlock(int x, int y, int z) const
-{
-	return chunkData_.getBlockID(x, y, z);
-} // end of getBlock()
-
-ChunkData& ChunkMesh::getChunk()
-{
-	return chunkData_;
-} // end of getChunk()
-
-void ChunkMesh::rebuild()
-{
-	buildChunkMesh();
-} // end of rebuild()
-
 
 //--- PRIVATE ---//
 void ChunkMesh::buildChunkMesh()
@@ -500,6 +480,20 @@ void ChunkMesh::getBlockTile(BlockID id, int& tileX, int& tileY, std::optional<F
 			break;
 		}
 		break;
+	case BlockID::SnowGrass:
+		switch (*face)
+		{
+		case FaceDir::PosY: // top
+			tileX = 10; tileY = tileYFromTop(15); // snow
+			break;
+		case FaceDir::NegY: // bottom
+			tileX = 5; tileY = tileYFromTop(7); // dirt
+			break;
+		default: // sides
+			tileX = 14; tileY = tileYFromTop(4); // grass (snow)
+			break;
+		}
+		break;
 	case BlockID::Stone:
 		tileX = 8; tileY = tileYFromTop(2);
 		break;
@@ -526,6 +520,27 @@ void ChunkMesh::getBlockTile(BlockID id, int& tileX, int& tileY, std::optional<F
 		break;
 	case BlockID::Water:
 		tileX = 2; tileY = tileYFromTop(0);
+		break;
+	case BlockID::Flower:
+		switch (*face)
+		{
+		case FaceDir::PosY: // top
+		case FaceDir::NegY: // bottom
+			tileX = 18; tileY = tileYFromTop(5); // air
+			break;
+		default: // sides
+			tileX = 12; tileY = tileYFromTop(0); // flower
+			break;
+		}
+		break;
+	case BlockID::IronOre:
+		tileX = 6; tileY = tileYFromTop(9);
+		break;
+	case BlockID::DiamondOre:
+		tileX = 4; tileY = tileYFromTop(7);
+		break;
+	case BlockID::GoldOre:
+		tileX = 14; tileY = tileYFromTop(1);
 		break;
 	default:
 		tileX = 0; tileY = tileYFromTop(0);
